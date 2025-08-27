@@ -19,7 +19,7 @@ const roleValidationSchema = z.object({
 })
 
 // Response type for consistent API responses
-type ActionResponse<T = any> = {
+type ActionResponse<T = unknown> = {
   isSuccess: boolean
   data?: T
   error?: string

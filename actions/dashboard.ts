@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server"
 import { db } from "@/db"
 import { transactions, transactionItems, products, users } from "@/db/schema"
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm"
-import { validateUserRole } from "./auth"
+import { validateUserRole, getCurrentUserProfile } from "./auth"
 
 export interface DashboardMetrics {
   todaysSales: {
@@ -56,18 +56,18 @@ export async function getDashboardMetrics(date?: Date): Promise<{
       return { isSuccess: false, error: "Insufficient permissions" }
     }
 
-    const userProfile = roleCheck.data
-    if (!userProfile) {
+    const userProfileResult = await getCurrentUserProfile()
+    if (!userProfileResult.isSuccess || !userProfileResult.data) {
       return { isSuccess: false, error: "User profile not found" }
     }
 
-    const stationId = userProfile.user.stationId
+    const stationId = userProfileResult.data.user.stationId
     const targetDate = date || new Date()
-    
+
     // Set date range for "today" (start and end of day)
     const startOfDay = new Date(targetDate)
     startOfDay.setHours(0, 0, 0, 0)
-    
+
     const endOfDay = new Date(targetDate)
     endOfDay.setHours(23, 59, 59, 999)
 
@@ -86,10 +86,16 @@ export async function getDashboardMetrics(date?: Date): Promise<{
         )
       )
 
-    const todaysSales = todaysSalesQuery[0] || { totalValue: "0", transactionCount: 0 }
-    const averageTransaction = todaysSales.transactionCount > 0 
-      ? (parseFloat(todaysSales.totalValue) / todaysSales.transactionCount).toFixed(2)
-      : "0"
+    const todaysSales = todaysSalesQuery[0] || {
+      totalValue: "0",
+      transactionCount: 0
+    }
+    const averageTransaction =
+      todaysSales.transactionCount > 0
+        ? (
+            parseFloat(todaysSales.totalValue) / todaysSales.transactionCount
+          ).toFixed(2)
+        : "0"
 
     // Get stock status
     const stockStatusQuery = await db
@@ -100,16 +106,13 @@ export async function getDashboardMetrics(date?: Date): Promise<{
       })
       .from(products)
       .where(
-        and(
-          eq(products.stationId, stationId),
-          eq(products.isActive, true)
-        )
+        and(eq(products.stationId, stationId), eq(products.isActive, true))
       )
 
-    const stockStatus = stockStatusQuery[0] || { 
-      totalProducts: 0, 
-      lowStockCount: 0, 
-      pmsLevel: "0" 
+    const stockStatus = stockStatusQuery[0] || {
+      totalProducts: 0,
+      lowStockCount: 0,
+      pmsLevel: "0"
     }
 
     // Get staff activity
@@ -121,9 +124,9 @@ export async function getDashboardMetrics(date?: Date): Promise<{
       .from(users)
       .where(eq(users.stationId, stationId))
 
-    const staffActivity = staffActivityQuery[0] || { 
-      totalStaff: 0, 
-      activeStaffCount: 0 
+    const staffActivity = staffActivityQuery[0] || {
+      totalStaff: 0,
+      activeStaffCount: 0
     }
 
     // Get top products for today
@@ -135,7 +138,10 @@ export async function getDashboardMetrics(date?: Date): Promise<{
         revenue: sql<string>`COALESCE(SUM(${transactionItems.totalPrice}), 0)`
       })
       .from(transactionItems)
-      .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
+      .innerJoin(
+        transactions,
+        eq(transactionItems.transactionId, transactions.id)
+      )
       .innerJoin(products, eq(transactionItems.productId, products.id))
       .where(
         and(
@@ -167,7 +173,6 @@ export async function getDashboardMetrics(date?: Date): Promise<{
     }
 
     return { isSuccess: true, data: metrics }
-
   } catch (error) {
     console.error("Error fetching dashboard metrics:", error)
     return { isSuccess: false, error: "Failed to fetch dashboard metrics" }
@@ -191,15 +196,15 @@ export async function getLowStockAlerts(): Promise<{
       return { isSuccess: false, error: "Insufficient permissions" }
     }
 
-    const userProfile = roleCheck.data
-    if (!userProfile) {
+    const userProfileResult = await getCurrentUserProfile()
+    if (!userProfileResult.isSuccess || !userProfileResult.data) {
       return { isSuccess: false, error: "User profile not found" }
     }
 
-    const stationId = userProfile.user.stationId
+    const stationId = userProfileResult.data.user.stationId
 
     // Get products with low stock
-    const lowStockProducts = await db
+    const lowStockProductsRaw = await db
       .select({
         id: products.id,
         name: products.name,
@@ -219,8 +224,15 @@ export async function getLowStockAlerts(): Promise<{
       )
       .orderBy(sql`(${products.currentStock} / ${products.minThreshold})`)
 
-    return { isSuccess: true, data: lowStockProducts }
+    // Transform null brand to undefined to match LowStockAlert interface
+    const lowStockProducts: LowStockAlert[] = lowStockProductsRaw.map(
+      product => ({
+        ...product,
+        brand: product.brand || undefined
+      })
+    )
 
+    return { isSuccess: true, data: lowStockProducts }
   } catch (error) {
     console.error("Error fetching low stock alerts:", error)
     return { isSuccess: false, error: "Failed to fetch low stock alerts" }
@@ -250,12 +262,12 @@ export async function getRecentTransactions(limit: number = 10): Promise<{
       return { isSuccess: false, error: "Insufficient permissions" }
     }
 
-    const userProfile = roleCheck.data
-    if (!userProfile) {
+    const userProfileResult = await getCurrentUserProfile()
+    if (!userProfileResult.isSuccess || !userProfileResult.data) {
       return { isSuccess: false, error: "User profile not found" }
     }
 
-    const stationId = userProfile.user.stationId
+    const stationId = userProfileResult.data.user.stationId
 
     // Get recent transactions with user info and item count
     const recentTransactions = await db
@@ -268,7 +280,10 @@ export async function getRecentTransactions(limit: number = 10): Promise<{
       })
       .from(transactions)
       .innerJoin(users, eq(transactions.userId, users.id))
-      .leftJoin(transactionItems, eq(transactions.id, transactionItems.transactionId))
+      .leftJoin(
+        transactionItems,
+        eq(transactions.id, transactionItems.transactionId)
+      )
       .where(eq(transactions.stationId, stationId))
       .groupBy(
         transactions.id,
@@ -280,7 +295,6 @@ export async function getRecentTransactions(limit: number = 10): Promise<{
       .limit(limit)
 
     return { isSuccess: true, data: recentTransactions }
-
   } catch (error) {
     console.error("Error fetching recent transactions:", error)
     return { isSuccess: false, error: "Failed to fetch recent transactions" }

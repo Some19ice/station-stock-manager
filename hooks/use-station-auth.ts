@@ -60,12 +60,15 @@ export function useStationAuth(): UseStationAuthReturn {
     try {
       setIsLoading(true)
       setError(null)
-      
+
       const result = await getCurrentUserProfile()
-      
+
       if (result.isSuccess && result.data) {
         setStationUser(result.data.user)
-        setStation(result.data.station)
+        setStation({
+          ...result.data.station,
+          address: result.data.station.address || undefined
+        })
       } else {
         setError(result.error || "Failed to load user profile")
         setStationUser(null)
@@ -95,12 +98,12 @@ export function useStationAuth(): UseStationAuthReturn {
 
   const canAccess = (requiredRole: UserRole): boolean => {
     if (!stationUser) return false
-    
+
     // Manager can access all staff functions
     if (requiredRole === "staff" && stationUser.role === "manager") {
       return true
     }
-    
+
     return stationUser.role === requiredRole
   }
 

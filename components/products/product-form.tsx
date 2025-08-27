@@ -7,7 +7,13 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
@@ -25,7 +31,7 @@ const productFormSchema = z.object({
   unitPrice: z.number().min(0, "Price must be positive"),
   minThreshold: z.number().min(0, "Threshold must be positive"),
   unit: z.string().min(1, "Unit is required"),
-  isActive: z.boolean().default(true)
+  isActive: z.boolean()
 })
 
 type ProductFormData = z.infer<typeof productFormSchema>
@@ -37,7 +43,12 @@ interface ProductFormProps {
   onCancel?: () => void
 }
 
-export function ProductForm({ stationId, product, onSuccess, onCancel }: ProductFormProps) {
+export function ProductForm({
+  stationId,
+  product,
+  onSuccess,
+  onCancel
+}: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditing = !!product
 
@@ -61,10 +72,10 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
 
   const onSubmit = async (data: ProductFormData) => {
     setIsSubmitting(true)
-    
+
     try {
       let result
-      
+
       if (isEditing && product) {
         result = await updateProduct({
           id: product.id,
@@ -82,9 +93,13 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
           ...data
         })
       }
-      
+
       if (result.isSuccess) {
-        toast.success(isEditing ? "Product updated successfully" : "Product created successfully")
+        toast.success(
+          isEditing
+            ? "Product updated successfully"
+            : "Product created successfully"
+        )
         onSuccess?.()
       } else {
         toast.error(result.error)
@@ -103,7 +118,7 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Product Name *</Label>
               <Input
@@ -112,7 +127,9 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
                 placeholder="e.g., Premium Motor Spirit"
               />
               {form.formState.errors.name && (
-                <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.name.message}
+                </p>
               )}
             </div>
 
@@ -129,13 +146,17 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
               <Label htmlFor="type">Product Type *</Label>
               <Select
                 value={form.watch("type")}
-                onValueChange={(value) => form.setValue("type", value as "pms" | "lubricant")}
+                onValueChange={value =>
+                  form.setValue("type", value as "pms" | "lubricant")
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select product type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pms">PMS (Premium Motor Spirit)</SelectItem>
+                  <SelectItem value="pms">
+                    PMS (Premium Motor Spirit)
+                  </SelectItem>
                   <SelectItem value="lubricant">Lubricant</SelectItem>
                 </SelectContent>
               </Select>
@@ -145,7 +166,7 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
               <Label htmlFor="unit">Unit *</Label>
               <Select
                 value={form.watch("unit")}
-                onValueChange={(value) => form.setValue("unit", value)}
+                onValueChange={value => form.setValue("unit", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select unit" />
@@ -190,7 +211,9 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
                   placeholder="0.00"
                 />
                 {form.formState.errors.currentStock && (
-                  <p className="text-sm text-red-500">{form.formState.errors.currentStock.message}</p>
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.currentStock.message}
+                  </p>
                 )}
               </div>
             )}
@@ -205,7 +228,9 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
                 placeholder="0.00"
               />
               {form.formState.errors.unitPrice && (
-                <p className="text-sm text-red-500">{form.formState.errors.unitPrice.message}</p>
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.unitPrice.message}
+                </p>
               )}
             </div>
 
@@ -219,7 +244,9 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
                 placeholder="0.00"
               />
               {form.formState.errors.minThreshold && (
-                <p className="text-sm text-red-500">{form.formState.errors.minThreshold.message}</p>
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.minThreshold.message}
+                </p>
               )}
             </div>
 
@@ -228,7 +255,9 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
                 <Switch
                   id="isActive"
                   checked={form.watch("isActive")}
-                  onCheckedChange={(checked) => form.setValue("isActive", checked)}
+                  onCheckedChange={checked =>
+                    form.setValue("isActive", checked)
+                  }
                 />
                 <Label htmlFor="isActive">Active Product</Label>
               </div>
@@ -242,7 +271,11 @@ export function ProductForm({ stationId, product, onSuccess, onCancel }: Product
               </Button>
             )}
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : isEditing ? "Update Product" : "Create Product"}
+              {isSubmitting
+                ? "Saving..."
+                : isEditing
+                  ? "Update Product"
+                  : "Create Product"}
             </Button>
           </div>
         </form>

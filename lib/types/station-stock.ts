@@ -215,7 +215,7 @@ export interface DailyReport {
 }
 
 // API response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   isSuccess: boolean
   data?: T
   error?: string

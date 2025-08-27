@@ -2,9 +2,37 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { db } from "@/db"
-import { products, transactions, transactionItems, stockMovements, users } from "@/db/schema"
+import {
+  products,
+  transactions,
+  transactionItems,
+  stockMovements,
+  users
+} from "@/db/schema"
 import { eq, and, desc, sql } from "drizzle-orm"
 import { z } from "zod"
+
+// Type for transactions with items and products
+type TransactionWithItems = {
+  id: string
+  stationId: string
+  userId: string
+  totalAmount: string
+  transactionDate: Date
+  syncStatus: "pending" | "synced" | "failed"
+  createdAt: Date
+  items: Array<{
+    id: string
+    quantity: string
+    totalPrice: string
+    product: {
+      id: string
+      name: string
+      type: "pms" | "lubricant"
+      unit: string
+    }
+  }>
+}
 
 // Input validation schemas
 const saleItemSchema = z.object({
@@ -58,10 +86,10 @@ export async function recordSale(input: z.infer<typeof recordSaleSchema>) {
       return { isSuccess: false, error: "Access denied for this station" }
     }
 
-    const result = await db.transaction(async (tx) => {
+    const result = await db.transaction(async tx => {
       // Validate all products exist and have sufficient stock
       const productChecks = await Promise.all(
-        validatedInput.items.map(async (item) => {
+        validatedInput.items.map(async item => {
           const product = await tx.query.products.findFirst({
             where: and(
               eq(products.id, item.productId),
@@ -76,7 +104,9 @@ export async function recordSale(input: z.infer<typeof recordSaleSchema>) {
 
           const currentStock = parseFloat(product.currentStock)
           if (currentStock < item.quantity) {
-            throw new Error(`Insufficient stock for ${product.name}. Available: ${currentStock}, Requested: ${item.quantity}`)
+            throw new Error(
+              `Insufficient stock for ${product.name}. Available: ${currentStock}, Requested: ${item.quantity}`
+            )
           }
 
           return { product, item }
@@ -169,7 +199,9 @@ export async function recordSale(input: z.infer<typeof recordSaleSchema>) {
 /**
  * Get sales history with optional filters
  */
-export async function getSalesHistory(input: z.infer<typeof getSalesHistorySchema>) {
+export async function getSalesHistory(
+  input: z.infer<typeof getSalesHistorySchema>
+) {
   try {
     const validatedInput = getSalesHistorySchema.parse(input)
 
@@ -197,11 +229,15 @@ export async function getSalesHistory(input: z.infer<typeof getSalesHistorySchem
     }
 
     if (validatedInput.startDate) {
-      whereConditions.push(sql`${transactions.transactionDate} >= ${validatedInput.startDate}`)
+      whereConditions.push(
+        sql`${transactions.transactionDate} >= ${validatedInput.startDate}`
+      )
     }
 
     if (validatedInput.endDate) {
-      whereConditions.push(sql`${transactions.transactionDate} <= ${validatedInput.endDate}`)
+      whereConditions.push(
+        sql`${transactions.transactionDate} <= ${validatedInput.endDate}`
+      )
     }
 
     // Get transactions with items
@@ -246,7 +282,10 @@ export async function getSalesHistory(input: z.infer<typeof getSalesHistorySchem
 /**
  * Get today's sales summary for a user
  */
-export async function getTodaysSalesSummary(stationId: string, userId?: string) {
+export async function getTodaysSalesSummary(
+  stationId: string,
+  userId?: string
+) {
   try {
     const { userId: authUserId } = await auth()
     if (!authUserId) {
@@ -269,11 +308,19 @@ export async function getTodaysSalesSummary(stationId: string, userId?: string) 
 
     // Get today's date range
     const today = new Date()
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+    const startOfDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    )
+    const endOfDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 1
+    )
 
     // Get today's transactions
-    const todaysTransactions = await db.query.transactions.findMany({
+    const todaysTransactions = (await db.query.transactions.findMany({
       where: and(
         eq(transactions.stationId, stationId),
         eq(transactions.userId, targetUserId),
@@ -294,7 +341,7 @@ export async function getTodaysSalesSummary(stationId: string, userId?: string) 
           }
         }
       }
-    })
+    })) as TransactionWithItems[]
 
     // Calculate summary statistics
     const totalTransactions = todaysTransactions.length
@@ -304,40 +351,49 @@ export async function getTodaysSalesSummary(stationId: string, userId?: string) 
     )
 
     // Group by product type
-    const productTypeSummary = todaysTransactions.reduce((acc, transaction) => {
-      transaction.items.forEach(item => {
-        const productType = item.product.type
-        if (!acc[productType]) {
-          acc[productType] = {
-            totalQuantity: 0,
-            totalAmount: 0,
-            transactionCount: 0
+    const productTypeSummary = todaysTransactions.reduce(
+      (acc, transaction) => {
+        transaction.items.forEach(item => {
+          const productType = item.product.type
+          if (!acc[productType]) {
+            acc[productType] = {
+              totalQuantity: 0,
+              totalAmount: 0,
+              transactionCount: 0
+            }
           }
-        }
-        acc[productType].totalQuantity += parseFloat(item.quantity)
-        acc[productType].totalAmount += parseFloat(item.totalPrice)
-      })
-      return acc
-    }, {} as Record<string, { totalQuantity: number; totalAmount: number; transactionCount: number }>)
+          acc[productType].totalQuantity += parseFloat(item.quantity)
+          acc[productType].totalAmount += parseFloat(item.totalPrice)
+        })
+        return acc
+      },
+      {} as Record<
+        string,
+        { totalQuantity: number; totalAmount: number; transactionCount: number }
+      >
+    )
 
     // Get most sold products
-    const productSales = todaysTransactions.reduce((acc, transaction) => {
-      transaction.items.forEach(item => {
-        const productId = item.product.id
-        if (!acc[productId]) {
-          acc[productId] = {
-            product: item.product,
-            totalQuantity: 0,
-            totalAmount: 0,
-            transactionCount: 0
+    const productSales = todaysTransactions.reduce(
+      (acc, transaction) => {
+        transaction.items.forEach(item => {
+          const productId = item.product.id
+          if (!acc[productId]) {
+            acc[productId] = {
+              product: item.product,
+              totalQuantity: 0,
+              totalAmount: 0,
+              transactionCount: 0
+            }
           }
-        }
-        acc[productId].totalQuantity += parseFloat(item.quantity)
-        acc[productId].totalAmount += parseFloat(item.totalPrice)
-        acc[productId].transactionCount += 1
-      })
-      return acc
-    }, {} as Record<string, any>)
+          acc[productId].totalQuantity += parseFloat(item.quantity)
+          acc[productId].totalAmount += parseFloat(item.totalPrice)
+          acc[productId].transactionCount += 1
+        })
+        return acc
+      },
+      {} as Record<string, any>
+    )
 
     const topProducts = Object.values(productSales)
       .sort((a, b) => b.totalAmount - a.totalAmount)
@@ -346,7 +402,7 @@ export async function getTodaysSalesSummary(stationId: string, userId?: string) 
     return {
       isSuccess: true,
       data: {
-        date: today.toISOString().split('T')[0],
+        date: today.toISOString().split("T")[0],
         totalTransactions,
         totalAmount,
         productTypeSummary,
@@ -363,7 +419,10 @@ export async function getTodaysSalesSummary(stationId: string, userId?: string) 
 /**
  * Get frequently sold products for quick access
  */
-export async function getFrequentlysoldProducts(stationId: string, limit: number = 10) {
+export async function getFrequentlysoldProducts(
+  stationId: string,
+  limit: number = 10
+) {
   try {
     const { userId } = await auth()
     if (!userId) {
@@ -395,7 +454,10 @@ export async function getFrequentlysoldProducts(stationId: string, limit: number
       })
       .from(transactionItems)
       .innerJoin(products, eq(transactionItems.productId, products.id))
-      .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
+      .innerJoin(
+        transactions,
+        eq(transactionItems.transactionId, transactions.id)
+      )
       .where(
         and(
           eq(transactions.stationId, stationId),
@@ -410,7 +472,10 @@ export async function getFrequentlysoldProducts(stationId: string, limit: number
     return { isSuccess: true, data: frequentProducts }
   } catch (error) {
     console.error("Error fetching frequently sold products:", error)
-    return { isSuccess: false, error: "Failed to fetch frequently sold products" }
+    return {
+      isSuccess: false,
+      error: "Failed to fetch frequently sold products"
+    }
   }
 }
 
@@ -435,9 +500,9 @@ export async function voidTransaction(transactionId: string, reason: string) {
       return { isSuccess: false, error: "Only managers can void transactions" }
     }
 
-    const result = await db.transaction(async (tx) => {
+    const result = await db.transaction(async tx => {
       // Get the transaction with its items
-      const transaction = await tx.query.transactions.findFirst({
+      const transaction = (await tx.query.transactions.findFirst({
         where: eq(transactions.id, transactionId),
         with: {
           items: {
@@ -446,7 +511,7 @@ export async function voidTransaction(transactionId: string, reason: string) {
             }
           }
         }
-      })
+      })) as any
 
       if (!transaction) {
         throw new Error("Transaction not found")
@@ -485,7 +550,9 @@ export async function voidTransaction(transactionId: string, reason: string) {
 
       // Mark transaction as voided (we could add a status field, but for now we'll delete)
       // In a production system, you might want to keep voided transactions for audit purposes
-      await tx.delete(transactionItems).where(eq(transactionItems.transactionId, transactionId))
+      await tx
+        .delete(transactionItems)
+        .where(eq(transactionItems.transactionId, transactionId))
       await tx.delete(transactions).where(eq(transactions.id, transactionId))
 
       return transaction
@@ -496,7 +563,8 @@ export async function voidTransaction(transactionId: string, reason: string) {
     console.error("Error voiding transaction:", error)
     return {
       isSuccess: false,
-      error: error instanceof Error ? error.message : "Failed to void transaction"
+      error:
+        error instanceof Error ? error.message : "Failed to void transaction"
     }
   }
 }

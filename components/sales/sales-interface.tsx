@@ -1,8 +1,14 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -35,8 +41,13 @@ interface SalesInterfaceProps {
   onSaleComplete?: () => void
 }
 
-export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProps) {
-  const [selectedType, setSelectedType] = useState<"pms" | "lubricant" | null>(null)
+export function SalesInterface({
+  stationId,
+  onSaleComplete
+}: SalesInterfaceProps) {
+  const [selectedType, setSelectedType] = useState<"pms" | "lubricant" | null>(
+    null
+  )
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -44,36 +55,21 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
   const [loading, setLoading] = useState(false)
   const [processingSale, setProcessingSale] = useState(false)
 
-  // Load products when type is selected
-  useEffect(() => {
-    if (selectedType) {
-      loadProducts()
-    }
-  }, [selectedType])
-
-  // Filter products based on search query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredProducts(products)
-    } else {
-      const query = searchQuery.toLowerCase()
-      const filtered = products.filter(product =>
-        product.name.toLowerCase().includes(query) ||
-        (product.brand && product.brand.toLowerCase().includes(query)) ||
-        (product.viscosity && product.viscosity.toLowerCase().includes(query))
-      )
-      setFilteredProducts(filtered)
-    }
-  }, [searchQuery, products])
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     if (!selectedType) return
 
     setLoading(true)
     try {
       const result = await getProducts(stationId, selectedType)
       if (result.isSuccess && result.data) {
-        setProducts(result.data)
+        // Transform null values to undefined to match Product interface
+        const transformedProducts = result.data.map(product => ({
+          ...product,
+          brand: product.brand || undefined,
+          viscosity: product.viscosity || undefined,
+          containerSize: product.containerSize || undefined
+        }))
+        setProducts(transformedProducts)
       } else {
         toast.error(result.error || "Failed to load products")
       }
@@ -82,35 +78,60 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedType, stationId])
+
+  // Load products when type is selected
+  useEffect(() => {
+    if (selectedType) {
+      loadProducts()
+    }
+  }, [selectedType, loadProducts])
+
+  // Filter products based on search query
+  useEffect(() => {
+    if (!searchQuery) {
+      setFilteredProducts(products)
+    } else {
+      const query = searchQuery.toLowerCase()
+      const filtered = products.filter(
+        product =>
+          product.name.toLowerCase().includes(query) ||
+          (product.brand && product.brand.toLowerCase().includes(query)) ||
+          (product.viscosity && product.viscosity.toLowerCase().includes(query))
+      )
+      setFilteredProducts(filtered)
+    }
+  }, [searchQuery, products])
 
   const addToCart = (product: Product, quantity: number = 1) => {
-    const existingItemIndex = cart.findIndex(item => item.product.id === product.id)
+    const existingItemIndex = cart.findIndex(
+      item => item.product.id === product.id
+    )
     const unitPrice = parseFloat(product.unitPrice)
-    
+
     if (existingItemIndex >= 0) {
       // Update existing item
       const newCart = [...cart]
       const newQuantity = newCart[existingItemIndex].quantity + quantity
       const availableStock = parseFloat(product.currentStock)
-      
+
       if (newQuantity > availableStock) {
         toast.error(`Only ${availableStock} ${product.unit} available`)
         return
       }
-      
+
       newCart[existingItemIndex].quantity = newQuantity
       newCart[existingItemIndex].totalPrice = newQuantity * unitPrice
       setCart(newCart)
     } else {
       // Add new item
       const availableStock = parseFloat(product.currentStock)
-      
+
       if (quantity > availableStock) {
         toast.error(`Only ${availableStock} ${product.unit} available`)
         return
       }
-      
+
       const cartItem: CartItem = {
         product,
         quantity,
@@ -118,8 +139,10 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
       }
       setCart([...cart, cartItem])
     }
-    
-    toast.success(`Added ${quantity} ${product.unit} of ${product.name} to cart`)
+
+    toast.success(
+      `Added ${quantity} ${product.unit} of ${product.name} to cart`
+    )
   }
 
   const updateCartItemQuantity = (productId: string, newQuantity: number) => {
@@ -131,12 +154,12 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
     const newCart = cart.map(item => {
       if (item.product.id === productId) {
         const availableStock = parseFloat(item.product.currentStock)
-        
+
         if (newQuantity > availableStock) {
           toast.error(`Only ${availableStock} ${item.product.unit} available`)
           return item
         }
-        
+
         const unitPrice = parseFloat(item.product.unitPrice)
         return {
           ...item,
@@ -184,7 +207,7 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
       }
 
       const result = await recordSale(saleData)
-      
+
       if (result.isSuccess) {
         toast.success("Sale recorded successfully!")
         clearCart()
@@ -213,40 +236,36 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Select Product Type</h2>
+          <h2 className="mb-2 text-2xl font-bold">Select Product Type</h2>
           <p className="text-muted-foreground mb-6">
             Choose the type of product you want to sell
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary"
+        <div className="mx-auto grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
+          <Card
+            className="hover:border-primary cursor-pointer border-2 transition-shadow hover:shadow-lg"
             onClick={() => setSelectedType("pms")}
           >
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 p-3 bg-blue-100 rounded-full w-fit">
+              <div className="mx-auto mb-4 w-fit rounded-full bg-blue-100 p-3">
                 <Fuel className="h-8 w-8 text-blue-600" />
               </div>
               <CardTitle className="text-xl">PMS (Petrol)</CardTitle>
-              <CardDescription>
-                Premium Motor Spirit sales
-              </CardDescription>
+              <CardDescription>Premium Motor Spirit sales</CardDescription>
             </CardHeader>
           </Card>
 
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary"
+          <Card
+            className="hover:border-primary cursor-pointer border-2 transition-shadow hover:shadow-lg"
             onClick={() => setSelectedType("lubricant")}
           >
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 p-3 bg-orange-100 rounded-full w-fit">
+              <div className="mx-auto mb-4 w-fit rounded-full bg-orange-100 p-3">
                 <Wrench className="h-8 w-8 text-orange-600" />
               </div>
               <CardTitle className="text-xl">Lubricants</CardTitle>
-              <CardDescription>
-                Engine oils and lubricants
-              </CardDescription>
+              <CardDescription>Engine oils and lubricants</CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -263,7 +282,7 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
             ← Back
           </Button>
           <div>
-            <h2 className="text-2xl font-bold flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-2xl font-bold">
               {selectedType === "pms" ? (
                 <>
                   <Fuel className="h-6 w-6 text-blue-600" />
@@ -285,7 +304,7 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
         {cart.length > 0 && (
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-sm">
-              <ShoppingCart className="h-4 w-4 mr-1" />
+              <ShoppingCart className="mr-1 h-4 w-4" />
               {cartItemCount} items
             </Badge>
             <Badge variant="default" className="text-sm">
@@ -295,48 +314,53 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Product Selection */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-4 lg:col-span-2">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
             <Input
               placeholder={`Search ${selectedType === "pms" ? "PMS products" : "lubricants"}...`}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
 
           {/* Products Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {[...Array(6)].map((_, i) => (
                 <Card key={i} className="animate-pulse">
                   <CardHeader>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-4 w-3/4 rounded bg-gray-200"></div>
+                    <div className="h-3 w-1/2 rounded bg-gray-200"></div>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-8 bg-gray-200 rounded"></div>
+                    <div className="h-8 rounded bg-gray-200"></div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredProducts.map((product) => {
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {filteredProducts.map(product => {
                 const stock = parseFloat(product.currentStock)
                 const price = parseFloat(product.unitPrice)
                 const isLowStock = stock <= 10 // Simple low stock indicator
-                
+
                 return (
-                  <Card key={product.id} className="hover:shadow-md transition-shadow">
+                  <Card
+                    key={product.id}
+                    className="transition-shadow hover:shadow-md"
+                  >
                     <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
+                      <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-lg">{product.name}</CardTitle>
+                          <CardTitle className="text-lg">
+                            {product.name}
+                          </CardTitle>
                           {product.brand && (
                             <CardDescription>{product.brand}</CardDescription>
                           )}
@@ -346,7 +370,7 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
                             </Badge>
                           )}
                         </div>
-                        <Badge 
+                        <Badge
                           variant={isLowStock ? "destructive" : "secondary"}
                           className="text-xs"
                         >
@@ -355,17 +379,17 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="mb-3 flex items-center justify-between">
                         <span className="text-lg font-semibold">
                           ₦{price.toFixed(2)}/{product.unit}
                         </span>
                         {product.containerSize && (
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-muted-foreground text-sm">
                             {product.containerSize}
                           </span>
                         )}
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -373,7 +397,7 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
                           disabled={stock <= 0}
                           className="flex-1"
                         >
-                          <Plus className="h-4 w-4 mr-1" />
+                          <Plus className="mr-1 h-4 w-4" />
                           Add 1
                         </Button>
                         {selectedType === "pms" && (
@@ -406,9 +430,11 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
 
           {!loading && filteredProducts.length === 0 && (
             <Card>
-              <CardContent className="text-center py-8">
+              <CardContent className="py-8 text-center">
                 <p className="text-muted-foreground">
-                  {searchQuery ? "No products found matching your search" : "No products available"}
+                  {searchQuery
+                    ? "No products found matching your search"
+                    : "No products available"}
                 </p>
               </CardContent>
             </Card>
@@ -426,37 +452,49 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
             </CardHeader>
             <CardContent className="space-y-4">
               {cart.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
+                <p className="text-muted-foreground py-4 text-center">
                   Cart is empty
                 </p>
               ) : (
                 <>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {cart.map((item) => (
-                      <div key={item.product.id} className="border rounded-lg p-3">
-                        <div className="flex justify-between items-start mb-2">
+                  <div className="max-h-96 space-y-3 overflow-y-auto">
+                    {cart.map(item => (
+                      <div
+                        key={item.product.id}
+                        className="rounded-lg border p-3"
+                      >
+                        <div className="mb-2 flex items-start justify-between">
                           <div>
-                            <h4 className="font-medium text-sm">{item.product.name}</h4>
+                            <h4 className="text-sm font-medium">
+                              {item.product.name}
+                            </h4>
                             {item.product.brand && (
-                              <p className="text-xs text-muted-foreground">{item.product.brand}</p>
+                              <p className="text-muted-foreground text-xs">
+                                {item.product.brand}
+                              </p>
                             )}
                           </div>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => removeFromCart(item.product.id)}
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            className="text-muted-foreground hover:text-destructive h-6 w-6 p-0"
                           >
                             ×
                           </Button>
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateCartItemQuantity(item.product.id, item.quantity - 1)}
+                              onClick={() =>
+                                updateCartItemQuantity(
+                                  item.product.id,
+                                  item.quantity - 1
+                                )
+                              }
                               className="h-6 w-6 p-0"
                             >
                               <Minus className="h-3 w-3" />
@@ -464,18 +502,23 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
                             <Input
                               type="number"
                               value={item.quantity}
-                              onChange={(e) => {
+                              onChange={e => {
                                 const value = parseFloat(e.target.value) || 0
                                 updateCartItemQuantity(item.product.id, value)
                               }}
-                              className="w-16 h-6 text-center text-xs"
+                              className="h-6 w-16 text-center text-xs"
                               min="0"
                               step="0.1"
                             />
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateCartItemQuantity(item.product.id, item.quantity + 1)}
+                              onClick={() =>
+                                updateCartItemQuantity(
+                                  item.product.id,
+                                  item.quantity + 1
+                                )
+                              }
                               className="h-6 w-6 p-0"
                             >
                               <Plus className="h-3 w-3" />
@@ -492,7 +535,7 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
                   <Separator />
 
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center text-lg font-semibold">
+                    <div className="flex items-center justify-between text-lg font-semibold">
                       <span>Total:</span>
                       <span>₦{cartTotal.toFixed(2)}</span>
                     </div>
@@ -506,7 +549,7 @@ export function SalesInterface({ stationId, onSaleComplete }: SalesInterfaceProp
                       >
                         {processingSale ? "Processing..." : "Complete Sale"}
                       </Button>
-                      
+
                       <Button
                         variant="outline"
                         onClick={clearCart}

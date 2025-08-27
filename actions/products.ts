@@ -215,7 +215,7 @@ export async function updateStock(input: z.infer<typeof updateStockSchema>) {
       return { isSuccess: false, error: "Unauthorized" }
     }
 
-    return await db.transaction(async tx => {
+    const result = await db.transaction(async tx => {
       // Get current product stock
       const product = await tx.query.products.findFirst({
         where: eq(products.id, validatedInput.productId)
@@ -265,6 +265,8 @@ export async function updateStock(input: z.infer<typeof updateStockSchema>) {
         quantity
       }
     })
+
+    return { isSuccess: true, data: result }
   } catch (error) {
     console.error("Error updating stock:", error)
     if (error instanceof z.ZodError) {
@@ -378,7 +380,7 @@ export async function calculateInventoryValue(stationId: string) {
       const unitPrice = parseFloat(product.unitPrice)
       const value = currentStock * unitPrice
       totalValue += value
-      
+
       return {
         productId: product.id,
         name: product.name,
@@ -416,16 +418,18 @@ export async function getProductsNeedingReorder(stationId: string) {
       where: and(eq(products.stationId, stationId), eq(products.isActive, true))
     })
 
-    const reorderProducts = productList.filter(product => {
-      const currentStock = parseFloat(product.currentStock)
-      const minThreshold = parseFloat(product.minThreshold)
-      return currentStock <= minThreshold
-    }).map(product => ({
-      ...product,
-      currentStock: parseFloat(product.currentStock),
-      minThreshold: parseFloat(product.minThreshold),
-      suggestedReorderQuantity: parseFloat(product.minThreshold) * 2 // Suggest double the minimum threshold
-    }))
+    const reorderProducts = productList
+      .filter(product => {
+        const currentStock = parseFloat(product.currentStock)
+        const minThreshold = parseFloat(product.minThreshold)
+        return currentStock <= minThreshold
+      })
+      .map(product => ({
+        ...product,
+        currentStock: parseFloat(product.currentStock),
+        minThreshold: parseFloat(product.minThreshold),
+        suggestedReorderQuantity: parseFloat(product.minThreshold) * 2 // Suggest double the minimum threshold
+      }))
 
     return {
       isSuccess: true,
@@ -459,12 +463,12 @@ export async function bulkUpdatePrices(
 
     const results = await db.transaction(async tx => {
       const updatedProducts = []
-      
+
       for (const update of updates) {
         if (update.newPrice < 0) {
           throw new Error(`Invalid price for product ${update.productId}`)
         }
-        
+
         const [product] = await tx
           .update(products)
           .set({
@@ -473,12 +477,12 @@ export async function bulkUpdatePrices(
           })
           .where(eq(products.id, update.productId))
           .returning()
-          
+
         if (product) {
           updatedProducts.push(product)
         }
       }
-      
+
       return updatedProducts
     })
 

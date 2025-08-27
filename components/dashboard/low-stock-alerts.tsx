@@ -106,7 +106,7 @@ export function LowStockAlerts({ alerts }: LowStockAlertsProps) {
                         </Badge>
                       )}
                       <Badge 
-                        variant={getSeverityColor(severity) as any}
+                        variant={getSeverityColor(severity) as "default" | "secondary" | "destructive" | "outline"}
                         className="text-xs"
                       >
                         {percentage}% of threshold

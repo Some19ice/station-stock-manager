@@ -1,17 +1,47 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { AlertTriangle, Edit, Package, Search, Trash2, Settings } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table"
+import {
+  AlertTriangle,
+  Edit,
+  Package,
+  Search,
+  Trash2,
+  Settings
+} from "lucide-react"
 import { getProducts, deleteProduct } from "@/actions/products"
 import { SelectProduct } from "@/db/schema"
 import { toast } from "sonner"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog"
 
 interface ProductListProps {
   stationId: string
@@ -20,39 +50,47 @@ interface ProductListProps {
   onAdjustStock?: (product: SelectProduct) => void
 }
 
-export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustStock }: ProductListProps) {
+export function ProductList({
+  stationId,
+  onEditProduct,
+  onAddProduct,
+  onAdjustStock
+}: ProductListProps) {
   const [products, setProducts] = useState<SelectProduct[]>([])
   const [filteredProducts, setFilteredProducts] = useState<SelectProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [typeFilter, setTypeFilter] = useState<"all" | "pms" | "lubricant">("all")
+  const [typeFilter, setTypeFilter] = useState<"all" | "pms" | "lubricant">(
+    "all"
+  )
   const [stockFilter, setStockFilter] = useState<"all" | "low" | "out">("all")
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     setLoading(true)
     const result = await getProducts(stationId)
-    
-    if (result.isSuccess) {
+
+    if (result.isSuccess && result.data) {
       setProducts(result.data)
       setFilteredProducts(result.data)
     } else {
-      toast.error(result.error)
+      toast.error(result.error || "Failed to load products")
     }
     setLoading(false)
-  }
+  }, [stationId])
 
   useEffect(() => {
     loadProducts()
-  }, [stationId])
+  }, [loadProducts])
 
   useEffect(() => {
     let filtered = products
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        product =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.brand?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
@@ -69,7 +107,9 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
         return currentStock <= minThreshold && currentStock > 0
       })
     } else if (stockFilter === "out") {
-      filtered = filtered.filter(product => parseFloat(product.currentStock) === 0)
+      filtered = filtered.filter(
+        product => parseFloat(product.currentStock) === 0
+      )
     }
 
     setFilteredProducts(filtered)
@@ -77,7 +117,7 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
 
   const handleDeleteProduct = async (productId: string) => {
     const result = await deleteProduct(productId)
-    
+
     if (result.isSuccess) {
       toast.success("Product deleted successfully")
       loadProducts()
@@ -89,20 +129,32 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
   const getStockStatus = (product: SelectProduct) => {
     const currentStock = parseFloat(product.currentStock)
     const minThreshold = parseFloat(product.minThreshold)
-    
+
     if (currentStock === 0) {
-      return { status: "out", label: "Out of Stock", variant: "destructive" as const }
+      return {
+        status: "out",
+        label: "Out of Stock",
+        variant: "destructive" as const
+      }
     } else if (currentStock <= minThreshold) {
-      return { status: "low", label: "Low Stock", variant: "secondary" as const }
+      return {
+        status: "low",
+        label: "Low Stock",
+        variant: "secondary" as const
+      }
     } else {
-      return { status: "normal", label: "In Stock", variant: "default" as const }
+      return {
+        status: "normal",
+        label: "In Stock",
+        variant: "default" as const
+      }
     }
   }
 
   const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN'
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN"
     }).format(parseFloat(amount))
   }
 
@@ -111,7 +163,7 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <div className="text-center">
-            <Package className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <Package className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
             <p className="text-muted-foreground">Loading products...</p>
           </div>
         </CardContent>
@@ -126,25 +178,30 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
           <CardTitle>Products</CardTitle>
           {onAddProduct && (
             <Button onClick={onAddProduct}>
-              <Package className="h-4 w-4 mr-2" />
+              <Package className="mr-2 h-4 w-4" />
               Add Product
             </Button>
           )}
         </div>
-        
+
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
             <Input
               placeholder="Search products..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-          
-          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
+
+          <Select
+            value={typeFilter}
+            onValueChange={value =>
+              setTypeFilter(value as "all" | "pms" | "lubricant")
+            }
+          >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Product Type" />
             </SelectTrigger>
@@ -154,8 +211,13 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
               <SelectItem value="lubricant">Lubricants</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Select value={stockFilter} onValueChange={(value) => setStockFilter(value as any)}>
+
+          <Select
+            value={stockFilter}
+            onValueChange={value =>
+              setStockFilter(value as "all" | "low" | "out")
+            }
+          >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Stock Level" />
             </SelectTrigger>
@@ -167,21 +229,20 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
           </Select>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-8">
-            <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No products found</h3>
+          <div className="py-8 text-center">
+            <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+            <h3 className="mb-2 text-lg font-semibold">No products found</h3>
             <p className="text-muted-foreground mb-4">
-              {products.length === 0 
+              {products.length === 0
                 ? "Get started by adding your first product."
-                : "Try adjusting your search or filters."
-              }
+                : "Try adjusting your search or filters."}
             </p>
             {onAddProduct && products.length === 0 && (
               <Button onClick={onAddProduct}>
-                <Package className="h-4 w-4 mr-2" />
+                <Package className="mr-2 h-4 w-4" />
                 Add Your First Product
               </Button>
             )}
@@ -200,20 +261,24 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.map((product) => {
+                {filteredProducts.map(product => {
                   const stockStatus = getStockStatus(product)
-                  
+
                   return (
                     <TableRow key={product.id}>
                       <TableCell>
                         <div>
                           <div className="font-medium">{product.name}</div>
                           {product.brand && (
-                            <div className="text-sm text-muted-foreground">{product.brand}</div>
+                            <div className="text-muted-foreground text-sm">
+                              {product.brand}
+                            </div>
                           )}
                           {product.viscosity && (
-                            <div className="text-sm text-muted-foreground">
-                              {product.viscosity} {product.containerSize && `• ${product.containerSize}`}
+                            <div className="text-muted-foreground text-sm">
+                              {product.viscosity}{" "}
+                              {product.containerSize &&
+                                `• ${product.containerSize}`}
                             </div>
                           )}
                         </div>
@@ -232,16 +297,17 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
                             <AlertTriangle className="h-4 w-4 text-red-500" />
                           )}
                           <span>
-                            {parseFloat(product.currentStock).toLocaleString()} {product.unit}
+                            {parseFloat(product.currentStock).toLocaleString()}{" "}
+                            {product.unit}
                           </span>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          Min: {parseFloat(product.minThreshold).toLocaleString()} {product.unit}
+                        <div className="text-muted-foreground text-sm">
+                          Min:{" "}
+                          {parseFloat(product.minThreshold).toLocaleString()}{" "}
+                          {product.unit}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {formatCurrency(product.unitPrice)}
-                      </TableCell>
+                      <TableCell>{formatCurrency(product.unitPrice)}</TableCell>
                       <TableCell>
                         <Badge variant={stockStatus.variant}>
                           {stockStatus.label}
@@ -259,7 +325,7 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
                               <Settings className="h-4 w-4" />
                             </Button>
                           )}
-                          
+
                           {onEditProduct && (
                             <Button
                               variant="ghost"
@@ -270,24 +336,33 @@ export function ProductList({ stationId, onEditProduct, onAddProduct, onAdjustSt
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
-                          
+
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" title="Delete Product">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Delete Product"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Delete Product
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                                  Are you sure you want to delete "
+                                  {product.name}"? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleDeleteProduct(product.id)}
+                                  onClick={() =>
+                                    handleDeleteProduct(product.id)
+                                  }
                                   className="bg-red-600 hover:bg-red-700"
                                 >
                                   Delete
