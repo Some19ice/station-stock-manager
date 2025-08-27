@@ -1,17 +1,149 @@
 import { validateUserRole, getCurrentUserProfile } from "@/actions/auth"
+import { getDashboardMetrics, getLowStockAlerts, getRecentTransactions } from "@/actions/dashboard"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { 
-  BarChart3, 
-  Package, 
-  Users, 
-  FileText, 
-  ShoppingCart,
-  AlertTriangle,
-  TrendingUp
-} from "lucide-react"
-import Link from "next/link"
+import { Suspense } from "react"
+import { MetricsCards } from "@/components/dashboard/metrics-cards"
+import { LowStockAlerts } from "@/components/dashboard/low-stock-alerts"
+import { RecentActivity } from "@/components/dashboard/recent-activity"
+import { QuickActions } from "@/components/dashboard/quick-actions"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+
+// Loading components
+function MetricsLoading() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-4" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-8 w-20 mb-2" />
+            <Skeleton className="h-3 w-32" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function AlertsLoading() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-4 w-60" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-5 w-5" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+              <Skeleton className="h-8 w-16" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ActivityLoading() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-4 w-48" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+              <Skeleton className="h-8 w-12" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Data fetching components
+async function DashboardMetrics() {
+  const metricsResult = await getDashboardMetrics()
+  
+  if (!metricsResult.isSuccess || !metricsResult.data) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">
+            Unable to load dashboard metrics
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return <MetricsCards metrics={metricsResult.data} />
+}
+
+async function StockAlerts() {
+  const alertsResult = await getLowStockAlerts()
+  
+  if (!alertsResult.isSuccess) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">
+            Unable to load stock alerts
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return <LowStockAlerts alerts={alertsResult.data || []} />
+}
+
+async function RecentTransactions() {
+  const transactionsResult = await getRecentTransactions(10)
+  
+  if (!transactionsResult.isSuccess) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">
+            Unable to load recent transactions
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return <RecentActivity transactions={transactionsResult.data || []} />
+}
+
+async function QuickActionsWithData() {
+  const alertsResult = await getLowStockAlerts()
+  const lowStockCount = alertsResult.isSuccess ? (alertsResult.data?.length || 0) : 0
+  
+  return <QuickActions lowStockCount={lowStockCount} />
+}
 
 export default async function ManagerDashboard() {
   // Verify user is a manager
@@ -38,157 +170,32 @@ export default async function ManagerDashboard() {
         </p>
       </div>
 
-      {/* Quick Stats Cards - Will be implemented in task 5 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Sales</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₦0</div>
-            <p className="text-xs text-muted-foreground">
-              Metrics will be available in task 5
-            </p>
-          </CardContent>
-        </Card>
+      {/* Key Metrics Cards */}
+      <Suspense fallback={<MetricsLoading />}>
+        <DashboardMetrics />
+      </Suspense>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Transaction count
-            </p>
-          </CardContent>
-        </Card>
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column - Alerts and Activity */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Low Stock Alerts */}
+          <Suspense fallback={<AlertsLoading />}>
+            <StockAlerts />
+          </Suspense>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Items below threshold
-            </p>
-          </CardContent>
-        </Card>
+          {/* Recent Activity */}
+          <Suspense fallback={<ActivityLoading />}>
+            <RecentTransactions />
+          </Suspense>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Staff</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-muted-foreground">
-              Currently active
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Record Sale
-            </CardTitle>
-            <CardDescription>
-              Quickly record a customer transaction
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/dashboard/sales">
-                Record Sale
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Manage Inventory
-            </CardTitle>
-            <CardDescription>
-              Update stock levels and manage products
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/dashboard/inventory">
-                Manage Inventory
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              View Reports
-            </CardTitle>
-            <CardDescription>
-              Generate and view business reports
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/dashboard/reports">
-                View Reports
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Manage Users
-            </CardTitle>
-            <CardDescription>
-              Add and manage staff accounts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/dashboard/users">
-                Manage Users
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Analytics
-            </CardTitle>
-            <CardDescription>
-              View detailed business analytics
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" asChild className="w-full">
-              <Link href="/dashboard/analytics">
-                View Analytics
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Right Column - Quick Actions */}
+        <div className="lg:col-span-1">
+          <Suspense fallback={<div>Loading actions...</div>}>
+            <QuickActionsWithData />
+          </Suspense>
+        </div>
       </div>
     </div>
   )

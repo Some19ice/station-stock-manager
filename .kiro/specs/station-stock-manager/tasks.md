@@ -32,7 +32,7 @@
   - Write tests for sales recording workflow and stock updates
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
 
-- [ ] 5. Implement manager dashboard with key metrics
+- [x] 5. Implement manager dashboard with key metrics
   - Create dashboard components displaying today's sales metrics
   - Build real-time status cards for PMS levels, low stock alerts, and staff activity
   - Implement quick action buttons for common manager tasks
@@ -41,7 +41,7 @@
   - Write tests for dashboard data calculations and display
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 6. Create comprehensive reporting system
+- [-] 6. Create comprehensive reporting system
   - Implement end-of-day report generation with sales overview, PMS report, and lubricant breakdown
   - Build staff performance reporting with individual transaction tracking
   - Create low stock alert system with reorder recommendations
