@@ -1,234 +1,462 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  jest
-} from "@jest/globals"
-
-// Mock the auth function
-const mockAuth = jest.fn()
+// Mock Clerk authentication (properly hoisted)
 jest.mock("@clerk/nextjs/server", () => ({
-  auth: mockAuth
+  auth: jest.fn()
 }))
 
-// Mock the database
-const mockDb = {
-  insert: jest.fn(),
-  update: jest.fn(),
-  transaction: jest.fn(),
-  query: {
-    users: {
-      findFirst: jest.fn()
-    },
-    products: {
-      findMany: jest.fn(),
-      findFirst: jest.fn()
-    },
-    stockMovements: {
-      findMany: jest.fn()
-    }
-  }
-}
-
+// Mock database (properly hoisted)
 jest.mock("@/db", () => ({
-  db: mockDb
+  db: {
+    query: {
+      users: {
+        findFirst: jest.fn()
+      },
+      products: {
+        findFirst: jest.fn(),
+        findMany: jest.fn()
+      },
+      suppliers: {
+        findFirst: jest.fn()
+      }
+    },
+    insert: jest.fn(),
+    update: jest.fn(),
+    transaction: jest.fn()
+  }
 }))
 
-// Mock the schema
-jest.mock("@/db/schema", () => ({
-  products: {},
-  stockMovements: {},
-  users: {}
+// Mock Drizzle ORM (properly hoisted)
+jest.mock("drizzle-orm", () => ({
+  eq: jest.fn(),
+  and: jest.fn(),
+  desc: jest.fn(),
+  relations: jest.fn()
 }))
 
-// Import after mocking
-import {
-  createProduct,
-  updateProduct,
-  getProducts,
-  getProduct,
-  updateStock,
-  getLowStockProducts,
-  deleteProduct,
-  getStockMovements,
-  calculateInventoryValue,
-  getProductsNeedingReorder,
-  bulkUpdatePrices
-} from "@/actions/products"
+// Mock Zod (use the comprehensive mock from __mocks__)
+jest.mock("zod")
 
-describe("Product Actions", () => {
+// Import after mocks are set up
+import { auth } from "@clerk/nextjs/server"
+import { db } from "@/db"
+import * as products from "@/actions/products"
+
+// Type the mocked functions
+const mockAuth = auth as jest.MockedFunction<typeof auth>
+const mockDb = db as jest.Mocked<typeof db>
+
+describe("Products Actions - Basic Tests", () => {
+  const mockUser = {
+    id: "user-123",
+    clerkUserId: "user-123",
+    stationId: "station-123",
+    role: "attendant"
+  }
+
+  const mockManagerUser = {
+    id: "manager-123",
+    clerkUserId: "manager-123",
+    stationId: "station-123",
+    role: "manager"
+  }
+
+  const mockSupplier = {
+    id: "supplier-123",
+    name: "Test Supplier"
+  }
+
+  const mockProduct = {
+    id: "product-123",
+    name: "Test Product",
+    type: "pms",
+    currentStock: "100",
+    unitPrice: "1.50",
+    minThreshold: "20",
+    stationId: "station-123",
+    isActive: true
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
-    
-    // Setup default mock implementations
-    mockAuth.mockResolvedValue({ userId: null })
-    mockDb.query.users.findFirst.mockResolvedValue(null)
-    mockDb.query.products.findMany.mockResolvedValue([])
+
+    // Default auth setup - authenticated user
+    mockAuth.mockResolvedValue({ userId: "user-123" })
+
+    // Default database responses
+    mockDb.query.users.findFirst.mockResolvedValue(mockUser)
+    mockDb.query.suppliers.findFirst.mockResolvedValue(mockSupplier)
     mockDb.query.products.findFirst.mockResolvedValue(null)
-    mockDb.query.stockMovements.findMany.mockResolvedValue([])
-    
-    // Setup chainable methods for insert/update operations
-    const mockChain = {
-      values: jest.fn().mockReturnThis(),
-      set: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      returning: jest.fn().mockResolvedValue([])
-    }
-    
-    mockDb.insert.mockReturnValue(mockChain)
-    mockDb.update.mockReturnValue(mockChain)
-    mockDb.transaction.mockImplementation((callback) => callback(mockDb))
+    mockDb.query.products.findMany.mockResolvedValue([])
   })
 
-  afterEach(() => {
-    jest.resetAllMocks()
+  describe("Authentication", () => {
+    it("should reject unauthenticated requests", async () => {
+      mockAuth.mockResolvedValue({ userId: null })
+
+      const result = await products.getProducts("station-123")
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Unauthorized")
+    })
+
+    it("should accept authenticated requests", async () => {
+      mockDb.query.products.findMany.mockResolvedValue([mockProduct])
+
+      const result = await products.getProducts("station-123")
+
+      expect(result.isSuccess).toBe(true)
+      expect(mockAuth).toHaveBeenCalled()
+    })
   })
 
-  describe("createProduct", () => {
-    const mockProductData = {
-      stationId: "station-123",
-      name: "Premium Motor Spirit",
-      brand: "Shell",
+  describe("Product Retrieval", () => {
+    it("should return empty array when no products found", async () => {
+      mockDb.query.products.findMany.mockResolvedValue([])
+
+      const result = await products.getProducts("station-123")
+
+      expect(result.isSuccess).toBe(true)
+      expect(result.data).toEqual([])
+    })
+
+    it("should return products when found", async () => {
+      const productList = [mockProduct]
+      mockDb.query.products.findMany.mockResolvedValue(productList)
+
+      const result = await products.getProducts("station-123")
+
+      expect(result.isSuccess).toBe(true)
+      expect(result.data).toEqual(productList)
+    })
+
+    it("should filter products by type when specified", async () => {
+      const result = await products.getProducts("station-123", "pms")
+
+      expect(result.isSuccess).toBe(true)
+      expect(mockDb.query.products.findMany).toHaveBeenCalled()
+    })
+  })
+
+  describe("Error Handling", () => {
+    it("should handle database errors gracefully", async () => {
+      mockDb.query.products.findMany.mockRejectedValue(new Error("DB Error"))
+
+      const result = await products.getProducts("station-123")
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Failed to fetch products")
+    })
+
+    it("should handle database connection issues", async () => {
+      mockDb.query.products.findMany.mockRejectedValue(
+        new Error("Connection timeout")
+      )
+
+      const result = await products.getProducts("station-123")
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Failed to fetch products")
+    })
+  })
+
+  describe("Product Creation", () => {
+    const validProductData = {
+      name: "Test Product",
       type: "pms" as const,
-      currentStock: 1000,
-      unitPrice: 650,
-      minThreshold: 100,
+      currentStock: 100,
+      minThreshold: 20,
+      unitPrice: 1.5,
+      stationId: "station-123",
       unit: "litres"
     }
 
-    it("should validate input data correctly", async () => {
+    it("should require manager role for product creation", async () => {
+      // Mock as non-manager user
+      mockDb.query.users.findFirst.mockResolvedValue(mockUser)
+
+      const result = await products.createProduct(validProductData)
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Only managers can create products")
+    })
+
+    it("should allow managers to create products", async () => {
+      // Mock as manager user
+      mockDb.query.users.findFirst.mockResolvedValue(mockManagerUser)
+      mockDb.insert.mockReturnValue({
+        values: jest.fn().mockReturnValue({
+          returning: jest.fn().mockResolvedValue([mockProduct])
+        })
+      } as any)
+
+      const result = await products.createProduct(validProductData)
+
+      expect(result.isSuccess).toBe(true)
+    })
+
+    it("should validate required fields", async () => {
       const invalidData = {
-        ...mockProductData,
-        name: "", // Invalid empty name
-        currentStock: -10 // Invalid negative stock
+        ...validProductData,
+        name: "" // Invalid name
       }
 
-      const result = await createProduct(invalidData)
+      const result = await products.createProduct(invalidData)
 
       expect(result.isSuccess).toBe(false)
-      expect(result.error).toContain("Product name is required")
+      // This will depend on the Zod validation
+    })
+  })
+
+  describe("Single Product Retrieval", () => {
+    it("should return product when found", async () => {
+      mockDb.query.products.findFirst.mockResolvedValue(mockProduct)
+
+      const result = await products.getProduct("product-123")
+
+      expect(result.isSuccess).toBe(true)
+      expect(result.data).toEqual(mockProduct)
     })
 
-    it("should reject creation for unauthenticated users", async () => {
+    it("should handle product not found", async () => {
+      mockDb.query.products.findFirst.mockResolvedValue(null)
+
+      const result = await products.getProduct("nonexistent-product")
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Product not found")
+    })
+
+    it("should require authentication", async () => {
       mockAuth.mockResolvedValue({ userId: null })
 
-      const result = await createProduct(mockProductData)
+      const result = await products.getProduct("product-123")
 
       expect(result.isSuccess).toBe(false)
       expect(result.error).toBe("Unauthorized")
     })
-
-    it("should handle valid product data structure", async () => {
-      // Test that the function accepts valid data structure
-      expect(mockProductData.stationId).toBeDefined()
-      expect(mockProductData.name).toBeDefined()
-      expect(mockProductData.type).toBeDefined()
-      expect(mockProductData.currentStock).toBeGreaterThanOrEqual(0)
-      expect(mockProductData.unitPrice).toBeGreaterThan(0)
-      expect(mockProductData.minThreshold).toBeGreaterThanOrEqual(0)
-    })
   })
 
-  describe("getProducts", () => {
-    it("should handle unauthenticated users", async () => {
-      mockAuth.mockResolvedValue({ userId: null })
+  describe("Product Updates", () => {
+    const updateData = {
+      id: "product-123",
+      name: "Updated Product",
+      unitPrice: 2.0
+    }
 
-      const result = await getProducts("station-123")
+    it("should require manager role for updates", async () => {
+      mockDb.query.users.findFirst.mockResolvedValue(mockUser)
+
+      const result = await products.updateProduct(updateData)
 
       expect(result.isSuccess).toBe(false)
-      expect(result.error).toBe("Unauthorized")
+      expect(result.error).toBe("Only managers can update products")
     })
 
-    it("should validate station ID parameter", async () => {
-      // Test that the function requires a station ID
-      expect(typeof "station-123").toBe("string")
-      expect("station-123".length).toBeGreaterThan(0)
+    it("should allow managers to update products", async () => {
+      mockDb.query.users.findFirst.mockResolvedValue(mockManagerUser)
+      mockDb.update.mockReturnValue({
+        set: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            returning: jest
+              .fn()
+              .mockResolvedValue([{ ...mockProduct, ...updateData }])
+          })
+        })
+      } as any)
+
+      const result = await products.updateProduct(updateData)
+
+      expect(result.isSuccess).toBe(true)
     })
   })
 
-  describe("updateStock", () => {
-    it("should update stock successfully", async () => {
-      // Skip this test for now as it requires complex database setup
-      // This test would need actual database records to work properly
-      expect(true).toBe(true)
+  describe("Stock Management", () => {
+    const stockUpdateData = {
+      productId: "product-123",
+      quantity: -10, // Sale
+      movementType: "sale" as const,
+      reference: "Sale #123"
+    }
+
+    it("should handle stock updates with transaction", async () => {
+      mockDb.transaction.mockImplementation(async callback => {
+        const mockTx = {
+          query: {
+            products: {
+              findFirst: jest.fn().mockResolvedValue(mockProduct)
+            }
+          },
+          update: jest.fn().mockReturnValue({
+            set: jest.fn().mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                returning: jest.fn().mockResolvedValue([
+                  {
+                    ...mockProduct,
+                    currentStock: "90"
+                  }
+                ])
+              })
+            })
+          }),
+          insert: jest.fn().mockReturnValue({
+            values: jest.fn().mockResolvedValue([])
+          })
+        }
+        return await callback(mockTx)
+      })
+
+      const result = await products.updateStock(stockUpdateData)
+
+      expect(result.isSuccess).toBe(true)
     })
 
     it("should prevent negative stock for sales", async () => {
-      // Skip this test for now as it requires complex database setup
-      // This test would need actual database records to work properly
-      expect(true).toBe(true)
-    })
-  })
+      const insufficientStockProduct = {
+        ...mockProduct,
+        currentStock: "5" // Less than the sale quantity
+      }
 
-  describe("deleteProduct", () => {
-    it("should validate product ID parameter", async () => {
-      // Test that the function requires a product ID
-      expect(typeof "product-123").toBe("string")
-      expect("product-123".length).toBeGreaterThan(0)
-    })
+      mockDb.transaction.mockImplementation(async callback => {
+        const mockTx = {
+          query: {
+            products: {
+              findFirst: jest.fn().mockResolvedValue(insufficientStockProduct)
+            }
+          }
+        }
 
-    it("should handle unauthenticated users", async () => {
-      mockAuth.mockResolvedValue({ userId: null })
+        try {
+          await callback(mockTx)
+        } catch (error) {
+          throw error
+        }
+      })
 
-      const result = await deleteProduct("product-123")
+      const result = await products.updateStock(stockUpdateData)
 
       expect(result.isSuccess).toBe(false)
-      expect(result.error).toBe("Unauthorized")
+      expect(result.error).toBe("Insufficient stock available")
     })
   })
 
-  describe("Business Logic Validation", () => {
-    it("should validate product types", async () => {
-      const validTypes = ["pms", "lubricant"]
-      expect(validTypes).toContain("pms")
-      expect(validTypes).toContain("lubricant")
+  describe("Low Stock Detection", () => {
+    it("should identify products with low stock", async () => {
+      const lowStockProduct = {
+        ...mockProduct,
+        currentStock: "10" // Below minThreshold of 20
+      }
+
+      mockDb.query.products.findMany.mockResolvedValue([lowStockProduct])
+
+      const result = await products.getLowStockProducts("station-123")
+
+      expect(result.isSuccess).toBe(true)
+      expect(result.data).toHaveLength(1)
     })
 
-    it("should validate stock movement types", async () => {
-      const validMovementTypes = ["sale", "adjustment", "delivery"]
-      expect(validMovementTypes).toContain("sale")
-      expect(validMovementTypes).toContain("adjustment")
-      expect(validMovementTypes).toContain("delivery")
+    it("should return empty array when no low stock products", async () => {
+      const goodStockProduct = {
+        ...mockProduct,
+        currentStock: "50" // Above minThreshold
+      }
+
+      mockDb.query.products.findMany.mockResolvedValue([goodStockProduct])
+
+      const result = await products.getLowStockProducts("station-123")
+
+      expect(result.isSuccess).toBe(true)
+      expect(result.data).toHaveLength(0)
+    })
+  })
+
+  describe("Inventory Value Calculation", () => {
+    it("should calculate total inventory value", async () => {
+      const productsList = [
+        { ...mockProduct, currentStock: "100", unitPrice: "1.50" },
+        {
+          ...mockProduct,
+          id: "product-2",
+          currentStock: "50",
+          unitPrice: "2.00"
+        }
+      ]
+
+      mockDb.query.products.findMany.mockResolvedValue(productsList)
+
+      const result = await products.calculateInventoryValue("station-123")
+
+      expect(result.isSuccess).toBe(true)
+      expect(result.data.totalValue).toBe(250) // (100 * 1.50) + (50 * 2.00)
+      expect(result.data.productCount).toBe(2)
+    })
+  })
+
+  describe("Product Deletion", () => {
+    it("should require manager role for deletion", async () => {
+      mockDb.query.users.findFirst.mockResolvedValue(mockUser)
+
+      const result = await products.deleteProduct("product-123")
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Only managers can delete products")
     })
 
-    it("should validate user roles", async () => {
-      const validRoles = ["staff", "manager"]
-      expect(validRoles).toContain("staff")
-      expect(validRoles).toContain("manager")
+    it("should soft delete products (set isActive to false)", async () => {
+      mockDb.query.users.findFirst.mockResolvedValue(mockManagerUser)
+      mockDb.update.mockReturnValue({
+        set: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            returning: jest.fn().mockResolvedValue([
+              {
+                ...mockProduct,
+                isActive: false
+              }
+            ])
+          })
+        })
+      } as any)
+
+      const result = await products.deleteProduct("product-123")
+
+      expect(result.isSuccess).toBe(true)
+      expect(result.data.isActive).toBe(false)
+    })
+  })
+
+  describe("Bulk Operations", () => {
+    it("should allow bulk price updates for managers", async () => {
+      mockDb.query.users.findFirst.mockResolvedValue(mockManagerUser)
+
+      const updates = [
+        { productId: "product-1", newPrice: 2.0 },
+        { productId: "product-2", newPrice: 3.0 }
+      ]
+
+      mockDb.transaction.mockImplementation(async callback => {
+        const mockTx = {
+          update: jest.fn().mockReturnValue({
+            set: jest.fn().mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                returning: jest.fn().mockResolvedValue([mockProduct])
+              })
+            })
+          })
+        }
+        return await callback(mockTx)
+      })
+
+      const result = await products.bulkUpdatePrices(updates)
+
+      expect(result.isSuccess).toBe(true)
     })
 
-    it("should validate price calculations", async () => {
-      const quantity = 10
-      const unitPrice = 650
-      const totalPrice = quantity * unitPrice
-      
-      expect(totalPrice).toBe(6500)
-      expect(totalPrice).toBeGreaterThan(0)
-    })
+    it("should prevent bulk updates for non-managers", async () => {
+      mockDb.query.users.findFirst.mockResolvedValue(mockUser)
 
-    it("should validate stock level calculations", async () => {
-      const currentStock = 100
-      const minThreshold = 20
-      const isLowStock = currentStock <= minThreshold
-      
-      expect(isLowStock).toBe(false)
-      
-      const lowStock = 15
-      const isActuallyLowStock = lowStock <= minThreshold
-      expect(isActuallyLowStock).toBe(true)
-    })
+      const updates = [{ productId: "product-1", newPrice: 2.0 }]
+      const result = await products.bulkUpdatePrices(updates)
 
-    it("should validate Nigerian currency formatting", async () => {
-      const amount = 650.50
-      const formatted = new Intl.NumberFormat('en-NG', {
-        style: 'currency',
-        currency: 'NGN'
-      }).format(amount)
-      
-      expect(formatted).toContain('₦')
-      expect(formatted).toContain('650')
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Only managers can update prices")
     })
   })
 })

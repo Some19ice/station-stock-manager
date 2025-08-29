@@ -15,6 +15,13 @@
       "when": 1756163653448,
       "tag": "0001_pale_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756341132413,
+      "tag": "0002_rare_thundra",
+      "breakpoints": true
     }
   ]
 }

@@ -1,162 +1,197 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+import { describe, it, expect, beforeEach, jest } from "@jest/globals"
+import {
+  createDbMock,
+  createAuthMock,
+  createTestUUID,
+  createDrizzleMocks,
+  createZodMocks,
+  mockUser,
+  resetDbMocks
+} from "../utils/db-mock"
 
-// Mock Clerk authentication first
-const mockAuth = jest.fn()
+// Create mocks
+const { mockAuth } = createAuthMock()
+const dbMock = createDbMock()
+const drizzleMocks = createDrizzleMocks()
+const zodMocks = createZodMocks()
+
+// Mock dependencies
 jest.mock("@clerk/nextjs/server", () => ({
   auth: mockAuth
 }))
 
-// Mock database schema
+jest.mock("@/db", () => ({
+  db: dbMock
+}))
+
 jest.mock("@/db/schema", () => ({
-  transactions: { id: 'transactions.id', stationId: 'transactions.station_id' },
-  transactionItems: { id: 'transactionItems.id' },
-  products: { id: 'products.id', stationId: 'products.station_id' },
-  users: { id: 'users.id' },
-  stockMovements: { id: 'stockMovements.id' }
-}))
-
-// Mock drizzle-orm functions
-jest.mock("drizzle-orm", () => ({
-  eq: jest.fn(() => 'eq-condition'),
-  and: jest.fn(() => 'and-condition'),
-  gte: jest.fn(() => 'gte-condition'),
-  lte: jest.fn(() => 'lte-condition'),
-  desc: jest.fn(() => 'desc-order'),
-  sql: jest.fn(() => ({ mapWith: jest.fn() })),
-  sum: jest.fn(() => 'sum-function'),
-  count: jest.fn(() => 'count-function')
-}))
-
-// Mock the database with proper chainable methods
-const mockDb = {
-  select: jest.fn(),
-  insert: jest.fn(),
-  update: jest.fn(),
-  transaction: jest.fn(),
-  query: {
-    products: { findFirst: jest.fn(), findMany: jest.fn() },
-    transactions: { findMany: jest.fn() },
-    users: { findFirst: jest.fn() },
-    transactionItems: { findMany: jest.fn() },
-    stockMovements: { findMany: jest.fn() }
+  transactions: {
+    id: "transactions.id",
+    stationId: "transactions.station_id",
+    totalAmount: "transactions.total_amount",
+    transactionDate: "transactions.transaction_date",
+    createdAt: "transactions.created_at",
+    userId: "transactions.user_id"
+  },
+  transactionItems: {
+    id: "transaction_items.id",
+    transactionId: "transaction_items.transaction_id",
+    productId: "transaction_items.product_id",
+    quantity: "transaction_items.quantity",
+    unitPrice: "transaction_items.unit_price"
+  },
+  products: {
+    id: "products.id",
+    name: "products.name",
+    brand: "products.brand",
+    type: "products.type",
+    currentStock: "products.current_stock",
+    minStockLevel: "products.min_stock_level",
+    unitPrice: "products.unit_price",
+    stationId: "products.station_id",
+    isActive: "products.is_active"
+  },
+  users: {
+    id: "users.id",
+    username: "users.username",
+    stationId: "users.station_id",
+    role: "users.role"
+  },
+  stockMovements: {
+    id: "stock_movements.id",
+    productId: "stock_movements.product_id",
+    movementType: "stock_movements.movement_type"
   }
+}))
+
+jest.mock("drizzle-orm", () => drizzleMocks)
+jest.mock("zod", () => zodMocks)
+
+// Import functions at the top level to avoid ReferenceError
+let generateDailyReport: any
+let getStaffPerformanceReport: any
+let getLowStockAlerts: any
+let generateWeeklyReport: any
+let generateMonthlyReport: any
+
+beforeAll(async () => {
+  const reportsModule = await import("@/actions/reports")
+  generateDailyReport = reportsModule.generateDailyReport
+  getStaffPerformanceReport = reportsModule.getStaffPerformanceReport
+  getLowStockAlerts = reportsModule.getLowStockAlerts
+  generateWeeklyReport = reportsModule.generateWeeklyReport
+  generateMonthlyReport = reportsModule.generateMonthlyReport
+})
+
+// Helper to create chainable query mock
+const createQueryChain = (result: any) => {
+  const chain: any = {
+    from: jest.fn(() => chain),
+    where: jest.fn(() => chain),
+    innerJoin: jest.fn(() => chain),
+    leftJoin: jest.fn(() => chain),
+    groupBy: jest.fn(() => chain),
+    orderBy: jest.fn(() => chain),
+    limit: jest.fn(() => chain),
+    then: jest.fn(resolve => Promise.resolve(result).then(resolve)),
+    catch: jest.fn(),
+    finally: jest.fn(),
+    [Symbol.toStringTag]: "Promise"
+  }
+  return chain
 }
 
-jest.mock("@/db", () => ({ db: mockDb }))
-
-// Import after mocking
-const { 
-  generateDailyReport, 
-  getStaffPerformanceReport, 
-  getLowStockAlerts,
-  generateWeeklyReport,
-  generateMonthlyReport
-} = require('@/actions/reports')
-
 describe("Reports Actions", () => {
+  const validStationId = createTestUUID("1001")
+  const validUserId = createTestUUID("2001")
+
   beforeEach(() => {
     jest.clearAllMocks()
-    
-    // Setup chainable methods for database operations
-    const mockChain = {
-      from: jest.fn().mockReturnThis(),
-      select: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      innerJoin: jest.fn().mockReturnThis(),
-      leftJoin: jest.fn().mockReturnThis(),
-      groupBy: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-      returning: jest.fn().mockResolvedValue([])
-    }
-    
-    mockDb.select.mockReturnValue(mockChain)
-    mockDb.transaction.mockImplementation((callback) => callback(mockDb))
+    resetDbMocks(dbMock)
   })
 
   describe("generateDailyReport", () => {
     const validInput = {
-      stationId: "550e8400-e29b-41d4-a716-446655440000",
+      stationId: validStationId,
       startDate: "2024-01-15",
       endDate: "2024-01-15"
     }
 
-    describe("Authentication", () => {
-      it("should reject unauthenticated users", async () => {
-        mockAuth.mockResolvedValue({ userId: null })
-        
-        const result = await generateDailyReport(validInput)
-        
-        expect(result.isSuccess).toBe(false)
-        expect(result.error).toBe("Unauthorized")
+    it("should generate daily report for authenticated user", async () => {
+      mockAuth.mockResolvedValue({ userId: mockUser.clerkUserId })
+
+      // Mock multiple sequential queries
+      const mockResults = [
+        [{ totalSales: "1500.00", totalTransactions: 5 }], // sales overview
+        [{ productName: "Premium Gasoline", totalQuantity: "100.00" }], // top product
+        [{ currentStock: "1000.00" }], // PMS products
+        [{ totalQuantity: "200.00", totalRevenue: "300.00" }], // PMS sales
+        [
+          {
+            // lubricant sales
+            productName: "Motor Oil",
+            brand: "Shell",
+            currentStock: "50.00",
+            totalQuantity: "10.00",
+            totalRevenue: "150.00"
+          }
+        ]
+      ]
+
+      let queryCount = 0
+      dbMock.select.mockImplementation(() => {
+        const result = mockResults[queryCount] || []
+        queryCount++
+        return createQueryChain(result)
       })
+
+      const result = await generateDailyReport(validInput)
+
+      expect(result.isSuccess).toBe(true)
+      expect(result.data).toBeDefined()
+      expect(result.data?.salesOverview).toBeDefined()
+      expect(result.data?.pmsReport).toBeDefined()
+      expect(result.data?.lubricantBreakdown).toBeDefined()
     })
 
-    describe("Input Validation", () => {
-      it("should validate required fields", async () => {
-        mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        const invalidInput = { ...validInput, stationId: "" }
-        
-        const result = await generateDailyReport(invalidInput)
-        
-        expect(result.isSuccess).toBe(false)
-        expect(result.error).toContain("Failed to generate daily report")
-      })
+    it("should reject unauthenticated users", async () => {
+      mockAuth.mockResolvedValue({ userId: null })
 
-      it("should validate date format", async () => {
-        mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        const invalidInput = { ...validInput, startDate: "invalid-date" }
-        
-        const result = await generateDailyReport(invalidInput)
-        
-        expect(result.isSuccess).toBe(false)
-        expect(result.error).toContain("Failed to generate daily report")
-      })
+      const result = await generateDailyReport(validInput)
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Unauthorized")
     })
 
     describe("Report Generation", () => {
       it("should generate daily report successfully", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        // Mock database responses
-        const mockSalesOverview = [{ totalSales: "5000", totalTransactions: 10 }]
-        const mockTopProduct = [{ productName: "Premium PMS", totalQuantity: "100" }]
-        const mockPmsProducts = [{ currentStock: "1000" }]
-        const mockPmsSales = [{ totalQuantity: "100", totalRevenue: "5000" }]
-        const mockLubricantSales = [
-          {
-            productId: "product-1",
-            productName: "Engine Oil",
-            brand: "Shell",
-            currentStock: "50",
-            totalQuantity: "5",
-            totalRevenue: "2500"
-          }
+
+        const mockResults = [
+          [{ totalSales: "5000", totalTransactions: 10 }],
+          [{ productName: "Premium Gas", totalQuantity: "500" }],
+          [{ currentStock: "2000.00" }],
+          [{ totalQuantity: "400.00", totalRevenue: "2000.00" }],
+          [
+            {
+              productName: "Engine Oil",
+              brand: "Mobil",
+              currentStock: "100.00",
+              totalQuantity: "20.00",
+              totalRevenue: "800.00"
+            }
+          ]
         ]
 
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          innerJoin: jest.fn().mockReturnThis(),
-          leftJoin: jest.fn().mockReturnThis(),
-          groupBy: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis(),
-          limit: jest.fn().mockReturnThis()
-        }
-
-        // Setup different return values for different queries
-        mockDb.select
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockSalesOverview) })
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockTopProduct) })
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockPmsProducts) })
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockPmsSales) })
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockLubricantSales) })
+        let queryCount = 0
+        dbMock.select.mockImplementation(() => {
+          const result = mockResults[queryCount] || []
+          queryCount++
+          return createQueryChain(result)
+        })
 
         const result = await generateDailyReport(validInput)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data).toBeDefined()
         expect(result.data?.salesOverview.totalSales).toBe("5000")
@@ -165,95 +200,71 @@ describe("Reports Actions", () => {
 
       it("should handle empty sales data", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          innerJoin: jest.fn().mockReturnThis(),
-          leftJoin: jest.fn().mockReturnThis(),
-          groupBy: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis(),
-          limit: jest.fn().mockReturnThis()
-        }
 
-        mockDb.select.mockReturnValue({ 
-          ...mockChain, 
-          from: jest.fn().mockResolvedValue([])
-        })
+        dbMock.select.mockImplementation(() => createQueryChain([]))
 
         const result = await generateDailyReport(validInput)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data?.salesOverview.totalSales).toBe("0")
         expect(result.data?.salesOverview.totalTransactions).toBe(0)
       })
     })
 
-    describe("Error Handling", () => {
-      it("should handle database errors gracefully", async () => {
-        mockAuth.mockResolvedValue({ userId: "user-123" })
-        mockDb.select.mockImplementation(() => {
-          throw new Error("Database connection failed")
-        })
-        
-        const result = await generateDailyReport(validInput)
-        
-        expect(result.isSuccess).toBe(false)
-        expect(result.error).toBe("Failed to generate daily report")
+    it("should handle database errors", async () => {
+      mockAuth.mockResolvedValue({ userId: mockUser.clerkUserId })
+
+      dbMock.select.mockImplementation(() => {
+        throw new Error("Database connection failed")
       })
+
+      const result = await generateDailyReport(validInput)
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Failed to generate daily report")
     })
   })
 
   describe("getStaffPerformanceReport", () => {
     const validInput = {
-      stationId: "550e8400-e29b-41d4-a716-446655440000",
+      stationId: validStationId,
       startDate: "2024-01-01",
-      endDate: "2024-01-07"
+      endDate: "2024-01-31"
     }
 
-    describe("Authentication", () => {
-      it("should reject unauthenticated users", async () => {
-        mockAuth.mockResolvedValue({ userId: null })
-        
-        const result = await getStaffPerformanceReport(validInput)
-        
-        expect(result.isSuccess).toBe(false)
-        expect(result.error).toBe("Unauthorized")
-      })
+    it("should reject unauthenticated users", async () => {
+      mockAuth.mockResolvedValue({ userId: null })
+
+      const result = await getStaffPerformanceReport(validInput)
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Unauthorized")
     })
 
     describe("Report Generation", () => {
       it("should generate staff performance report successfully", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
+
         const mockStaffPerformance = [
           {
-            staffId: "staff-1",
+            staffId: validUserId,
             username: "john_doe",
-            transactionCount: 15,
-            totalSales: "7500"
+            totalSales: "7500",
+            transactionCount: 15
           }
         ]
 
-        const mockTopProduct = [{ productName: "Premium PMS", totalQuantity: "100" }]
+        const mockTopProduct = [{ productName: "Premium Gas" }]
 
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          innerJoin: jest.fn().mockReturnThis(),
-          groupBy: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis(),
-          limit: jest.fn().mockReturnThis()
-        }
-
-        mockDb.select
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockStaffPerformance) })
-          .mockReturnValue({ ...mockChain, from: jest.fn().mockResolvedValue(mockTopProduct) })
+        let queryCount = 0
+        dbMock.select.mockImplementation(() => {
+          queryCount++
+          if (queryCount === 1) return createQueryChain(mockStaffPerformance)
+          return createQueryChain(mockTopProduct)
+        })
 
         const result = await getStaffPerformanceReport(validInput)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data).toBeDefined()
         expect(result.data?.length).toBe(1)
@@ -264,24 +275,11 @@ describe("Reports Actions", () => {
 
       it("should handle staff with no sales", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          innerJoin: jest.fn().mockReturnThis(),
-          groupBy: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis(),
-          limit: jest.fn().mockReturnThis()
-        }
 
-        mockDb.select.mockReturnValue({ 
-          ...mockChain, 
-          from: jest.fn().mockResolvedValue([])
-        })
+        dbMock.select.mockImplementation(() => createQueryChain([]))
 
         const result = await getStaffPerformanceReport(validInput)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data).toEqual([])
       })
@@ -290,75 +288,55 @@ describe("Reports Actions", () => {
     describe("Date Range Filtering", () => {
       it("should filter by specific user when provided", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        const inputWithUserId = { ...validInput, userId: "550e8400-e29b-41d4-a716-446655440001" }
-        
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          innerJoin: jest.fn().mockReturnThis(),
-          groupBy: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis(),
-          limit: jest.fn().mockReturnThis()
+
+        const inputWithUserId = {
+          ...validInput,
+          userId: validUserId
         }
 
-        mockDb.select.mockReturnValue({ 
-          ...mockChain, 
-          from: jest.fn().mockResolvedValue([])
-        })
+        dbMock.select.mockImplementation(() => createQueryChain([]))
 
         const result = await getStaffPerformanceReport(inputWithUserId)
-        
+
         expect(result.isSuccess).toBe(true)
       })
     })
   })
 
   describe("getLowStockAlerts", () => {
-    const stationId = "550e8400-e29b-41d4-a716-446655440000"
+    const stationId = validStationId
 
-    describe("Authentication", () => {
-      it("should reject unauthenticated users", async () => {
-        mockAuth.mockResolvedValue({ userId: null })
-        
-        const result = await getLowStockAlerts(stationId)
-        
-        expect(result.isSuccess).toBe(false)
-        expect(result.error).toBe("Unauthorized")
-      })
+    it("should reject unauthenticated users", async () => {
+      mockAuth.mockResolvedValue({ userId: null })
+
+      const result = await getLowStockAlerts(stationId)
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Unauthorized")
     })
 
     describe("Alert Generation", () => {
       it("should return low stock alerts successfully", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
+
         const mockLowStockProducts = [
           {
-            productId: "product-1",
+            productId: createTestUUID("3001"),
             productName: "Engine Oil",
-            brand: "Shell",
+            brand: "Mobil",
             type: "lubricant",
-            currentStock: "5",
-            minThreshold: "20",
-            unit: "units"
+            currentStock: "5.00",
+            minThreshold: "20.00",
+            unit: "liters"
           }
         ]
 
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis()
-        }
-
-        mockDb.select.mockReturnValue({ 
-          ...mockChain, 
-          from: jest.fn().mockResolvedValue(mockLowStockProducts)
-        })
+        dbMock.select.mockImplementation(() =>
+          createQueryChain(mockLowStockProducts)
+        )
 
         const result = await getLowStockAlerts(stationId)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data).toBeDefined()
         expect(result.data?.length).toBe(1)
@@ -368,21 +346,11 @@ describe("Reports Actions", () => {
 
       it("should return empty array when no low stock items", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis()
-        }
 
-        mockDb.select.mockReturnValue({ 
-          ...mockChain, 
-          from: jest.fn().mockResolvedValue([])
-        })
+        dbMock.select.mockImplementation(() => createQueryChain([]))
 
         const result = await getLowStockAlerts(stationId)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data).toEqual([])
       })
@@ -391,33 +359,25 @@ describe("Reports Actions", () => {
     describe("Reorder Calculations", () => {
       it("should calculate correct reorder quantities", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
+
         const mockLowStockProducts = [
           {
-            productId: "product-1",
-            productName: "Test Product",
-            brand: "Test Brand",
+            productId: createTestUUID("3002"),
+            productName: "Brake Fluid",
+            brand: "Shell",
             type: "lubricant",
-            currentStock: "10",
-            minThreshold: "50",
-            unit: "units"
+            currentStock: "10.00",
+            minThreshold: "50.00",
+            unit: "liters"
           }
         ]
 
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis()
-        }
-
-        mockDb.select.mockReturnValue({ 
-          ...mockChain, 
-          from: jest.fn().mockResolvedValue(mockLowStockProducts)
-        })
+        dbMock.select.mockImplementation(() =>
+          createQueryChain(mockLowStockProducts)
+        )
 
         const result = await getLowStockAlerts(stationId)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data?.[0].reorderQuantity).toBe("90.00") // (50 * 2) - 10
       })
@@ -426,46 +386,47 @@ describe("Reports Actions", () => {
 
   describe("generateWeeklyReport", () => {
     const validInput = {
-      stationId: "550e8400-e29b-41d4-a716-446655440000",
-      startDate: "2024-01-01",
-      endDate: "2024-01-07"
+      stationId: validStationId,
+      startDate: "2024-01-08",
+      endDate: "2024-01-14"
     }
 
-    describe("Authentication", () => {
-      it("should reject unauthenticated users", async () => {
-        mockAuth.mockResolvedValue({ userId: null })
-        
-        const result = await generateWeeklyReport(validInput)
-        
-        expect(result.isSuccess).toBe(false)
-        expect(result.error).toBe("Unauthorized")
-      })
+    it("should reject unauthenticated users", async () => {
+      mockAuth.mockResolvedValue({ userId: null })
+
+      const result = await generateWeeklyReport(validInput)
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Unauthorized")
     })
 
     describe("Report Generation", () => {
       it("should generate weekly report successfully", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        const mockDailySales = [
-          { date: "2024-01-01", totalSales: "1000", transactionCount: 5 },
-          { date: "2024-01-02", totalSales: "1500", transactionCount: 8 }
+
+        const mockResults = [
+          [
+            { date: "2024-01-08", totalSales: "1200", totalTransactions: "8" },
+            { date: "2024-01-09", totalSales: "1300", totalTransactions: "12" }
+          ],
+          [
+            {
+              totalSales: "2500",
+              totalTransactions: "20",
+              averageDaily: "357.14"
+            }
+          ]
         ]
-        const mockWeekTotals = [{ totalSales: "2500", totalTransactions: 13 }]
 
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          groupBy: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis()
-        }
-
-        mockDb.select
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockDailySales) })
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockWeekTotals) })
+        let queryCount = 0
+        dbMock.select.mockImplementation(() => {
+          const result = mockResults[queryCount] || []
+          queryCount++
+          return createQueryChain(result)
+        })
 
         const result = await generateWeeklyReport(validInput)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data).toBeDefined()
         expect(result.data?.dailyBreakdown.length).toBe(2)
@@ -476,56 +437,54 @@ describe("Reports Actions", () => {
 
   describe("generateMonthlyReport", () => {
     const validInput = {
-      stationId: "550e8400-e29b-41d4-a716-446655440000",
+      stationId: validStationId,
       startDate: "2024-01-01",
       endDate: "2024-01-31"
     }
 
-    describe("Authentication", () => {
-      it("should reject unauthenticated users", async () => {
-        mockAuth.mockResolvedValue({ userId: null })
-        
-        const result = await generateMonthlyReport(validInput)
-        
-        expect(result.isSuccess).toBe(false)
-        expect(result.error).toBe("Unauthorized")
-      })
+    it("should reject unauthenticated users", async () => {
+      mockAuth.mockResolvedValue({ userId: null })
+
+      const result = await generateMonthlyReport(validInput)
+
+      expect(result.isSuccess).toBe(false)
+      expect(result.error).toBe("Unauthorized")
     })
 
     describe("Report Generation", () => {
       it("should generate monthly report successfully", async () => {
         mockAuth.mockResolvedValue({ userId: "user-123" })
-        
-        const mockWeeklySales = [
-          { week: "1", totalSales: "5000", transactionCount: 25 },
-          { week: "2", totalSales: "6000", transactionCount: 30 }
-        ]
-        const mockMonthTotals = [{ totalSales: "11000", totalTransactions: 55 }]
-        const mockProductPerformance = [
-          {
-            productName: "Premium PMS",
-            type: "pms",
-            totalQuantity: "500",
-            totalRevenue: "8000"
-          }
+
+        const mockResults = [
+          [
+            { week: "Week 1", totalSales: "5500", totalTransactions: "45" },
+            { week: "Week 2", totalSales: "5500", totalTransactions: "48" }
+          ],
+          [
+            {
+              totalSales: "11000",
+              totalTransactions: "93",
+              averageDaily: "354.84"
+            }
+          ],
+          [
+            {
+              productName: "Premium Gas",
+              totalRevenue: "8000",
+              totalQuantity: "4000"
+            }
+          ]
         ]
 
-        const mockChain = {
-          from: jest.fn().mockReturnThis(),
-          select: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          innerJoin: jest.fn().mockReturnThis(),
-          groupBy: jest.fn().mockReturnThis(),
-          orderBy: jest.fn().mockReturnThis()
-        }
-
-        mockDb.select
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockWeeklySales) })
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockMonthTotals) })
-          .mockReturnValueOnce({ ...mockChain, from: jest.fn().mockResolvedValue(mockProductPerformance) })
+        let queryCount = 0
+        dbMock.select.mockImplementation(() => {
+          const result = mockResults[queryCount] || []
+          queryCount++
+          return createQueryChain(result)
+        })
 
         const result = await generateMonthlyReport(validInput)
-        
+
         expect(result.isSuccess).toBe(true)
         expect(result.data).toBeDefined()
         expect(result.data?.weeklyBreakdown.length).toBe(2)

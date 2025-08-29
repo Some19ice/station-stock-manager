@@ -1,37 +1,71 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ProductList } from "@/components/products/product-list"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProductForm } from "@/components/products/product-form"
-import { StockAdjustment } from "@/components/products/stock-adjustment"
-import { SelectProduct } from "@/db/schema"
-import { Package, Plus, Settings } from "lucide-react"
+import { InventoryDashboard } from "@/components/inventory/inventory-dashboard"
+import { StockMovementHistory } from "@/components/inventory/stock-movement-history"
+import { SupplierManagement } from "@/components/inventory/supplier-management"
+import { DeliveryForm } from "@/components/inventory/delivery-form"
+import { StockAdjustmentForm } from "@/components/inventory/stock-adjustment-form"
+import { ReorderRecommendations } from "@/components/inventory/reorder-recommendations"
 import { useStationAuth } from "@/hooks/use-station-auth"
+import { 
+  Package, 
+  History, 
+  Building2, 
+  ShoppingCart,
+  TrendingUp,
+  Settings
+} from "lucide-react"
 
-type DialogMode = "add" | "edit" | "adjust" | null
+interface InventoryItem {
+  id: string
+  name: string
+  brand?: string
+  type: "pms" | "lubricant"
+  currentStock: number
+  minThreshold: number
+  unitPrice: number
+  value: number
+  unit: string
+  isLowStock: boolean
+  isOutOfStock: boolean
+  supplier?: { id: string; name: string } | null
+  stockStatus: "out_of_stock" | "low_stock" | "normal"
+}
+
+type DialogMode = "add-product" | "edit-product" | "adjust-stock" | "record-delivery" | "view-product" | null
 
 export default function InventoryPage() {
   const { user, station } = useStationAuth()
+  const [activeTab, setActiveTab] = useState("dashboard")
   const [dialogMode, setDialogMode] = useState<DialogMode>(null)
-  const [selectedProduct, setSelectedProduct] = useState<SelectProduct | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<InventoryItem | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const handleAddProduct = () => {
-    setSelectedProduct(null)
-    setDialogMode("add")
+  const handleViewProduct = (product: InventoryItem) => {
+    setSelectedProduct(product)
+    setDialogMode("view-product")
   }
 
-  const handleEditProduct = (product: SelectProduct) => {
+  const handleAdjustStock = (product: InventoryItem) => {
     setSelectedProduct(product)
-    setDialogMode("edit")
+    setDialogMode("adjust-stock")
   }
 
-  const handleAdjustStock = (product: SelectProduct) => {
+  const handleRecordDelivery = (product: InventoryItem) => {
     setSelectedProduct(product)
-    setDialogMode("adjust")
+    setDialogMode("record-delivery")
+  }
+
+  const handleRecordDeliveryById = (productId: string) => {
+    // This would need to fetch the product details by ID
+    // For now, we'll just close any open dialogs and switch to dashboard
+    setDialogMode(null)
+    setActiveTab("dashboard")
+    setRefreshKey(prev => prev + 1)
   }
 
   const handleSuccess = () => {
@@ -58,60 +92,106 @@ export default function InventoryPage() {
     )
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+  if (user?.role !== "manager") {
+    return (
+      <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your station's product inventory and stock levels
+            Access restricted to managers only
           </p>
         </div>
-        
-        {user?.role === "manager" && (
-          <div className="flex gap-2">
-            <Button onClick={handleAddProduct}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </div>
-        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
+        <p className="text-muted-foreground mt-2">
+          Comprehensive inventory management for your station
+        </p>
       </div>
 
-      <ProductList
-        key={refreshKey}
-        stationId={station.id}
-        onEditProduct={user?.role === "manager" ? handleEditProduct : undefined}
-        onAddProduct={user?.role === "manager" ? handleAddProduct : undefined}
-        onAdjustStock={user?.role === "manager" ? handleAdjustStock : undefined}
-      />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            History
+          </TabsTrigger>
+          <TabsTrigger value="suppliers" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Suppliers
+          </TabsTrigger>
+          <TabsTrigger value="reorder" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Reorder
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Add/Edit Product Dialog */}
-      <Dialog open={dialogMode === "add" || dialogMode === "edit"} onOpenChange={handleCancel}>
+        <TabsContent value="dashboard" className="space-y-6">
+          <InventoryDashboard
+            key={refreshKey}
+            stationId={station.id}
+            onViewProduct={handleViewProduct}
+            onAdjustStock={handleAdjustStock}
+            onRecordDelivery={handleRecordDelivery}
+          />
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6">
+          <StockMovementHistory stationId={station.id} />
+        </TabsContent>
+
+        <TabsContent value="suppliers" className="space-y-6">
+          <SupplierManagement stationId={station.id} />
+        </TabsContent>
+
+        <TabsContent value="reorder" className="space-y-6">
+          <ReorderRecommendations 
+            stationId={station.id}
+            onRecordDelivery={handleRecordDeliveryById}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Stock Adjustment Dialog */}
+      <Dialog open={dialogMode === "adjust-stock"} onOpenChange={handleCancel}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {dialogMode === "add" ? "Add New Product" : "Edit Product"}
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Stock Adjustment
             </DialogTitle>
           </DialogHeader>
-          <ProductForm
-            stationId={station.id}
-            product={selectedProduct || undefined}
-            onSuccess={handleSuccess}
-            onCancel={handleCancel}
-          />
+          {selectedProduct && (
+            <StockAdjustmentForm
+              product={selectedProduct}
+              onSuccess={handleSuccess}
+              onCancel={handleCancel}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Stock Adjustment Dialog */}
-      <Dialog open={dialogMode === "adjust"} onOpenChange={handleCancel}>
-        <DialogContent className="max-w-lg">
+      {/* Record Delivery Dialog */}
+      <Dialog open={dialogMode === "record-delivery"} onOpenChange={handleCancel}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Adjust Stock Level</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Record Delivery
+            </DialogTitle>
           </DialogHeader>
           {selectedProduct && (
-            <StockAdjustment
+            <DeliveryForm
               product={selectedProduct}
+              stationId={station.id}
               onSuccess={handleSuccess}
               onCancel={handleCancel}
             />

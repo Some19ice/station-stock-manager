@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm"
 import { customers } from "./customers"
 import { stations } from "./stations"
 import { users } from "./users"
+import { suppliers } from "./suppliers"
 import { products } from "./products"
 import { transactions } from "./transactions"
 import { transactionItems } from "./transaction-items"
@@ -19,6 +20,7 @@ export const stationsRelations = relations(stations, ({ one, many }) => ({
     references: [customers.id]
   }),
   users: many(users),
+  suppliers: many(suppliers),
   products: many(products),
   transactions: many(transactions)
 }))
@@ -32,11 +34,24 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   transactions: many(transactions)
 }))
 
+// Supplier relations
+export const suppliersRelations = relations(suppliers, ({ one, many }) => ({
+  station: one(stations, {
+    fields: [suppliers.stationId],
+    references: [stations.id]
+  }),
+  products: many(products)
+}))
+
 // Product relations
 export const productsRelations = relations(products, ({ one, many }) => ({
   station: one(stations, {
     fields: [products.stationId],
     references: [stations.id]
+  }),
+  supplier: one(suppliers, {
+    fields: [products.supplierId],
+    references: [suppliers.id]
   }),
   transactionItems: many(transactionItems),
   stockMovements: many(stockMovements)

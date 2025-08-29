@@ -1,15 +1,21 @@
-import Stripe from "stripe"
+// Stripe functionality is disabled
+console.log("Stripe functionality is disabled")
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-
-if (!stripeSecretKey) {
-  throw new Error("STRIPE_SECRET_KEY is not set")
-}
-
-export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2025-05-28.basil",
-  appInfo: {
-    name: "Mckay's App Template",
-    version: "0.1.0"
+// Export a mock stripe object to prevent import errors
+export const stripe = {
+  webhooks: {
+    constructEvent: () => {
+      throw new Error("Stripe functionality is disabled")
+    }
+  },
+  subscriptions: {
+    retrieve: () => {
+      throw new Error("Stripe functionality is disabled")
+    }
+  },
+  products: {
+    retrieve: () => {
+      throw new Error("Stripe functionality is disabled")
+    }
   }
-})
+}

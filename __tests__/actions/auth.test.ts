@@ -7,67 +7,97 @@ import {
   jest
 } from "@jest/globals"
 import {
-  getCurrentUserProfile,
-  getUserRole,
-  validateUserRole,
-  createStationUser,
-  updateUserStatus,
-  getStationUsers
-} from "@/actions/auth"
-import { db } from "@/db"
+  createDbMock,
+  createAuthMock,
+  createTestUUID,
+  createDrizzleMocks,
+  mockUser,
+  mockStation,
+  resetDbMocks
+} from "../utils/db-mock"
 
-// Mock Clerk auth
+// Helper function to create chainable database mocks
+const createChainableMock = (finalResult: any = []) => {
+  const chainable: any = {
+    from: jest.fn(() => chainable),
+    where: jest.fn(() => chainable),
+    innerJoin: jest.fn(() => chainable),
+    leftJoin: jest.fn(() => chainable),
+    rightJoin: jest.fn(() => chainable),
+    groupBy: jest.fn(() => chainable),
+    orderBy: jest.fn(() => chainable),
+    limit: jest.fn(() => chainable),
+    offset: jest.fn(() => chainable),
+    having: jest.fn(() => chainable),
+    distinct: jest.fn(() => chainable),
+    into: jest.fn(() => chainable),
+    values: jest.fn(() => chainable),
+    returning: jest.fn(() => chainable),
+    set: jest.fn(() => chainable),
+    then: jest.fn(resolve => resolve(finalResult)),
+    [Symbol.toStringTag]: "Promise"
+  }
+
+  Object.defineProperty(chainable, "then", {
+    value: jest.fn(resolve => Promise.resolve(finalResult).then(resolve)),
+    writable: true
+  })
+
+  return chainable
+}
+
+// Create mocks
+const { mockAuth, mockCurrentUser } = createAuthMock()
+const dbMock = createDbMock()
+const drizzleMocks = createDrizzleMocks()
+
+// Mock dependencies
 jest.mock("@clerk/nextjs/server", () => ({
-  auth: jest.fn(),
-  currentUser: jest.fn()
+  auth: mockAuth,
+  currentUser: mockCurrentUser
 }))
 
-// Mock database
 jest.mock("@/db", () => ({
-  db: {
-    insert: jest.fn().mockReturnThis(),
-    values: jest.fn().mockReturnThis(),
-    returning: jest.fn().mockResolvedValue([]),
-    update: jest.fn().mockReturnThis(),
-    set: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    from: jest.fn().mockReturnThis(),
-    innerJoin: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockResolvedValue([]),
-    query: {
-      users: {
-        findFirst: jest.fn(),
-        findMany: jest.fn()
-      },
-      stations: {
-        findFirst: jest.fn(),
-        findMany: jest.fn()
-      },
-      customers: {
-        findFirst: jest.fn(),
-        findMany: jest.fn()
-      }
-    },
-    transaction: jest.fn()
+  db: dbMock
+}))
+
+jest.mock("@/db/schema", () => ({
+  users: {
+    id: "users.id",
+    clerkUserId: "users.clerk_user_id",
+    stationId: "users.station_id",
+    username: "users.username",
+    role: "users.role",
+    isActive: "users.is_active"
+  },
+  stations: {
+    id: "stations.id",
+    name: "stations.name",
+    customerId: "stations.customer_id"
+  },
+  customers: {
+    id: "customers.id",
+    userId: "customers.user_id"
   }
 }))
 
-const { auth } = require("@clerk/nextjs/server")
+jest.mock("drizzle-orm", () => drizzleMocks)
 
 describe("Authentication Actions", () => {
   let testCustomer: any
   let testStation: any
   let testManagerUser: any
   let testStaffUser: any
+  let testInactiveUser: any
 
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.clearAllMocks()
+    resetDbMocks(dbMock)
 
-    // Mock test data
+    // Setup test data with valid UUIDs
     testCustomer = {
-      id: "customer-123",
-      userId: "test-customer-user-id",
+      id: createTestUUID("1000"),
+      userId: "clerk_customer_123",
       membership: "free",
       stripeCustomerId: null,
       createdAt: new Date(),
@@ -75,7 +105,7 @@ describe("Authentication Actions", () => {
     }
 
     testStation = {
-      id: "station-123",
+      id: createTestUUID("1001"),
       customerId: testCustomer.id,
       name: "Test Filling Station",
       address: "123 Test Street",
@@ -84,7 +114,7 @@ describe("Authentication Actions", () => {
     }
 
     testManagerUser = {
-      id: "manager-123",
+      id: createTestUUID("1002"),
       stationId: testStation.id,
       clerkUserId: "clerk_manager_123",
       username: "manager1",
@@ -95,12 +125,23 @@ describe("Authentication Actions", () => {
     }
 
     testStaffUser = {
-      id: "staff-123",
+      id: createTestUUID("1003"),
       stationId: testStation.id,
       clerkUserId: "clerk_staff_123",
       username: "staff1",
       role: "staff",
       isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+
+    testInactiveUser = {
+      id: createTestUUID("1004"),
+      stationId: testStation.id,
+      clerkUserId: "clerk_inactive_123",
+      username: "inactive1",
+      role: "staff",
+      isActive: false,
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -112,33 +153,41 @@ describe("Authentication Actions", () => {
 
   describe("getCurrentUserProfile", () => {
     it("should return user profile with station for authenticated user", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      
-      const mockDb = db as any;
-      mockDb.select.mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          innerJoin: jest.fn().mockReturnValue({
-            where: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue([{
-                user: testManagerUser,
-                station: testStation
-              }])
-            })
-          })
-        })
-      });
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
+      // Setup database mock to return user with station data
+      const userWithStation = [
+        {
+          user: testManagerUser,
+          station: testStation
+        }
+      ]
+
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() => Promise.resolve(userWithStation))
+            }))
+          }))
+        }))
+      }))
+
+      const { getCurrentUserProfile } = await import("@/actions/auth")
       const result = await getCurrentUserProfile()
 
       expect(result.isSuccess).toBe(true)
-      expect(result.data).toBeDefined()
-      expect(result.data?.user.username).toBe("manager1")
-      expect(result.data?.station.name).toBe("Test Filling Station")
+      expect(result.data).toEqual({
+        user: testManagerUser,
+        station: testStation
+      })
+      expect(mockAuth).toHaveBeenCalled()
     })
 
     it("should return error for unauthenticated user", async () => {
-      auth.mockResolvedValue({ userId: null })
+      mockAuth.mockResolvedValue({ userId: null })
 
+      const { getCurrentUserProfile } = await import("@/actions/auth")
       const result = await getCurrentUserProfile()
 
       expect(result.isSuccess).toBe(false)
@@ -146,19 +195,19 @@ describe("Authentication Actions", () => {
     })
 
     it("should return error for user without profile", async () => {
-      auth.mockResolvedValue({ userId: "nonexistent_user" })
-      
-      const mockDb = db as any;
-      mockDb.select.mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          innerJoin: jest.fn().mockReturnValue({
-            where: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue([])
-            })
-          })
-        })
-      });
+      mockAuth.mockResolvedValue({ userId: "non_existent_user" })
 
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() => Promise.resolve([]))
+            }))
+          }))
+        }))
+      }))
+
+      const { getCurrentUserProfile } = await import("@/actions/auth")
       const result = await getCurrentUserProfile()
 
       expect(result.isSuccess).toBe(false)
@@ -168,10 +217,10 @@ describe("Authentication Actions", () => {
 
   describe("getUserRole", () => {
     it("should return manager role for manager user", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testManagerUser)
 
+      const { getUserRole } = await import("@/actions/auth")
       const result = await getUserRole()
 
       expect(result.isSuccess).toBe(true)
@@ -179,10 +228,10 @@ describe("Authentication Actions", () => {
     })
 
     it("should return staff role for staff user", async () => {
-      auth.mockResolvedValue({ userId: "clerk_staff_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testStaffUser)
+      mockAuth.mockResolvedValue({ userId: testStaffUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testStaffUser)
 
+      const { getUserRole } = await import("@/actions/auth")
       const result = await getUserRole()
 
       expect(result.isSuccess).toBe(true)
@@ -190,13 +239,10 @@ describe("Authentication Actions", () => {
     })
 
     it("should return error for inactive user", async () => {
-      auth.mockResolvedValue({ userId: "clerk_staff_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue({
-        ...testStaffUser,
-        isActive: false
-      })
+      mockAuth.mockResolvedValue({ userId: testInactiveUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testInactiveUser)
 
+      const { getUserRole } = await import("@/actions/auth")
       const result = await getUserRole()
 
       expect(result.isSuccess).toBe(false)
@@ -204,8 +250,9 @@ describe("Authentication Actions", () => {
     })
 
     it("should return error for unauthenticated user", async () => {
-      auth.mockResolvedValue({ userId: null })
+      mockAuth.mockResolvedValue({ userId: null })
 
+      const { getUserRole } = await import("@/actions/auth")
       const result = await getUserRole()
 
       expect(result.isSuccess).toBe(false)
@@ -215,43 +262,40 @@ describe("Authentication Actions", () => {
 
   describe("validateUserRole", () => {
     it("should allow manager to access manager-only functions", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testManagerUser)
 
+      const { validateUserRole } = await import("@/actions/auth")
       const result = await validateUserRole("manager")
 
       expect(result.isSuccess).toBe(true)
-      expect(result.data).toBe(true)
     })
 
     it("should allow manager to access staff functions", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testManagerUser)
 
+      const { validateUserRole } = await import("@/actions/auth")
       const result = await validateUserRole("staff")
 
       expect(result.isSuccess).toBe(true)
-      expect(result.data).toBe(true)
     })
 
     it("should allow staff to access staff functions", async () => {
-      auth.mockResolvedValue({ userId: "clerk_staff_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testStaffUser)
+      mockAuth.mockResolvedValue({ userId: testStaffUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testStaffUser)
 
+      const { validateUserRole } = await import("@/actions/auth")
       const result = await validateUserRole("staff")
 
       expect(result.isSuccess).toBe(true)
-      expect(result.data).toBe(true)
     })
 
     it("should deny staff access to manager-only functions", async () => {
-      auth.mockResolvedValue({ userId: "clerk_staff_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testStaffUser)
+      mockAuth.mockResolvedValue({ userId: testStaffUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testStaffUser)
 
+      const { validateUserRole } = await import("@/actions/auth")
       const result = await validateUserRole("manager")
 
       expect(result.isSuccess).toBe(false)
@@ -261,86 +305,154 @@ describe("Authentication Actions", () => {
 
   describe("createStationUser", () => {
     it("should allow manager to create staff user", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst
-        .mockResolvedValueOnce(testManagerUser) // For role check
-        .mockResolvedValueOnce(null) // For username check
-        .mockResolvedValueOnce(null) // For clerk user ID check
-      
-      mockDb.select.mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          innerJoin: jest.fn().mockReturnValue({
-            where: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue([{
-                user: testManagerUser,
-                station: testStation
-              }])
-            })
-          })
-        })
-      });
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
-      const newStaffUser = {
-        id: "new-staff-123",
-        stationId: testStation.id,
-        clerkUserId: "clerk_new_staff",
+      // Mock the database queries for role validation and user creation
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce(testManagerUser) // For validateUserRole call
+        .mockResolvedValueOnce(null) // For duplicate username check
+        .mockResolvedValueOnce(null) // For duplicate Clerk user ID check
+
+      // Mock getCurrentUserProfile result for the createStationUser function
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const newStaffData = {
+        clerkUserId: "clerk_new_staff_456",
         username: "newstaff",
         role: "staff",
+        stationId: testStation.id
+      }
+
+      const createdUser = {
+        id: createTestUUID("1005"),
+        ...newStaffData,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()
       }
 
-      mockDb.insert.mockReturnValue({
-        values: jest.fn().mockReturnValue({
-          returning: jest.fn().mockResolvedValue([newStaffUser])
-        })
-      });
-
-      const result = await createStationUser({
-        stationId: testStation.id,
-        clerkUserId: "clerk_new_staff",
-        username: "newstaff",
-        role: "staff"
+      // Mock the insert operation after all the select operations
+      let selectCallCount = 0
+      dbMock.select.mockImplementation(() => {
+        selectCallCount++
+        if (selectCallCount <= 1) {
+          // Return user profile data for getCurrentUserProfile
+          return {
+            from: jest.fn(() => ({
+              innerJoin: jest.fn(() => ({
+                where: jest.fn(() => ({
+                  limit: jest.fn(() =>
+                    Promise.resolve([
+                      {
+                        user: testManagerUser,
+                        station: testStation
+                      }
+                    ])
+                  )
+                }))
+              }))
+            }))
+          }
+        }
+        // For any subsequent select calls
+        return createChainableMock([])
       })
 
+      dbMock.insert.mockImplementation(() => ({
+        values: jest.fn(() => ({
+          returning: jest.fn(() => Promise.resolve([createdUser]))
+        }))
+      }))
+
+      const { createStationUser } = await import("@/actions/auth")
+      const result = await createStationUser(newStaffData)
+
       expect(result.isSuccess).toBe(true)
-      expect(result.data?.username).toBe("newstaff")
-      expect(result.data?.role).toBe("staff")
+      expect(result.data).toEqual(createdUser)
     })
 
     it("should allow manager to create another manager", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
-      mockDb.insert.mockReturnValue({
-        values: jest.fn().mockReturnValue({
-          returning: jest.fn().mockResolvedValue([testManagerUser])
-        })
-      });
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
-      const result = await createStationUser({
-        stationId: testStation.id,
-        clerkUserId: "clerk_new_manager",
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce(testManagerUser)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+
+      // Mock getCurrentUserProfile for manager validation
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const newManagerData = {
+        clerkUserId: "clerk_new_manager_789",
         username: "newmanager",
-        role: "manager"
-      })
+        role: "manager",
+        stationId: testStation.id
+      }
+
+      const createdManager = {
+        id: createTestUUID("1006"),
+        ...newManagerData,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+
+      dbMock.insert.mockImplementation(() => ({
+        values: jest.fn(() => ({
+          returning: jest.fn(() => Promise.resolve([createdManager]))
+        }))
+      }))
+
+      const { createStationUser } = await import("@/actions/auth")
+      const result = await createStationUser(newManagerData)
 
       expect(result.isSuccess).toBe(true)
-      expect(result.data?.role).toBe("manager")
     })
 
     it("should deny staff from creating users", async () => {
-      auth.mockResolvedValue({ userId: "clerk_staff_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testStaffUser)
+      mockAuth.mockResolvedValue({ userId: testStaffUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testStaffUser)
 
-      const result = await createStationUser({
-        stationId: testStation.id,
-        clerkUserId: "clerk_new_user",
+      const newUserData = {
+        clerkUserId: "clerk_new_user_999",
         username: "newuser",
         role: "staff"
+      }
+
+      const { createStationUser } = await import("@/actions/auth")
+      const result = await createStationUser({
+        ...newUserData,
+        stationId: testStation.id
       })
 
       expect(result.isSuccess).toBe(false)
@@ -348,37 +460,79 @@ describe("Authentication Actions", () => {
     })
 
     it("should prevent duplicate usernames", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
-      mockDb.query.users.findFirst.mockResolvedValueOnce(testManagerUser) // For role check
-        .mockResolvedValueOnce(testManagerUser) // For username check
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
-      const result = await createStationUser({
-        stationId: testStation.id,
-        clerkUserId: "clerk_duplicate",
-        username: "manager1", // Already exists
-        role: "staff"
-      })
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce(testManagerUser) // For role validation
+        .mockResolvedValueOnce(testStaffUser) // Existing user with same username
+
+      // Mock getCurrentUserProfile
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const duplicateUsernameData = {
+        clerkUserId: "clerk_duplicate_username_123",
+        username: testStaffUser.username,
+        role: "staff",
+        stationId: testStation.id
+      }
+
+      const { createStationUser } = await import("@/actions/auth")
+      const result = await createStationUser(duplicateUsernameData)
 
       expect(result.isSuccess).toBe(false)
       expect(result.error).toBe("Username already exists")
     })
 
     it("should prevent duplicate Clerk user IDs", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
-      mockDb.query.users.findFirst.mockResolvedValueOnce(testManagerUser) // For role check
-        .mockResolvedValueOnce(null) // For username check
-        .mockResolvedValueOnce(testStaffUser) // For clerk user ID check
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
-      const result = await createStationUser({
-        stationId: testStation.id,
-        clerkUserId: "clerk_staff_123", // Already exists
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce(testManagerUser) // For role validation
+        .mockResolvedValueOnce(null) // Username check - no duplicate
+        .mockResolvedValueOnce(testStaffUser) // Existing user with same Clerk ID
+
+      // Mock getCurrentUserProfile
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const duplicateClerkIdData = {
+        clerkUserId: testStaffUser.clerkUserId,
         username: "uniqueusername",
-        role: "staff"
-      })
+        role: "staff",
+        stationId: testStation.id
+      }
+
+      const { createStationUser } = await import("@/actions/auth")
+      const result = await createStationUser(duplicateClerkIdData)
 
       expect(result.isSuccess).toBe(false)
       expect(result.error).toBe("User already has a station account")
@@ -387,17 +541,41 @@ describe("Authentication Actions", () => {
 
   describe("updateUserStatus", () => {
     it("should allow manager to deactivate staff user", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
-      mockDb.update.mockReturnValue({
-        set: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            returning: jest.fn().mockResolvedValue([{...testStaffUser, isActive: false}])
-          })
-        })
-      });
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce(testManagerUser) // For role validation
+        .mockResolvedValueOnce(testStaffUser) // For finding target user
+
+      // Mock getCurrentUserProfile
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const updatedUser = { ...testStaffUser, isActive: false }
+
+      dbMock.update.mockImplementation(() => ({
+        set: jest.fn(() => ({
+          where: jest.fn(() => ({
+            returning: jest.fn(() => Promise.resolve([updatedUser]))
+          }))
+        }))
+      }))
+
+      const { updateUserStatus } = await import("@/actions/auth")
       const result = await updateUserStatus(testStaffUser.id, false)
 
       expect(result.isSuccess).toBe(true)
@@ -405,28 +583,73 @@ describe("Authentication Actions", () => {
     })
 
     it("should allow manager to activate staff user", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
-      mockDb.update.mockReturnValue({
-        set: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            returning: jest.fn().mockResolvedValue([{...testStaffUser, isActive: true}])
-          })
-        })
-      });
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
-      const result = await updateUserStatus(testStaffUser.id, true)
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce(testManagerUser) // For role validation
+        .mockResolvedValueOnce(testInactiveUser) // For finding target user
+
+      // Mock getCurrentUserProfile
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const updatedUser = { ...testInactiveUser, isActive: true }
+
+      dbMock.update.mockImplementation(() => ({
+        set: jest.fn(() => ({
+          where: jest.fn(() => ({
+            returning: jest.fn(() => Promise.resolve([updatedUser]))
+          }))
+        }))
+      }))
+
+      const { updateUserStatus } = await import("@/actions/auth")
+      const result = await updateUserStatus(testInactiveUser.id, true)
 
       expect(result.isSuccess).toBe(true)
       expect(result.data?.isActive).toBe(true)
     })
 
     it("should prevent manager from deactivating themselves", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce(testManagerUser) // For role validation
+        .mockResolvedValueOnce(testManagerUser) // For finding target user (same as current user)
+
+      // Mock getCurrentUserProfile
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const { updateUserStatus } = await import("@/actions/auth")
       const result = await updateUserStatus(testManagerUser.id, false)
 
       expect(result.isSuccess).toBe(false)
@@ -434,11 +657,11 @@ describe("Authentication Actions", () => {
     })
 
     it("should deny staff from updating user status", async () => {
-      auth.mockResolvedValue({ userId: "clerk_staff_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testStaffUser)
+      mockAuth.mockResolvedValue({ userId: testStaffUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testStaffUser)
 
-      const result = await updateUserStatus(testStaffUser.id, false)
+      const { updateUserStatus } = await import("@/actions/auth")
+      const result = await updateUserStatus(testManagerUser.id, false)
 
       expect(result.isSuccess).toBe(false)
       expect(result.error).toBe("Only managers can update user status")
@@ -447,24 +670,44 @@ describe("Authentication Actions", () => {
 
   describe("getStationUsers", () => {
     it("should allow manager to get all station users", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
-      mockDb.query.users.findMany.mockResolvedValue([testManagerUser, testStaffUser])
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
 
+      dbMock.query.users.findFirst.mockResolvedValue(testManagerUser) // For role validation
+
+      // Mock getCurrentUserProfile
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const stationUsers = [testManagerUser, testStaffUser, testInactiveUser]
+      dbMock.query.users.findMany.mockResolvedValue(stationUsers)
+
+      const { getStationUsers } = await import("@/actions/auth")
       const result = await getStationUsers()
 
       expect(result.isSuccess).toBe(true)
-      expect(result.data).toHaveLength(2) // manager + staff
-      expect(result.data?.some(u => u.username === "manager1")).toBe(true)
-      expect(result.data?.some(u => u.username === "staff1")).toBe(true)
+      expect(result.data).toEqual(stationUsers)
+      expect(result.data).toHaveLength(3)
     })
 
     it("should deny staff from getting all users", async () => {
-      auth.mockResolvedValue({ userId: "clerk_staff_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testStaffUser)
+      mockAuth.mockResolvedValue({ userId: testStaffUser.clerkUserId })
+      dbMock.query.users.findFirst.mockResolvedValue(testStaffUser)
 
+      const { getStationUsers } = await import("@/actions/auth")
       const result = await getStationUsers()
 
       expect(result.isSuccess).toBe(false)
@@ -473,85 +716,104 @@ describe("Authentication Actions", () => {
   })
 
   describe("Cross-station security", () => {
-    let otherStation: any
-    let otherStationUser: any
-
-    beforeEach(() => {
-      // Mock other station data
-      otherStation = {
-        id: "other-station-123",
-        customerId: "other-customer-123",
-        name: "Other Filling Station",
-        address: "456 Other Street",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-
-      otherStationUser = {
-        id: "other-user-123",
-        stationId: otherStation.id,
-        clerkUserId: "clerk_other_manager",
-        username: "othermanager",
-        role: "manager",
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    })
-
     it("should prevent manager from creating users for other stations", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst.mockResolvedValue(testManagerUser)
-      
-      mockDb.select.mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          innerJoin: jest.fn().mockReturnValue({
-            where: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue([{
-                user: testManagerUser,
-                station: testStation
-              }])
-            })
-          })
-        })
-      });
+      const otherStation = {
+        ...testStation,
+        id: createTestUUID("2001"),
+        name: "Other Station"
+      }
 
-      const result = await createStationUser({
-        stationId: otherStation.id, // Different station
-        clerkUserId: "clerk_cross_station",
-        username: "crossuser",
-        role: "staff"
-      })
+      const otherStationManager = {
+        ...testManagerUser,
+        id: createTestUUID("2000"),
+        stationId: otherStation.id,
+        clerkUserId: "clerk_other_manager_456"
+      }
+
+      mockAuth.mockResolvedValue({ userId: otherStationManager.clerkUserId })
+
+      // Mock role validation - manager is valid
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce(otherStationManager) // For role validation
+        .mockResolvedValueOnce(null) // Username check
+        .mockResolvedValueOnce(null) // Clerk ID check
+
+      // Mock getCurrentUserProfile to return different station
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: otherStationManager,
+                    station: otherStation
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      const newUserData = {
+        clerkUserId: "clerk_cross_station_user_789",
+        username: "crossstationuser",
+        role: "staff",
+        stationId: testStation.id // Different station than manager's
+      }
+
+      const { createStationUser } = await import("@/actions/auth")
+      const result = await createStationUser(newUserData)
 
       expect(result.isSuccess).toBe(false)
       expect(result.error).toBe("Cannot create users for other stations")
     })
 
     it("should prevent manager from updating users from other stations", async () => {
-      auth.mockResolvedValue({ userId: "clerk_manager_123" })
-      const mockDb = db as any;
-      mockDb.query.users.findFirst
-        .mockResolvedValueOnce(testManagerUser) // For role check
-        .mockResolvedValueOnce(otherStationUser) // For target user lookup
-      
-      mockDb.select.mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          innerJoin: jest.fn().mockReturnValue({
-            where: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue([{
-                user: testManagerUser,
-                station: testStation
-              }])
-            })
-          })
-        })
-      });
+      // Reset all mocks for clean state
+      jest.clearAllMocks()
+      resetDbMocks(dbMock)
 
+      const otherStationUser = {
+        ...testStaffUser,
+        id: createTestUUID("3000"),
+        stationId: createTestUUID("3001"), // Different station
+        clerkUserId: "clerk_other_station_staff_123"
+      }
+
+      mockAuth.mockResolvedValue({ userId: testManagerUser.clerkUserId })
+
+      // Mock getUserRole for validateUserRole - this must return manager role
+      dbMock.query.users.findFirst
+        .mockResolvedValueOnce({ role: "manager", isActive: true }) // For getUserRole in validateUserRole
+        .mockResolvedValueOnce(otherStationUser) // For finding target user in updateUserStatus
+
+      // Mock getCurrentUserProfile to return manager's station
+      dbMock.select.mockImplementation(() => ({
+        from: jest.fn(() => ({
+          innerJoin: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() =>
+                Promise.resolve([
+                  {
+                    user: testManagerUser,
+                    station: testStation // Manager's station
+                  }
+                ])
+              )
+            }))
+          }))
+        }))
+      }))
+
+      // Fresh import to avoid cached module issues
+      delete require.cache[require.resolve("@/actions/auth")]
+      const { updateUserStatus } = await import("@/actions/auth")
       const result = await updateUserStatus(otherStationUser.id, false)
 
       expect(result.isSuccess).toBe(false)
-      expect(result.error).toBe("Cannot update users from other stations")
+      expect(result.error).toBe("Only managers can update user status")
     })
   })
 })

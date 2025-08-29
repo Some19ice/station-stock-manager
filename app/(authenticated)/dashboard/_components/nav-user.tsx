@@ -107,12 +107,14 @@ export function NavUser({
                   Account
                 </Link>
               </DropdownMenuItem>
+              {/* Billing disabled - Stripe functionality removed
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/billing">
                   <CreditCard />
                   Billing
                 </Link>
               </DropdownMenuItem>
+              */}
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/support">
                   <HelpCircle />
