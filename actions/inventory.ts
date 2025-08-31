@@ -5,6 +5,35 @@ import { db } from "@/db"
 import { products, stockMovements, users, suppliers } from "@/db/schema"
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm"
 import { z } from "zod"
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  createValidationErrorResponse,
+  handleDatabaseOperation,
+  validateInput,
+  ErrorCodes,
+  type ApiResponse
+} from "@/lib/utils"
+
+// Type definitions for related objects
+interface SupplierData {
+  id: string
+  name: string
+  contactPerson: string | null
+  phone: string | null
+}
+
+interface ProductData {
+  id: string
+  name: string
+  stationId: string
+}
+
+interface StockMovementData {
+  quantity: string
+  movementType: string
+  createdAt: Date
+}
 
 // Input validation schemas
 const stockAdjustmentSchema = z.object({
@@ -23,17 +52,28 @@ const deliverySchema = z.object({
 })
 
 const bulkStockUpdateSchema = z.object({
-  updates: z.array(z.object({
-    productId: z.string().min(1, "Product ID is required"),
-    quantity: z.number(),
-    movementType: z.enum(["adjustment", "delivery"]),
-    reason: z.string().min(1, "Reason is required")
-  }))
+  updates: z.array(
+    z.object({
+      productId: z.string().min(1, "Product ID is required"),
+      quantity: z.number(),
+      movementType: z.enum(["adjustment", "delivery"]),
+      reason: z.string().min(1, "Reason is required")
+    })
+  )
 })
 
 const stockAlertThresholdSchema = z.object({
   productId: z.string().min(1, "Product ID is required"),
   newThreshold: z.number().min(0, "Threshold cannot be negative")
+})
+
+const stockMovementHistorySchema = z.object({
+  stationId: z.string().min(1, "Station ID is required"),
+  productId: z.string().optional(),
+  movementType: z.enum(["sale", "adjustment", "delivery"]).optional(),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
+  limit: z.number().min(1).max(1000).optional()
 })
 
 // Helper function to get user role
@@ -49,20 +89,39 @@ async function getUserRole(userId: string): Promise<string | null> {
  */
 export async function recordStockAdjustment(
   input: z.infer<typeof stockAdjustmentSchema>
-) {
-  try {
-    const validatedInput = stockAdjustmentSchema.parse(input)
+): Promise<
+  ApiResponse<{
+    product: typeof products.$inferSelect
+    movement: typeof stockMovements.$inferSelect
+    previousStock: number
+    newStock: number
+    adjustment: number
+  }>
+> {
+  // Validate input
+  const validation = validateInput(stockAdjustmentSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+  const validatedInput = validation.data
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can adjust stock" }
-    }
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
     const result = await db.transaction(async tx => {
       // Get current product stock
       const product = await tx.query.products.findFirst({
@@ -93,14 +152,17 @@ export async function recordStockAdjustment(
         .returning()
 
       // Record stock movement
-      const [movement] = await tx.insert(stockMovements).values({
-        productId: validatedInput.productId,
-        movementType: "adjustment",
-        quantity: adjustment.toString(),
-        previousStock: currentStock.toString(),
-        newStock: newStock.toString(),
-        reference: `${validatedInput.reason}${validatedInput.reference ? ` - ${validatedInput.reference}` : ""}`
-      }).returning()
+      const [movement] = await tx
+        .insert(stockMovements)
+        .values({
+          productId: validatedInput.productId,
+          movementType: "adjustment",
+          quantity: adjustment.toString(),
+          previousStock: currentStock.toString(),
+          newStock: newStock.toString(),
+          reference: `${validatedInput.reason}${validatedInput.reference ? ` - ${validatedInput.reference}` : ""}`
+        })
+        .returning()
 
       return {
         product: updatedProduct,
@@ -111,36 +173,49 @@ export async function recordStockAdjustment(
       }
     })
 
-    return { isSuccess: true, data: result }
-  } catch (error) {
-    console.error("Error recording stock adjustment:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return {
-      isSuccess: false,
-      error: error instanceof Error ? error.message : "Failed to adjust stock"
-    }
-  }
+    return result
+  }, "Record stock adjustment")
 }
 
 /**
  * Record a delivery (Manager only)
  */
-export async function recordDelivery(input: z.infer<typeof deliverySchema>) {
-  try {
-    const validatedInput = deliverySchema.parse(input)
+export async function recordDelivery(
+  input: z.infer<typeof deliverySchema>
+): Promise<
+  ApiResponse<{
+    product: typeof products.$inferSelect
+    movement: typeof stockMovements.$inferSelect
+    previousStock: number
+    newStock: number
+    deliveryQuantity: number
+    priceUpdated: boolean
+  }>
+> {
+  // Validate input
+  const validation = validateInput(deliverySchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+  const validatedInput = validation.data
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can record deliveries" }
-    }
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
     const result = await db.transaction(async tx => {
       // Get current product stock
       const product = await tx.query.products.findFirst({
@@ -156,7 +231,11 @@ export async function recordDelivery(input: z.infer<typeof deliverySchema>) {
       const newStock = currentStock + deliveryQuantity
 
       // Update product stock and optionally unit price if unit cost provided
-      const updateData: any = {
+      const updateData: {
+        currentStock: string
+        updatedAt: Date
+        unitPrice?: string
+      } = {
         currentStock: newStock.toString(),
         updatedAt: new Date()
       }
@@ -171,7 +250,7 @@ export async function recordDelivery(input: z.infer<typeof deliverySchema>) {
         .where(eq(products.id, validatedInput.productId))
         .returning()
 
-      // Build reference string
+      // Build reference string - moved supplier query inside transaction
       let reference = "Delivery"
       if (validatedInput.deliveryNote) {
         reference += ` - ${validatedInput.deliveryNote}`
@@ -186,14 +265,17 @@ export async function recordDelivery(input: z.infer<typeof deliverySchema>) {
       }
 
       // Record stock movement
-      const [movement] = await tx.insert(stockMovements).values({
-        productId: validatedInput.productId,
-        movementType: "delivery",
-        quantity: deliveryQuantity.toString(),
-        previousStock: currentStock.toString(),
-        newStock: newStock.toString(),
-        reference
-      }).returning()
+      const [movement] = await tx
+        .insert(stockMovements)
+        .values({
+          productId: validatedInput.productId,
+          movementType: "delivery",
+          quantity: deliveryQuantity.toString(),
+          previousStock: currentStock.toString(),
+          newStock: newStock.toString(),
+          reference
+        })
+        .returning()
 
       return {
         product: updatedProduct,
@@ -205,57 +287,66 @@ export async function recordDelivery(input: z.infer<typeof deliverySchema>) {
       }
     })
 
-    return { isSuccess: true, data: result }
-  } catch (error) {
-    console.error("Error recording delivery:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return {
-      isSuccess: false,
-      error: error instanceof Error ? error.message : "Failed to record delivery"
-    }
-  }
+    return result
+  }, "Record delivery")
 }
 
 /**
  * Get comprehensive stock movement history with filters
  */
 export async function getStockMovementHistory(
-  stationId: string,
-  filters?: {
-    productId?: string
-    movementType?: "sale" | "adjustment" | "delivery"
-    startDate?: Date
-    endDate?: Date
-    limit?: number
+  input: z.infer<typeof stockMovementHistorySchema>
+): Promise<
+  ApiResponse<
+    Array<
+      typeof stockMovements.$inferSelect & {
+        product: typeof products.$inferSelect | null
+      }
+    >
+  >
+> {
+  // Validate input
+  const validation = validateInput(stockMovementHistorySchema, input)
+  if (!validation.isValid) {
+    return validation.error
   }
-) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
 
-    const limit = filters?.limit || 100
+  const {
+    stationId,
+    productId,
+    movementType,
+    startDate,
+    endDate,
+    limit = 100
+  } = validation.data
 
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
+
+  return handleDatabaseOperation(async () => {
     // Build where conditions
-    let whereConditions = []
+    const whereConditions = []
 
-    if (filters?.productId) {
-      whereConditions.push(eq(stockMovements.productId, filters.productId))
+    if (productId) {
+      whereConditions.push(eq(stockMovements.productId, productId))
     }
 
-    if (filters?.movementType) {
-      whereConditions.push(eq(stockMovements.movementType, filters.movementType))
+    if (movementType) {
+      whereConditions.push(eq(stockMovements.movementType, movementType))
     }
 
-    if (filters?.startDate) {
-      whereConditions.push(gte(stockMovements.createdAt, filters.startDate))
+    if (startDate) {
+      whereConditions.push(gte(stockMovements.createdAt, startDate))
     }
 
-    if (filters?.endDate) {
-      whereConditions.push(lte(stockMovements.createdAt, filters.endDate))
+    if (endDate) {
+      whereConditions.push(lte(stockMovements.createdAt, endDate))
     }
 
     const movements = await db.query.stockMovements.findMany({
@@ -272,27 +363,65 @@ export async function getStockMovementHistory(
     // Filter out movements for products not in this station
     const filteredMovements = movements.filter(movement => movement.product)
 
-    return { isSuccess: true, data: filteredMovements }
-  } catch (error) {
-    console.error("Error fetching stock movement history:", error)
-    return { isSuccess: false, error: "Failed to fetch stock movement history" }
-  }
+    return filteredMovements
+  }, "Fetch stock movement history")
 }
 
 /**
  * Get real-time inventory status with low stock alerts
  */
-export async function getInventoryStatus(stationId: string) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+export async function getInventoryStatus(stationId: string): Promise<
+  ApiResponse<{
+    items: Array<{
+      id: string
+      name: string
+      brand: string | null
+      type: "pms" | "lubricant"
+      currentStock: number
+      minThreshold: number
+      unitPrice: number
+      value: number
+      unit: string
+      isLowStock: boolean
+      isOutOfStock: boolean
+      supplier: { id: string; name: string } | null
+      stockStatus: "out_of_stock" | "low_stock" | "normal"
+    }>
+    summary: {
+      totalProducts: number
+      totalValue: number
+      lowStockCount: number
+      outOfStockCount: number
+      normalStockCount: number
     }
+  }>
+> {
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  if (!stationId) {
+    return createErrorResponse("Station ID is required", ErrorCodes.BAD_REQUEST)
+  }
+
+  return handleDatabaseOperation(async () => {
     const productList = await db.query.products.findMany({
-      where: and(eq(products.stationId, stationId), eq(products.isActive, true)),
+      where: and(
+        eq(products.stationId, stationId),
+        eq(products.isActive, true)
+      ),
       with: {
-        supplier: true
+        supplier: {
+          columns: {
+            id: true,
+            name: true
+          }
+        }
       },
       orderBy: [products.name]
     })
@@ -327,31 +456,31 @@ export async function getInventoryStatus(stationId: string) {
         unit: product.unit,
         isLowStock,
         isOutOfStock,
-        supplier: product.supplier ? {
-          id: product.supplier.id,
-          name: product.supplier.name
-        } : null,
-        stockStatus: isOutOfStock ? "out_of_stock" : isLowStock ? "low_stock" : "normal"
+        supplier: product.supplier
+          ? {
+              id: (product.supplier as SupplierData).id,
+              name: (product.supplier as SupplierData).name
+            }
+          : null,
+        stockStatus: (isOutOfStock
+          ? "out_of_stock"
+          : isLowStock
+            ? "low_stock"
+            : "normal") as "out_of_stock" | "low_stock" | "normal"
       }
     })
 
     return {
-      isSuccess: true,
-      data: {
-        items: inventoryItems,
-        summary: {
-          totalProducts: productList.length,
-          totalValue,
-          lowStockCount,
-          outOfStockCount,
-          normalStockCount: productList.length - lowStockCount
-        }
+      items: inventoryItems,
+      summary: {
+        totalProducts: productList.length,
+        totalValue,
+        lowStockCount,
+        outOfStockCount,
+        normalStockCount: productList.length - lowStockCount
       }
     }
-  } catch (error) {
-    console.error("Error fetching inventory status:", error)
-    return { isSuccess: false, error: "Failed to fetch inventory status" }
-  }
+  }, "Fetch inventory status")
 }
 
 /**
@@ -359,20 +488,31 @@ export async function getInventoryStatus(stationId: string) {
  */
 export async function updateStockAlertThreshold(
   input: z.infer<typeof stockAlertThresholdSchema>
-) {
-  try {
-    const validatedInput = stockAlertThresholdSchema.parse(input)
+): Promise<ApiResponse<typeof products.$inferSelect>> {
+  // Validate input
+  const validation = validateInput(stockAlertThresholdSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+  const validatedInput = validation.data
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can update thresholds" }
-    }
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
     const [product] = await db
       .update(products)
       .set({
@@ -383,17 +523,11 @@ export async function updateStockAlertThreshold(
       .returning()
 
     if (!product) {
-      return { isSuccess: false, error: "Product not found" }
+      throw new Error("Product not found")
     }
 
-    return { isSuccess: true, data: product }
-  } catch (error) {
-    console.error("Error updating stock threshold:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return { isSuccess: false, error: "Failed to update threshold" }
-  }
+    return product
+  }, "Update stock alert threshold")
 }
 
 /**
@@ -401,20 +535,42 @@ export async function updateStockAlertThreshold(
  */
 export async function bulkStockUpdate(
   input: z.infer<typeof bulkStockUpdateSchema>
-) {
-  try {
-    const validatedInput = bulkStockUpdateSchema.parse(input)
+): Promise<
+  ApiResponse<{
+    updates: Array<{
+      productId: string
+      productName: string
+      previousStock: number
+      newStock: number
+      quantity: number
+    }>
+    count: number
+  }>
+> {
+  // Validate input
+  const validation = validateInput(bulkStockUpdateSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+  const validatedInput = validation.data
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can perform bulk updates" }
-    }
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
     const results = await db.transaction(async tx => {
       const updateResults = []
 
@@ -432,7 +588,9 @@ export async function bulkStockUpdate(
         const newStock = currentStock + update.quantity
 
         if (newStock < 0) {
-          throw new Error(`Invalid stock update for ${product.name}: would result in negative stock`)
+          throw new Error(
+            `Invalid stock update for ${product.name}: would result in negative stock`
+          )
         }
 
         // Update product stock
@@ -468,22 +626,10 @@ export async function bulkStockUpdate(
     })
 
     return {
-      isSuccess: true,
-      data: {
-        updates: results,
-        count: results.length
-      }
+      updates: results,
+      count: results.length
     }
-  } catch (error) {
-    console.error("Error performing bulk stock update:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return {
-      isSuccess: false,
-      error: error instanceof Error ? error.message : "Failed to perform bulk update"
-    }
-  }
+  }, "Bulk stock update")
 }
 
 /**
@@ -492,21 +638,42 @@ export async function bulkStockUpdate(
 export async function getInventoryAnalytics(
   stationId: string,
   days: number = 30
-) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+): Promise<
+  ApiResponse<{
+    totalMovements: number
+    salesCount: number
+    deliveriesCount: number
+    adjustmentsCount: number
+    productActivity: Record<
+      string,
+      { name: string; movements: number; totalQuantity: number }
+    >
+    dailyTrends: Record<
+      string,
+      { sales: number; deliveries: number; adjustments: number }
+    >
+  }>
+> {
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  if (!stationId) {
+    return createErrorResponse("Station ID is required", ErrorCodes.BAD_REQUEST)
+  }
+
+  return handleDatabaseOperation(async () => {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
     // Get stock movements for the period
     const movements = await db.query.stockMovements.findMany({
-      where: and(
-        gte(stockMovements.createdAt, startDate)
-      ),
+      where: gte(stockMovements.createdAt, startDate),
       with: {
         product: {
           where: eq(products.stationId, stationId)
@@ -520,62 +687,120 @@ export async function getInventoryAnalytics(
     // Calculate analytics
     const analytics = {
       totalMovements: stationMovements.length,
-      salesCount: stationMovements.filter(m => m.movementType === "sale").length,
-      deliveriesCount: stationMovements.filter(m => m.movementType === "delivery").length,
-      adjustmentsCount: stationMovements.filter(m => m.movementType === "adjustment").length,
-      
-      // Most active products
-      productActivity: {} as Record<string, { name: string; movements: number; totalQuantity: number }>,
-      
-      // Daily movement trends
-      dailyTrends: {} as Record<string, { sales: number; deliveries: number; adjustments: number }>
+      salesCount: stationMovements.filter(m => m.movementType === "sale")
+        .length,
+      deliveriesCount: stationMovements.filter(
+        m => m.movementType === "delivery"
+      ).length,
+      adjustmentsCount: stationMovements.filter(
+        m => m.movementType === "adjustment"
+      ).length,
+      productActivity: {} as Record<
+        string,
+        { name: string; movements: number; totalQuantity: number }
+      >,
+      dailyTrends: {} as Record<
+        string,
+        { sales: number; deliveries: number; adjustments: number }
+      >
     }
 
     // Calculate product activity
     stationMovements.forEach(movement => {
       if (movement.product) {
-        const productId = movement.product.id
+        const product = movement.product as ProductData
+        const productId = product.id
         if (!analytics.productActivity[productId]) {
           analytics.productActivity[productId] = {
-            name: movement.product.name,
+            name: product.name,
             movements: 0,
             totalQuantity: 0
           }
         }
         analytics.productActivity[productId].movements++
-        analytics.productActivity[productId].totalQuantity += Math.abs(parseFloat(movement.quantity))
+        analytics.productActivity[productId].totalQuantity += Math.abs(
+          parseFloat(movement.quantity)
+        )
       }
     })
 
     // Calculate daily trends
     stationMovements.forEach(movement => {
-      const date = movement.createdAt.toISOString().split('T')[0]
+      const date = movement.createdAt.toISOString().split("T")[0]
       if (!analytics.dailyTrends[date]) {
-        analytics.dailyTrends[date] = { sales: 0, deliveries: 0, adjustments: 0 }
+        analytics.dailyTrends[date] = {
+          sales: 0,
+          deliveries: 0,
+          adjustments: 0
+        }
       }
-      analytics.dailyTrends[date][movement.movementType]++
+      const type = movement.movementType
+      if (type === "sale") {
+        analytics.dailyTrends[date].sales++
+      } else if (type === "delivery") {
+        analytics.dailyTrends[date].deliveries++
+      } else {
+        analytics.dailyTrends[date].adjustments++
+      }
     })
 
-    return { isSuccess: true, data: analytics }
-  } catch (error) {
-    console.error("Error fetching inventory analytics:", error)
-    return { isSuccess: false, error: "Failed to fetch inventory analytics" }
-  }
+    return analytics
+  }, "Fetch inventory analytics")
 }
 
 /**
  * Generate reorder recommendations
  */
-export async function generateReorderRecommendations(stationId: string) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+export async function generateReorderRecommendations(
+  stationId: string
+): Promise<
+  ApiResponse<{
+    recommendations: Array<{
+      productId: string
+      name: string
+      brand: string | null
+      type: "pms" | "lubricant"
+      currentStock: number
+      minThreshold: number
+      recommendedQuantity: number
+      avgDailySales: number
+      daysUntilStockout: number | null
+      supplier: {
+        id: string
+        name: string
+        contactPerson: string | null
+        phone: string | null
+      } | null
+      priority: "urgent" | "high" | "medium"
+    }>
+    summary: {
+      totalProducts: number
+      urgentCount: number
+      highPriorityCount: number
+      mediumPriorityCount: number
     }
+  }>
+> {
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  if (!stationId) {
+    return createErrorResponse("Station ID is required", ErrorCodes.BAD_REQUEST)
+  }
+
+  return handleDatabaseOperation(async () => {
     // Get products that need reordering
     const productList = await db.query.products.findMany({
-      where: and(eq(products.stationId, stationId), eq(products.isActive, true)),
+      where: and(
+        eq(products.stationId, stationId),
+        eq(products.isActive, true)
+      ),
       with: {
         supplier: true,
         stockMovements: {
@@ -595,14 +820,24 @@ export async function generateReorderRecommendations(stationId: string) {
       .map(product => {
         const currentStock = parseFloat(product.currentStock)
         const minThreshold = parseFloat(product.minThreshold)
-        
+
         // Calculate average daily sales from recent movements
-        const salesMovements = product.stockMovements || []
-        const totalSold = salesMovements.reduce((sum, movement) => 
-          sum + Math.abs(parseFloat(movement.quantity)), 0
+        const salesMovements =
+          (
+            product as typeof products.$inferSelect & {
+              stockMovements?: StockMovementData[]
+            }
+          ).stockMovements || []
+        const totalSold = salesMovements.reduce(
+          (sum: number, movement: StockMovementData) =>
+            sum + Math.abs(parseFloat(movement.quantity)),
+          0
         )
-        const avgDailySales = salesMovements.length > 0 ? totalSold / Math.min(salesMovements.length, 30) : 0
-        
+        const avgDailySales =
+          salesMovements.length > 0
+            ? totalSold / Math.min(salesMovements.length, 30)
+            : 0
+
         // Calculate recommended order quantity (enough for 2 weeks + buffer)
         const recommendedQuantity = Math.max(
           minThreshold * 2, // At least double the minimum threshold
@@ -618,14 +853,21 @@ export async function generateReorderRecommendations(stationId: string) {
           minThreshold,
           recommendedQuantity: Math.ceil(recommendedQuantity),
           avgDailySales: Math.round(avgDailySales * 100) / 100,
-          daysUntilStockout: avgDailySales > 0 ? Math.floor(currentStock / avgDailySales) : null,
-          supplier: product.supplier ? {
-            id: product.supplier.id,
-            name: product.supplier.name,
-            contactPerson: product.supplier.contactPerson,
-            phone: product.supplier.phone
-          } : null,
-          priority: currentStock === 0 ? "urgent" : currentStock <= minThreshold * 0.5 ? "high" : "medium"
+          daysUntilStockout:
+            avgDailySales > 0 ? Math.floor(currentStock / avgDailySales) : null,
+          supplier: product.supplier
+            ? {
+                id: (product.supplier as SupplierData).id,
+                name: (product.supplier as SupplierData).name,
+                contactPerson: (product.supplier as SupplierData).contactPerson,
+                phone: (product.supplier as SupplierData).phone
+              }
+            : null,
+          priority: (currentStock === 0
+            ? "urgent"
+            : currentStock <= minThreshold * 0.5
+              ? "high"
+              : "medium") as "urgent" | "high" | "medium"
         }
       })
       .sort((a, b) => {
@@ -638,19 +880,17 @@ export async function generateReorderRecommendations(stationId: string) {
       })
 
     return {
-      isSuccess: true,
-      data: {
-        recommendations,
-        summary: {
-          totalProducts: recommendations.length,
-          urgentCount: recommendations.filter(r => r.priority === "urgent").length,
-          highPriorityCount: recommendations.filter(r => r.priority === "high").length,
-          mediumPriorityCount: recommendations.filter(r => r.priority === "medium").length
-        }
+      recommendations,
+      summary: {
+        totalProducts: recommendations.length,
+        urgentCount: recommendations.filter(r => r.priority === "urgent")
+          .length,
+        highPriorityCount: recommendations.filter(r => r.priority === "high")
+          .length,
+        mediumPriorityCount: recommendations.filter(
+          r => r.priority === "medium"
+        ).length
       }
     }
-  } catch (error) {
-    console.error("Error generating reorder recommendations:", error)
-    return { isSuccess: false, error: "Failed to generate recommendations" }
-  }
+  }, "Generate reorder recommendations")
 }

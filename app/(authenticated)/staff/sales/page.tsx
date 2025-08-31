@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = "force-dynamic"
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -44,7 +46,7 @@ export default function StaffSalesPage() {
       </div>
 
       <Tabs defaultValue="record" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="record" className="flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
             Record Sales
@@ -56,14 +58,14 @@ export default function StaffSalesPage() {
         </TabsList>
 
         <TabsContent value="record" className="space-y-6">
-          <SalesInterface 
-            stationId={station.id} 
+          <SalesInterface
+            stationId={station.id}
             onSaleComplete={handleSaleComplete}
           />
         </TabsContent>
 
         <TabsContent value="summary" className="space-y-6">
-          <SalesSummary 
+          <SalesSummary
             stationId={station.id}
             userId={user.id}
             refreshTrigger={refreshTrigger}

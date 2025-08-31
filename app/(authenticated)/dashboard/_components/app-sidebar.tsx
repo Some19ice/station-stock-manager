@@ -1,7 +1,17 @@
 "use client"
 
-import { Link, Settings2, User, Users } from "lucide-react"
+import { 
+  BarChart3, 
+  Package, 
+  Users, 
+  Settings, 
+  ShoppingCart,
+  FileText,
+  AlertTriangle,
+  Home
+} from "lucide-react"
 import * as React from "react"
+import { useInventoryModalTrigger } from "@/hooks/use-inventory-modal"
 
 import {
   Sidebar,
@@ -12,7 +22,6 @@ import {
 } from "@/components/ui/sidebar"
 import { NavMain } from "../_components/nav-main"
 import { NavUser } from "../_components/nav-user"
-import { TeamSwitcher } from "../_components/team-switcher"
 
 export function AppSidebar({
   userData,
@@ -25,74 +34,128 @@ export function AppSidebar({
     membership: string
   }
 }) {
+  const { openAddProductModal } = useInventoryModalTrigger()
+
   const data = {
     user: userData,
-    teams: [
-      {
-        name: "Personal",
-        logo: User,
-        plan: "Account"
-      },
-      {
-        name: "Team 1",
-        logo: Users,
-        plan: "Team"
-      },
-      {
-        name: "Team 2",
-        logo: Users,
-        plan: "Team"
-      },
-      {
-        name: "Team 3",
-        logo: Users,
-        plan: "Team"
-      }
-    ],
     navMain: [
       {
-        title: "Nav Item 1",
-        url: "#",
-        icon: Link,
+        title: "Dashboard",
+        url: "/dashboard",
+        icon: Home,
+        items: []
+      },
+      {
+        title: "Inventory",
+        url: "/dashboard/inventory",
+        icon: Package,
         items: [
           {
-            title: "Sub Item 1",
-            url: "/dashboard/nav-item-1"
+            title: "View Products",
+            url: "/dashboard/inventory"
           },
           {
-            title: "Sub Item 2",
-            url: "/dashboard/nav-item-2"
+            title: "Add Product",
+            url: "/dashboard/inventory",
+            onClick: openAddProductModal
+          },
+          {
+            title: "Low Stock Alerts",
+            url: "/dashboard/inventory?filter=low-stock"
           }
         ]
       },
       {
-        title: "Nav Item 2",
-        url: "#",
-        icon: Link,
+        title: "Sales & Transactions",
+        url: "/dashboard/sales",
+        icon: ShoppingCart,
         items: [
           {
-            title: "Sub Item 1",
-            url: "/dashboard/nav-item-1"
+            title: "Record Sale",
+            url: "/staff/sales"
+          },
+          {
+            title: "Transaction History",
+            url: "/dashboard/sales/history"
+          },
+          {
+            title: "Daily Summary",
+            url: "/staff/summary"
+          }
+        ]
+      },
+      {
+        title: "Reports & Analytics",
+        url: "/dashboard/reports",
+        icon: BarChart3,
+        items: [
+          {
+            title: "Sales Reports",
+            url: "/dashboard/reports"
+          },
+          {
+            title: "Inventory Reports",
+            url: "/dashboard/reports/inventory"
+          },
+          {
+            title: "Staff Performance",
+            url: "/dashboard/reports/staff"
+          }
+        ]
+      },
+      {
+        title: "Staff Management",
+        url: "/dashboard/users",
+        icon: Users,
+        items: [
+          {
+            title: "View Staff",
+            url: "/dashboard/users"
+          },
+          {
+            title: "Add Staff Member",
+            url: "/dashboard/users/add"
+          },
+          {
+            title: "Roles & Permissions",
+            url: "/dashboard/users/roles"
           }
         ]
       },
       {
         title: "Settings",
-        url: "#",
-        icon: Settings2,
+        url: "/dashboard/settings",
+        icon: Settings,
         items: [
           {
-            title: "General",
+            title: "Station Settings",
             url: "/dashboard/settings"
+          },
+          {
+            title: "Product Categories",
+            url: "/dashboard/settings/categories"
+          },
+          {
+            title: "Suppliers",
+            url: "/dashboard/settings/suppliers"
           }
         ]
       }
     ]
   }
+  
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <div className="flex items-center gap-2 px-4 py-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+            <Package className="h-4 w-4 text-white" />
+          </div>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold">Station Stock Manager</span>
+            <span className="truncate text-xs text-muted-foreground">Manager Portal</span>
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

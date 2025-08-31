@@ -1,8 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Clock, ShoppingCart, User } from "lucide-react"
-import Link from "next/link"
 
 interface RecentTransaction {
   id: string
@@ -16,135 +12,91 @@ interface RecentActivityProps {
   transactions: RecentTransaction[]
 }
 
-export function RecentActivity({ transactions }: RecentActivityProps) {
+export const RecentActivity: React.FC<RecentActivityProps> = ({
+  transactions
+}) => {
   const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(parseFloat(amount))
   }
 
-  const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat('en-NG', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    }).format(new Date(date))
-  }
-
-  const formatDate = (date: Date) => {
+  const formatTimeAgo = (date: Date) => {
     const now = new Date()
     const transactionDate = new Date(date)
-    const diffInHours = Math.abs(now.getTime() - transactionDate.getTime()) / (1000 * 60 * 60)
-    
-    if (diffInHours < 24) {
-      return formatTime(transactionDate)
+    const diffInMinutes = Math.floor(
+      (now.getTime() - transactionDate.getTime()) / (1000 * 60)
+    )
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`
+    } else if (diffInMinutes < 1440) {
+      // 24 hours
+      const hours = Math.floor(diffInMinutes / 60)
+      return `${hours}h ago`
     } else {
-      return new Intl.DateTimeFormat('en-NG', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }).format(transactionDate)
+      const days = Math.floor(diffInMinutes / 1440)
+      return `${days}d ago`
     }
   }
 
   if (transactions.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-          <CardDescription>
-            Latest transactions and activities
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-sm text-muted-foreground">
-              No recent transactions
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Transactions will appear here as they are recorded
-            </p>
+      <div className="mb-8">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+          Recent Activity
+        </h3>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
+          <div className="text-center">
+            <ShoppingCart className="mx-auto mb-3 h-12 w-12 text-gray-400" />
+            <p className="text-sm text-gray-600">No recent activity</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Recent Activity
-        </CardTitle>
-        <CardDescription>
-          Latest transactions and activities
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {transactions.map((transaction) => (
-            <div
-              key={transaction.id}
-              className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-            >
+    <div className="mb-8">
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        Recent Activity
+      </h3>
+      <div className="space-y-3">
+        {transactions.slice(0, 10).map(transaction => (
+          <div
+            key={transaction.id}
+            className="rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-sm"
+          >
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                    <ShoppingCart className="h-4 w-4 text-primary" />
-                  </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                  <ShoppingCart className="h-5 w-5 text-blue-600" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm">
-                      {formatCurrency(transaction.totalAmount)}
-                    </p>
-                    <Badge variant="secondary" className="text-xs">
-                      {transaction.itemCount} item{transaction.itemCount !== 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                    <User className="h-3 w-3" />
-                    <span>{transaction.userName}</span>
-                    <span>•</span>
-                    <span>{formatDate(transaction.transactionDate)}</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {transaction.userName} recorded a sale
+                  </p>
+                  <div className="mt-1 flex items-center gap-4 text-xs text-gray-600">
+                    <span>{formatCurrency(transaction.totalAmount)}</span>
+                    <span>
+                      {transaction.itemCount} item
+                      {transaction.itemCount !== 1 ? "s" : ""}
+                    </span>
+                    <span>{formatTimeAgo(transaction.transactionDate)}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex-shrink-0">
-                <Button
-                  asChild
-                  size="sm"
-                  variant="ghost"
-                >
-                  <Link href={`/dashboard/reports?transaction=${transaction.id}`}>
-                    View
-                  </Link>
-                </Button>
+              <div className="flex items-center text-xs text-gray-500">
+                <Clock className="mr-1 h-3 w-3" />
+                <span>{formatTimeAgo(transaction.transactionDate)}</span>
               </div>
             </div>
-          ))}
-        </div>
-        
-        {transactions.length >= 10 && (
-          <div className="mt-4 pt-4 border-t">
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/reports">
-                View All Transactions
-              </Link>
-            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        ))}
+      </div>
+    </div>
   )
 }

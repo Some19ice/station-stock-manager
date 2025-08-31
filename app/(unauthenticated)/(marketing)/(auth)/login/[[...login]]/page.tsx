@@ -3,7 +3,7 @@
 import { SignIn } from "@clerk/nextjs"
 import { dark } from "@clerk/themes"
 import { motion } from "framer-motion"
-import { ArrowRight, Sparkles, Zap, Shield, Rocket } from "lucide-react"
+import { ArrowRight, BarChart3, Users, Package, TrendingUp } from "lucide-react"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 
@@ -13,7 +13,7 @@ export default function LoginPage() {
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
-        {/* Left side - Enhanced benefits */}
+        {/* Left side - Station management benefits */}
         <motion.div
           className="hidden space-y-8 lg:block"
           initial={{ opacity: 0, x: -20 }}
@@ -27,7 +27,7 @@ export default function LoginPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-medium">
+              <span className="bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs font-medium">
                 Welcome back!
               </span>
             </motion.div>
@@ -37,9 +37,9 @@ export default function LoginPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Continue building
+              Manage your station
               <motion.span
-                className="from-brand-primary to-brand-secondary mt-2 block bg-gradient-to-r bg-clip-text text-transparent"
+                className="mt-2 block bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent"
                 animate={{
                   backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
                 }}
@@ -52,7 +52,7 @@ export default function LoginPage() {
                   backgroundSize: "200% 200%"
                 }}
               >
-                amazing products
+                efficiently
               </motion.span>
             </motion.h1>
             <motion.p
@@ -61,7 +61,7 @@ export default function LoginPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Pick up right where you left off with your projects.
+              Continue managing your fuel inventory and sales operations.
             </motion.p>
           </div>
 
@@ -69,32 +69,32 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-4">
             {[
               {
-                icon: Zap,
-                title: "Lightning Fast",
-                desc: "Built for speed",
-                color: "text-yellow-500",
-                bgColor: "bg-yellow-500/10"
-              },
-              {
-                icon: Shield,
-                title: "Secure Auth",
-                desc: "Enterprise ready",
+                icon: BarChart3,
+                title: "Real-time Analytics",
+                desc: "Track sales & inventory",
                 color: "text-blue-500",
                 bgColor: "bg-blue-500/10"
               },
               {
-                icon: Sparkles,
-                title: "Modern Stack",
-                desc: "Latest tech",
+                icon: Package,
+                title: "Inventory Control",
+                desc: "Monitor fuel levels",
+                color: "text-green-500",
+                bgColor: "bg-green-500/10"
+              },
+              {
+                icon: Users,
+                title: "Staff Management",
+                desc: "Role-based access",
                 color: "text-purple-500",
                 bgColor: "bg-purple-500/10"
               },
               {
-                icon: Rocket,
-                title: "Ship Faster",
-                desc: "Deploy today",
-                color: "text-green-500",
-                bgColor: "bg-green-500/10"
+                icon: TrendingUp,
+                title: "Sales Tracking",
+                desc: "Daily reports",
+                color: "text-orange-500",
+                bgColor: "bg-orange-500/10"
               }
             ].map((feature, i) => (
               <motion.div
@@ -108,14 +108,6 @@ export default function LoginPage() {
                   boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
                 }}
               >
-                <motion.div
-                  className="absolute inset-0 -z-10 opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{
-                    background: `radial-gradient(circle at 50% 0%, ${
-                      feature.color.split("-")[1]
-                    }/10, transparent 70%)`
-                  }}
-                />
                 <motion.div
                   className={`${feature.bgColor} mb-2 inline-flex rounded-lg p-2`}
                   initial={{ rotate: -10 }}
@@ -136,38 +128,6 @@ export default function LoginPage() {
             ))}
           </div>
 
-          {/* Stats */}
-          <motion.div
-            className="bg-muted/30 space-y-4 rounded-xl border p-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            whileHover={{
-              boxShadow: "0 8px 30px -10px rgba(0,0,0,0.2)"
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">2,000+</p>
-                <p className="text-muted-foreground text-sm">
-                  Active developers
-                </p>
-              </div>
-              <div className="border-muted h-12 w-px border-l" />
-              <div>
-                <p className="text-2xl font-bold">50k+</p>
-                <p className="text-muted-foreground text-sm">
-                  Projects created
-                </p>
-              </div>
-              <div className="border-muted h-12 w-px border-l" />
-              <div>
-                <p className="text-2xl font-bold">4.9/5</p>
-                <p className="text-muted-foreground text-sm">Average rating</p>
-              </div>
-            </div>
-          </motion.div>
-
           {/* Trust badge */}
           <motion.div
             className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20"
@@ -187,12 +147,12 @@ export default function LoginPage() {
                 repeatType: "reverse"
               }}
             >
-              <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
             </motion.div>
             <div className="flex-1">
-              <p className="text-sm font-medium">Secure & Trusted</p>
+              <p className="text-sm font-medium">Trusted by Station Owners</p>
               <p className="text-muted-foreground text-xs">
-                SOC2 compliant infrastructure
+                Secure inventory management system
               </p>
             </div>
           </motion.div>
@@ -212,7 +172,7 @@ export default function LoginPage() {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <h2 className="mb-2 text-2xl font-semibold">
-              Sign in to your account
+              Sign in to Station Stock Manager
             </h2>
             <p className="text-muted-foreground text-sm">
               Don't have an account?{" "}
@@ -222,9 +182,9 @@ export default function LoginPage() {
               >
                 <Link
                   href="/signup"
-                  className="text-primary font-medium transition-colors hover:underline"
+                  className="text-blue-600 font-medium transition-colors hover:underline"
                 >
-                  Start building for free
+                  Contact your manager
                   <ArrowRight className="ml-1 inline h-3 w-3" />
                 </Link>
               </motion.span>
@@ -237,17 +197,6 @@ export default function LoginPage() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="relative"
           >
-            <motion.div
-              className="from-brand-primary/20 to-brand-secondary/20 absolute -inset-1 rounded-lg bg-gradient-to-r opacity-50 blur-xl"
-              animate={{
-                opacity: [0.3, 0.6, 0.3]
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
             <SignIn
               forceRedirectUrl="/dashboard"
               signUpUrl="/signup"

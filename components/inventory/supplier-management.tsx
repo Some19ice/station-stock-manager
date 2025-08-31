@@ -1,20 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { 
+import {
   getSuppliersWithProductCounts,
   createSupplier,
   updateSupplier,
   deleteSupplier
 } from "@/actions/suppliers"
-import { 
+import {
   Plus,
   Edit,
   Trash2,
@@ -29,11 +34,11 @@ import { toast } from "sonner"
 interface Supplier {
   id: string
   name: string
-  contactPerson?: string
-  phone?: string
-  email?: string
-  address?: string
-  notes?: string
+  contactPerson?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  notes?: string | null
   productCount: number
   isActive: boolean
   createdAt: Date
@@ -68,9 +73,9 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
   })
   const [submitting, setSubmitting] = useState(false)
 
-  const fetchSuppliers = async () => {
+  const fetchSuppliers = useCallback(async () => {
     try {
-      const result = await getSuppliersWithProductCounts(stationId)
+      const result = await getSuppliersWithProductCounts({ stationId })
       if (result.isSuccess && result.data) {
         setSuppliers(result.data)
       }
@@ -80,11 +85,11 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [stationId])
 
   useEffect(() => {
     fetchSuppliers()
-  }, [stationId])
+  }, [fetchSuppliers])
 
   const handleAddSupplier = () => {
     setEditingSupplier(null)
@@ -123,7 +128,7 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
           id: editingSupplier.id,
           ...formData
         })
-        
+
         if (result.isSuccess) {
           toast.success("Supplier updated successfully")
           setDialogOpen(false)
@@ -137,7 +142,7 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
           stationId,
           ...formData
         })
-        
+
         if (result.isSuccess) {
           toast.success("Supplier created successfully")
           setDialogOpen(false)
@@ -165,7 +170,7 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
     }
 
     try {
-      const result = await deleteSupplier(supplier.id)
+      const result = await deleteSupplier({ supplierId: supplier.id })
       if (result.isSuccess) {
         toast.success("Supplier deleted successfully")
         fetchSuppliers()
@@ -187,14 +192,14 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
         <CardContent>
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-5 w-32 bg-muted animate-pulse rounded" />
-                  <div className="h-6 w-16 bg-muted animate-pulse rounded" />
+              <div key={i} className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="bg-muted h-5 w-32 animate-pulse rounded" />
+                  <div className="bg-muted h-6 w-16 animate-pulse rounded" />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-4 w-48 bg-muted animate-pulse rounded" />
-                  <div className="h-4 w-36 bg-muted animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-48 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-36 animate-pulse rounded" />
                 </div>
               </div>
             ))}
@@ -214,34 +219,34 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
               Supplier Management
             </span>
             <Button onClick={handleAddSupplier}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Supplier
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {suppliers.length === 0 ? (
-            <div className="text-center py-8">
-              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="py-8 text-center">
+              <Building2 className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">No suppliers found</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-sm">
                 Add your first supplier to get started
               </p>
               <Button onClick={handleAddSupplier} className="mt-4">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Supplier
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              {suppliers.map((supplier) => (
+              {suppliers.map(supplier => (
                 <div
                   key={supplier.id}
-                  className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="mb-3 flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-lg">{supplier.name}</h3>
+                      <h3 className="text-lg font-semibold">{supplier.name}</h3>
                       {supplier.contactPerson && (
                         <p className="text-muted-foreground">
                           Contact: {supplier.contactPerson}
@@ -250,7 +255,7 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">
-                        <Package className="h-3 w-3 mr-1" />
+                        <Package className="mr-1 h-3 w-3" />
                         {supplier.productCount} products
                       </Badge>
                       <Button
@@ -271,21 +276,21 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
                     </div>
                   </div>
 
-                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 text-sm">
+                  <div className="grid gap-2 text-sm md:grid-cols-2 lg:grid-cols-3">
                     {supplier.phone && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="text-muted-foreground flex items-center gap-2">
                         <Phone className="h-4 w-4" />
                         <span>{supplier.phone}</span>
                       </div>
                     )}
                     {supplier.email && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="text-muted-foreground flex items-center gap-2">
                         <Mail className="h-4 w-4" />
                         <span>{supplier.email}</span>
                       </div>
                     )}
                     {supplier.address && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="text-muted-foreground flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="truncate">{supplier.address}</span>
                       </div>
@@ -293,7 +298,7 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
                   </div>
 
                   {supplier.notes && (
-                    <div className="mt-3 p-2 bg-muted rounded text-sm">
+                    <div className="bg-muted mt-3 rounded p-2 text-sm">
                       <strong>Notes:</strong> {supplier.notes}
                     </div>
                   )}
@@ -319,7 +324,9 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -328,7 +335,9 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
                 <Input
                   id="contactPerson"
                   value={formData.contactPerson}
-                  onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, contactPerson: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -340,7 +349,9 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
                   id="phone"
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -349,7 +360,9 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -359,7 +372,9 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
               <Input
                 id="address"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
               />
             </div>
 
@@ -368,7 +383,9 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
               <Textarea
                 id="notes"
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
                 rows={3}
               />
             </div>
@@ -383,7 +400,11 @@ export function SupplierManagement({ stationId }: SupplierManagementProps) {
                 Cancel
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Saving..." : editingSupplier ? "Update" : "Create"}
+                {submitting
+                  ? "Saving..."
+                  : editingSupplier
+                    ? "Update"
+                    : "Create"}
               </Button>
             </div>
           </form>

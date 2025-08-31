@@ -1,5 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Package, Fuel } from "lucide-react"
 import { LowStockAlert } from "@/actions/dashboard"
@@ -9,145 +7,126 @@ interface LowStockAlertsProps {
   alerts: LowStockAlert[]
 }
 
-export function LowStockAlerts({ alerts }: LowStockAlertsProps) {
+export const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ alerts }) => {
   const formatNumber = (num: string) => {
-    return new Intl.NumberFormat('en-NG', {
+    return new Intl.NumberFormat("en-NG", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(parseFloat(num))
   }
 
-  const getStockPercentage = (current: string, threshold: string) => {
+  const getAlertSeverity = (current: string, threshold: string) => {
     const currentNum = parseFloat(current)
     const thresholdNum = parseFloat(threshold)
-    if (thresholdNum === 0) return 0
-    return Math.round((currentNum / thresholdNum) * 100)
-  }
+    const percentage = thresholdNum > 0 ? (currentNum / thresholdNum) * 100 : 0
 
-  const getAlertSeverity = (current: string, threshold: string) => {
-    const percentage = getStockPercentage(current, threshold)
-    if (percentage === 0) return "critical"
-    if (percentage <= 50) return "high"
-    return "medium"
+    if (currentNum === 0) return "critical"
+    if (percentage <= 25) return "critical"
+    if (percentage <= 50) return "warning"
+    return "normal"
   }
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "critical":
-        return "destructive"
-      case "high":
-        return "destructive"
-      case "medium":
-        return "secondary"
+        return "text-red-600"
+      case "warning":
+        return "text-amber-600"
       default:
-        return "secondary"
+        return "text-gray-600"
     }
+  }
+
+  const getRecommendedReorder = (current: string, threshold: string) => {
+    const thresholdNum = parseFloat(threshold)
+    // Recommended reorder is typically 2x the minimum threshold
+    return Math.max(thresholdNum * 2, thresholdNum + 50)
   }
 
   if (alerts.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-600">
-            <Package className="h-5 w-5" />
-            Stock Status
-          </CardTitle>
-          <CardDescription>
-            All products are above minimum threshold
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            No low stock alerts at this time. Great job maintaining inventory levels!
-          </p>
-        </CardContent>
-      </Card>
+      <div className="mb-8">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+          Low Stock Alerts
+        </h3>
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className="flex items-center">
+            <Package className="mr-2 h-5 w-5 text-green-600" />
+            <p className="text-sm text-green-800">
+              All products are above minimum threshold
+            </p>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-red-600">
-          <AlertTriangle className="h-5 w-5" />
-          Low Stock Alerts ({alerts.length})
-        </CardTitle>
-        <CardDescription>
-          Products that need immediate attention
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {alerts.map((alert) => {
-            const severity = getAlertSeverity(alert.currentStock, alert.minThreshold)
-            const percentage = getStockPercentage(alert.currentStock, alert.minThreshold)
-            
-            return (
-              <div
-                key={alert.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
-              >
+    <div className="mb-8">
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        Low Stock Alerts
+      </h3>
+      <div className="space-y-3">
+        {alerts.slice(0, 5).map(alert => {
+          const severity = getAlertSeverity(
+            alert.currentStock,
+            alert.minThreshold
+          )
+          const severityColor = getSeverityColor(severity)
+          const recommendedReorder = getRecommendedReorder(
+            alert.currentStock,
+            alert.minThreshold
+          )
+
+          return (
+            <div
+              key={alert.id}
+              className="rounded-lg border border-red-200 bg-white p-4 transition-shadow hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0">
-                    {alert.type === "pms" ? (
-                      <Fuel className="h-5 w-5 text-blue-500" />
-                    ) : (
-                      <Package className="h-5 w-5 text-orange-500" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm truncate">
-                        {alert.name}
-                      </p>
-                      {alert.brand && (
-                        <Badge variant="outline" className="text-xs">
-                          {alert.brand}
-                        </Badge>
-                      )}
-                      <Badge 
-                        variant={getSeverityColor(severity) as "default" | "secondary" | "destructive" | "outline"}
-                        className="text-xs"
-                      >
-                        {percentage}% of threshold
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                  <AlertTriangle className={`h-5 w-5 ${severityColor}`} />
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">
+                      {alert.name}
+                    </h4>
+                    <div className="mt-1 flex items-center gap-4 text-xs text-gray-600">
                       <span>
                         Current: {formatNumber(alert.currentStock)} {alert.unit}
                       </span>
                       <span>
                         Min: {formatNumber(alert.minThreshold)} {alert.unit}
                       </span>
+                      <span className={severityColor}>
+                        Recommended:{" "}
+                        {formatNumber(recommendedReorder.toString())}{" "}
+                        {alert.unit}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex-shrink-0">
-                  <Button
-                    asChild
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Link href={`/dashboard/inventory?product=${alert.id}`}>
-                      Restock
-                    </Link>
-                  </Button>
-                </div>
+                <Button
+                  asChild
+                  size="sm"
+                  className="bg-red-600 text-white hover:bg-red-700"
+                >
+                  <Link href={`/inventory?product=${alert.id}`}>Restock</Link>
+                </Button>
               </div>
-            )
-          })}
+            </div>
+          )
+        })}
+      </div>
+
+      {alerts.length > 5 && (
+        <div className="mt-4">
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/inventory?filter=low-stock">
+              View All {alerts.length} Low Stock Items
+            </Link>
+          </Button>
         </div>
-        
-        {alerts.length > 5 && (
-          <div className="mt-4 pt-4 border-t">
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/inventory?filter=low-stock">
-                View All Low Stock Items
-              </Link>
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }

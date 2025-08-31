@@ -5,10 +5,19 @@ import {
   customers,
   stations,
   users,
+  suppliers,
   products,
   transactions,
   transactionItems,
-  stockMovements
+  stockMovements,
+  customersRelations,
+  stationsRelations,
+  usersRelations,
+  suppliersRelations,
+  productsRelations,
+  transactionsRelations,
+  transactionItemsRelations,
+  stockMovementsRelations
 } from "./schema"
 
 config({ path: ".env.local" })
@@ -23,11 +32,20 @@ const dbSchema = {
   customers,
   stations,
   users,
+  suppliers,
   products,
   transactions,
   transactionItems,
-  stockMovements
+  stockMovements,
   // relations
+  customersRelations,
+  stationsRelations,
+  usersRelations,
+  suppliersRelations,
+  productsRelations,
+  transactionsRelations,
+  transactionItemsRelations,
+  stockMovementsRelations
 }
 
 function initializeDb(url: string) {

@@ -5,30 +5,23 @@ import { db } from "@/db"
 import { products, stockMovements, users } from "@/db/schema"
 import { eq, and, desc } from "drizzle-orm"
 import { z } from "zod"
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  createValidationErrorResponse,
+  handleDatabaseOperation,
+  validateInput,
+  ErrorCodes,
+  type ApiResponse,
+  productSchemas
+} from "@/lib/utils"
+import type { SelectProduct, SelectStockMovement } from "@/db/schema"
 
-// Input validation schemas
-const createProductSchema = z.object({
-  stationId: z.string().min(1, "Station ID is required"),
-  name: z.string().min(1, "Product name is required"),
-  brand: z.string().optional(),
-  type: z.enum(["pms", "lubricant"]),
-  viscosity: z.string().optional(),
-  containerSize: z.string().optional(),
-  currentStock: z.number().min(0, "Stock cannot be negative"),
-  unitPrice: z.number().min(0, "Price must be positive"),
-  minThreshold: z.number().min(0, "Threshold must be positive"),
-  unit: z.string().min(1, "Unit is required")
-})
-
+// Legacy schemas for backward compatibility - will be replaced with productSchemas
+const createProductSchema = productSchemas.create
 const updateProductSchema = z.object({
   id: z.string().min(1, "Product ID is required"),
-  name: z.string().min(1, "Product name is required").optional(),
-  brand: z.string().optional(),
-  viscosity: z.string().optional(),
-  containerSize: z.string().optional(),
-  unitPrice: z.number().min(0, "Price must be positive").optional(),
-  minThreshold: z.number().min(0, "Threshold must be positive").optional(),
-  isActive: z.boolean().optional()
+  ...productSchemas.update.shape
 })
 
 const updateStockSchema = z.object({
@@ -49,20 +42,44 @@ async function getUserRole(userId: string): Promise<string | null> {
 // Create a new product (Manager only)
 export async function createProduct(
   input: z.infer<typeof createProductSchema>
-) {
-  try {
-    const validatedInput = createProductSchema.parse(input)
+): Promise<
+  ApiResponse<{
+    id: string
+    stationId: string
+    name: string
+    type: "pms" | "lubricant"
+    currentStock: string
+    unitPrice: string
+    minThreshold: string
+    unit: string
+    createdAt: Date
+    updatedAt: Date
+  }>
+> {
+  // Validate input
+  const validation = validateInput(createProductSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+  const validatedInput = validation.data
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can create products" }
-    }
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
     const [product] = await db
       .insert(products)
       .values({
@@ -85,25 +102,19 @@ export async function createProduct(
       })
     }
 
-    return { isSuccess: true, data: product }
-  } catch (error) {
-    console.error("Error creating product:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return { isSuccess: false, error: "Failed to create product" }
-  }
+    return product
+  }, "Create product")
 }
 
 // Get all products for a station
 export async function getProducts(
   stationId: string,
   type?: "pms" | "lubricant"
-) {
-  try {
+): Promise<ApiResponse<SelectProduct[]>> {
+  return handleDatabaseOperation(async () => {
     const { userId } = await auth()
     if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+      throw new Error("Authentication required")
     }
 
     let whereClause = and(
@@ -120,19 +131,18 @@ export async function getProducts(
       orderBy: [products.name]
     })
 
-    return { isSuccess: true, data: productList }
-  } catch (error) {
-    console.error("Error fetching products:", error)
-    return { isSuccess: false, error: "Failed to fetch products" }
-  }
+    return productList
+  }, "Get products")
 }
 
 // Get a single product by ID
-export async function getProduct(productId: string) {
-  try {
+export async function getProduct(
+  productId: string
+): Promise<ApiResponse<SelectProduct | null>> {
+  return handleDatabaseOperation(async () => {
     const { userId } = await auth()
     if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+      throw new Error("Authentication required")
     }
 
     const product = await db.query.products.findFirst({
@@ -140,81 +150,106 @@ export async function getProduct(productId: string) {
     })
 
     if (!product) {
-      return { isSuccess: false, error: "Product not found" }
+      throw new Error("Product not found")
     }
 
-    return { isSuccess: true, data: product }
-  } catch (error) {
-    console.error("Error fetching product:", error)
-    return { isSuccess: false, error: "Failed to fetch product" }
-  }
+    return product
+  }, "Get product")
 }
 
 // Update product details (Manager only)
 export async function updateProduct(
   input: z.infer<typeof updateProductSchema>
-) {
-  try {
-    const validatedInput = updateProductSchema.parse(input)
+): Promise<ApiResponse<SelectProduct>> {
+  // Validate input
+  const validation = validateInput(updateProductSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+  const validatedInput = validation.data
+
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
+
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
+    // Build update data object with only defined fields
+    const updateData: Partial<
+      Omit<SelectProduct, "id" | "stationId" | "createdAt">
+    > = {
+      updatedAt: new Date()
     }
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can update products" }
-    }
-
-    const updateData: any = { updatedAt: new Date() }
-
-    if (validatedInput.name !== undefined) updateData.name = validatedInput.name
-    if (validatedInput.brand !== undefined)
-      updateData.brand = validatedInput.brand
-    if (validatedInput.viscosity !== undefined)
-      updateData.viscosity = validatedInput.viscosity
-    if (validatedInput.containerSize !== undefined)
-      updateData.containerSize = validatedInput.containerSize
-    if (validatedInput.unitPrice !== undefined)
-      updateData.unitPrice = validatedInput.unitPrice.toString()
-    if (validatedInput.minThreshold !== undefined)
-      updateData.minThreshold = validatedInput.minThreshold.toString()
-    if (validatedInput.isActive !== undefined)
-      updateData.isActive = validatedInput.isActive
+    // Only include fields that are provided in the input
+    const { id, ...fieldsToUpdate } = validatedInput
+    Object.entries(fieldsToUpdate).forEach(([key, value]) => {
+      if (value !== undefined) {
+        // Convert numeric fields to strings for database storage
+        if (key === "unitPrice" || key === "minThreshold") {
+          ;(updateData as Record<string, unknown>)[key] = value.toString()
+        } else {
+          ;(updateData as Record<string, unknown>)[key] = value
+        }
+      }
+    })
 
     const [product] = await db
       .update(products)
       .set(updateData)
-      .where(eq(products.id, validatedInput.id))
+      .where(eq(products.id, id))
       .returning()
 
     if (!product) {
-      return { isSuccess: false, error: "Product not found" }
+      throw new Error("Product not found")
     }
 
-    return { isSuccess: true, data: product }
-  } catch (error) {
-    console.error("Error updating product:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return { isSuccess: false, error: "Failed to update product" }
-  }
+    return product
+  }, "Update product")
 }
 
 /**
  * Update stock levels with movement tracking
  */
-export async function updateStock(input: z.infer<typeof updateStockSchema>) {
-  try {
-    const validatedInput = updateStockSchema.parse(input)
+export async function updateStock(
+  input: z.infer<typeof updateStockSchema>
+): Promise<
+  ApiResponse<{
+    product: SelectProduct
+    previousStock: number
+    newStock: number
+    quantity: number
+  }>
+> {
+  // Validate input
+  const validation = validateInput(updateStockSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+  const validatedInput = validation.data
 
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
+
+  return handleDatabaseOperation(async () => {
     const result = await db.transaction(async tx => {
       // Get current product stock
       const product = await tx.query.products.findFirst({
@@ -266,25 +301,19 @@ export async function updateStock(input: z.infer<typeof updateStockSchema>) {
       }
     })
 
-    return { isSuccess: true, data: result }
-  } catch (error) {
-    console.error("Error updating stock:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return {
-      isSuccess: false,
-      error: error instanceof Error ? error.message : "Failed to update stock"
-    }
-  }
+    return result
+  }, "Update stock")
 }
 
 // Get stock movement history for a product
-export async function getStockMovements(productId: string, limit: number = 50) {
-  try {
+export async function getStockMovements(
+  productId: string,
+  limit: number = 50
+): Promise<ApiResponse<SelectStockMovement[]>> {
+  return handleDatabaseOperation(async () => {
     const { userId } = await auth()
     if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+      throw new Error("Authentication required")
     }
 
     const movements = await db.query.stockMovements.findMany({
@@ -293,19 +322,18 @@ export async function getStockMovements(productId: string, limit: number = 50) {
       limit
     })
 
-    return { isSuccess: true, data: movements }
-  } catch (error) {
-    console.error("Error fetching stock movements:", error)
-    return { isSuccess: false, error: "Failed to fetch stock movements" }
-  }
+    return movements
+  }, "Get stock movements")
 }
 
 // Get low stock products for a station
-export async function getLowStockProducts(stationId: string) {
-  try {
+export async function getLowStockProducts(
+  stationId: string
+): Promise<ApiResponse<SelectProduct[]>> {
+  return handleDatabaseOperation(async () => {
     const { userId } = await auth()
     if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+      throw new Error("Authentication required")
     }
 
     const lowStockProducts = await db.query.products.findMany({
@@ -319,26 +347,30 @@ export async function getLowStockProducts(stationId: string) {
       return currentStock <= minThreshold
     })
 
-    return { isSuccess: true, data: filteredProducts }
-  } catch (error) {
-    console.error("Error fetching low stock products:", error)
-    return { isSuccess: false, error: "Failed to fetch low stock products" }
-  }
+    return filteredProducts
+  }, "Get low stock products")
 }
 
 // Delete/deactivate a product (Manager only)
-export async function deleteProduct(productId: string) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+export async function deleteProduct(
+  productId: string
+): Promise<ApiResponse<SelectProduct>> {
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can delete products" }
-    }
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
 
+  return handleDatabaseOperation(async () => {
     // Soft delete by setting isActive to false
     const [product] = await db
       .update(products)
@@ -350,24 +382,33 @@ export async function deleteProduct(productId: string) {
       .returning()
 
     if (!product) {
-      return { isSuccess: false, error: "Product not found" }
+      throw new Error("Product not found")
     }
 
-    return { isSuccess: true, data: product }
-  } catch (error) {
-    console.error("Error deleting product:", error)
-    return { isSuccess: false, error: "Failed to delete product" }
-  }
+    return product
+  }, "Delete product")
 }
 
 /**
  * Calculate total inventory value for a station
  */
-export async function calculateInventoryValue(stationId: string) {
-  try {
+export async function calculateInventoryValue(stationId: string): Promise<
+  ApiResponse<{
+    totalValue: number
+    productValues: Array<{
+      productId: string
+      name: string
+      currentStock: number
+      unitPrice: number
+      value: number
+    }>
+    productCount: number
+  }>
+> {
+  return handleDatabaseOperation(async () => {
     const { userId } = await auth()
     if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+      throw new Error("Authentication required")
     }
 
     const productList = await db.query.products.findMany({
@@ -391,27 +432,32 @@ export async function calculateInventoryValue(stationId: string) {
     })
 
     return {
-      isSuccess: true,
-      data: {
-        totalValue,
-        productValues,
-        productCount: productList.length
-      }
+      totalValue,
+      productValues,
+      productCount: productList.length
     }
-  } catch (error) {
-    console.error("Error calculating inventory value:", error)
-    return { isSuccess: false, error: "Failed to calculate inventory value" }
-  }
+  }, "Calculate inventory value")
 }
 
 /**
  * Get products that need reordering (below minimum threshold)
  */
-export async function getProductsNeedingReorder(stationId: string) {
-  try {
+export async function getProductsNeedingReorder(stationId: string): Promise<
+  ApiResponse<{
+    products: Array<
+      Omit<SelectProduct, "currentStock" | "minThreshold"> & {
+        currentStock: number
+        minThreshold: number
+        suggestedReorderQuantity: number
+      }
+    >
+    count: number
+  }>
+> {
+  return handleDatabaseOperation(async () => {
     const { userId } = await auth()
     if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+      throw new Error("Authentication required")
     }
 
     const productList = await db.query.products.findMany({
@@ -432,16 +478,10 @@ export async function getProductsNeedingReorder(stationId: string) {
       }))
 
     return {
-      isSuccess: true,
-      data: {
-        products: reorderProducts,
-        count: reorderProducts.length
-      }
+      products: reorderProducts,
+      count: reorderProducts.length
     }
-  } catch (error) {
-    console.error("Error getting products needing reorder:", error)
-    return { isSuccess: false, error: "Failed to get reorder products" }
-  }
+  }, "Get products needing reorder")
 }
 
 /**
@@ -449,18 +489,28 @@ export async function getProductsNeedingReorder(stationId: string) {
  */
 export async function bulkUpdatePrices(
   updates: Array<{ productId: string; newPrice: number }>
-) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+): Promise<
+  ApiResponse<{
+    updatedProducts: SelectProduct[]
+    count: number
+  }>
+> {
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can update prices" }
-    }
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
 
+  return handleDatabaseOperation(async () => {
     const results = await db.transaction(async tx => {
       const updatedProducts = []
 
@@ -487,17 +537,8 @@ export async function bulkUpdatePrices(
     })
 
     return {
-      isSuccess: true,
-      data: {
-        updatedProducts: results,
-        count: results.length
-      }
+      updatedProducts: results,
+      count: results.length
     }
-  } catch (error) {
-    console.error("Error bulk updating prices:", error)
-    return {
-      isSuccess: false,
-      error: error instanceof Error ? error.message : "Failed to update prices"
-    }
-  }
+  }, "Bulk update prices")
 }

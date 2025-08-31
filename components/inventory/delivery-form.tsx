@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { recordDelivery } from "@/actions/inventory"
 import { getSuppliers } from "@/actions/suppliers"
@@ -16,7 +22,7 @@ import { formatCurrency } from "@/lib/utils"
 interface Product {
   id: string
   name: string
-  brand?: string
+  brand?: string | null
   type: "pms" | "lubricant"
   currentStock: number
   unitPrice: number
@@ -26,8 +32,8 @@ interface Product {
 interface Supplier {
   id: string
   name: string
-  contactPerson?: string
-  phone?: string
+  contactPerson?: string | null
+  phone?: string | null
 }
 
 interface DeliveryFormProps {
@@ -37,7 +43,12 @@ interface DeliveryFormProps {
   onCancel: () => void
 }
 
-export function DeliveryForm({ product, stationId, onSuccess, onCancel }: DeliveryFormProps) {
+export function DeliveryForm({
+  product,
+  stationId,
+  onSuccess,
+  onCancel
+}: DeliveryFormProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [formData, setFormData] = useState({
     quantity: "",
@@ -51,7 +62,7 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const result = await getSuppliers(stationId)
+        const result = await getSuppliers({ stationId })
         if (result.isSuccess && result.data) {
           setSuppliers(result.data)
         }
@@ -67,7 +78,7 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
       toast.error("Please enter a valid quantity")
       return
@@ -76,15 +87,12 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
     setSubmitting(true)
 
     try {
-      const deliveryData: any = {
+      const deliveryData = {
         productId: product.id,
         quantity: parseFloat(formData.quantity),
         deliveryNote: formData.deliveryNote || undefined,
-        supplierId: formData.supplierId || undefined
-      }
-
-      if (formData.unitCost && parseFloat(formData.unitCost) >= 0) {
-        deliveryData.unitCost = parseFloat(formData.unitCost)
+        supplierId: formData.supplierId || undefined,
+        unitCost: formData.unitCost ? parseFloat(formData.unitCost) : undefined
       }
 
       const result = await recordDelivery(deliveryData)
@@ -121,20 +129,26 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
         <CardContent className="space-y-2">
           <div className="flex justify-between">
             <span className="font-medium">Product:</span>
-            <span>{product.name} {product.brand && `(${product.brand})`}</span>
+            <span>
+              {product.name} {product.brand && `(${product.brand})`}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="font-medium">Current Stock:</span>
-            <span>{product.currentStock} {product.unit}</span>
+            <span>
+              {product.currentStock} {product.unit}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="font-medium">Current Unit Price:</span>
             <span>{formatCurrency(product.unitPrice)}</span>
           </div>
           {quantity > 0 && (
-            <div className="flex justify-between text-green-600 font-medium">
+            <div className="flex justify-between font-medium text-green-600">
               <span>New Stock Level:</span>
-              <span>{newStock} {product.unit}</span>
+              <span>
+                {newStock} {product.unit}
+              </span>
             </div>
           )}
         </CardContent>
@@ -151,12 +165,16 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
               step="0.01"
               min="0.01"
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, quantity: e.target.value })
+              }
               placeholder="Enter quantity"
               required
             />
-            <div className="flex items-center px-3 border rounded-md bg-muted">
-              <span className="text-sm text-muted-foreground">{product.unit}</span>
+            <div className="bg-muted flex items-center rounded-md border px-3">
+              <span className="text-muted-foreground text-sm">
+                {product.unit}
+              </span>
             </div>
           </div>
         </div>
@@ -164,15 +182,20 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
         <div className="space-y-2">
           <Label htmlFor="supplier">Supplier</Label>
           {loadingSuppliers ? (
-            <div className="h-10 bg-muted animate-pulse rounded" />
+            <div className="bg-muted h-10 animate-pulse rounded" />
           ) : (
-            <Select value={formData.supplierId} onValueChange={(value) => setFormData({ ...formData, supplierId: value })}>
+            <Select
+              value={formData.supplierId}
+              onValueChange={value =>
+                setFormData({ ...formData, supplierId: value })
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select supplier (optional)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">No supplier selected</SelectItem>
-                {suppliers.map((supplier) => (
+                {suppliers.map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.name}
                     {supplier.contactPerson && ` (${supplier.contactPerson})`}
@@ -192,15 +215,18 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
               step="0.01"
               min="0"
               value={formData.unitCost}
-              onChange={(e) => setFormData({ ...formData, unitCost: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, unitCost: e.target.value })
+              }
               placeholder={`Current: ${formatCurrency(product.unitPrice)}`}
             />
-            <div className="flex items-center px-3 border rounded-md bg-muted">
-              <span className="text-sm text-muted-foreground">₦</span>
+            <div className="bg-muted flex items-center rounded-md border px-3">
+              <span className="text-muted-foreground text-sm">₦</span>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Leave empty to keep current price. Enter new cost to update product price.
+          <p className="text-muted-foreground text-xs">
+            Leave empty to keep current price. Enter new cost to update product
+            price.
           </p>
         </div>
 
@@ -209,7 +235,9 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
           <Textarea
             id="deliveryNote"
             value={formData.deliveryNote}
-            onChange={(e) => setFormData({ ...formData, deliveryNote: e.target.value })}
+            onChange={e =>
+              setFormData({ ...formData, deliveryNote: e.target.value })
+            }
             placeholder="Optional delivery notes, invoice number, etc."
             rows={3}
           />
@@ -228,21 +256,26 @@ export function DeliveryForm({ product, stationId, onSuccess, onCancel }: Delive
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span>Quantity:</span>
-              <span>{quantity} {product.unit}</span>
+              <span>
+                {quantity} {product.unit}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Unit Cost:</span>
               <span>{formatCurrency(unitCost)}</span>
             </div>
-            <div className="flex justify-between font-medium text-lg border-t pt-2">
+            <div className="flex justify-between border-t pt-2 text-lg font-medium">
               <span>Total Cost:</span>
               <span>{formatCurrency(totalCost)}</span>
             </div>
-            {formData.unitCost && parseFloat(formData.unitCost) !== product.unitPrice && (
-              <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                <strong>Note:</strong> Product price will be updated from {formatCurrency(product.unitPrice)} to {formatCurrency(unitCost)}
-              </div>
-            )}
+            {formData.unitCost &&
+              parseFloat(formData.unitCost) !== product.unitPrice && (
+                <div className="rounded bg-blue-50 p-2 text-sm text-blue-600">
+                  <strong>Note:</strong> Product price will be updated from{" "}
+                  {formatCurrency(product.unitPrice)} to{" "}
+                  {formatCurrency(unitCost)}
+                </div>
+              )}
           </CardContent>
         </Card>
       )}

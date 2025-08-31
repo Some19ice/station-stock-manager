@@ -1,8 +1,16 @@
-# Mckay's App Template
+# Station Stock Manager
 
-This is a full-stack app template that I use to build my own apps.
+A comprehensive fuel inventory management system designed for gas stations. This application provides role-based dashboards for both sales staff and managers to efficiently track inventory, record sales, and monitor station operations.
 
-To learn how to use this template with the best AI tools & workflows, check out my workshops on [Takeoff](https://JoinTakeoff.com/)!
+## Features
+
+- **Role-Based Dashboards**: Separate interfaces for sales staff and managers
+- **Real-Time Inventory Tracking**: Monitor fuel levels and stock movements
+- **Sales Management**: Quick sale recording and transaction history
+- **Staff Management**: User roles and access control
+- **Analytics & Reporting**: Daily sales reports and performance metrics
+- **Low Stock Alerts**: Automated notifications for inventory thresholds
+- **Multi-Station Support**: Manage multiple station locations
 
 ## Tech Stack
 
@@ -20,7 +28,6 @@ They all have free plans that you can use to get started.
 - Create a [GitHub](https://github.com/) account
 - Create a [Supabase](https://supabase.com/) account
 - Create a [Clerk](https://clerk.com/) account
-- Create a [Stripe](https://stripe.com/) account (optional - currently disabled)
 - Create a [Vercel](https://vercel.com/) account
 
 You will likely not need paid plans unless you are building a business.
@@ -37,12 +44,6 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login # do not change
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup # do not change
-
-# Stripe (currently disabled - not required)
-# STRIPE_SECRET_KEY=
-# STRIPE_WEBHOOK_SECRET=
-# NEXT_PUBLIC_STRIPE_PAYMENT_LINK_YEARLY=
-# NEXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY=
 ```
 
 ## Setup
@@ -51,3 +52,38 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup # do not change
 2. Copy `.env.example` to `.env.local` and fill in the environment variables from above
 3. Run `npm install` to install dependencies
 4. Run `npm run dev` to run the app locally
+
+## User Roles
+
+### Sales Staff
+- Record new sales transactions
+- View daily sales summary
+- Access frequently sold products for quick sales
+- View recent transaction history
+
+### Manager
+- Access comprehensive dashboard with key metrics
+- Monitor low stock alerts
+- Manage staff and user roles
+- View detailed analytics and reports
+- Perform end-of-day summaries
+
+## Database Schema
+
+The application includes comprehensive database schema for:
+- Products (fuel types, lubricants, accessories)
+- Stations (multi-location support)
+- Users (staff and manager roles)
+- Transactions (sales records)
+- Stock movements (inventory tracking)
+- Suppliers (vendor management)
+
+## Getting Started
+
+1. Set up your environment variables
+2. Run the development server
+3. Create your first station and user accounts
+4. Configure product inventory
+5. Start recording sales and managing inventory
+
+For detailed setup instructions and API documentation, see the `/docs` directory.

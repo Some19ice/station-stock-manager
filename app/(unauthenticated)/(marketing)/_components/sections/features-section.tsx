@@ -13,40 +13,40 @@ import { SectionWrapper } from "./section-wrapper"
 
 const features = [
   {
-    name: "Authentication Ready",
+    name: "Real-time Fuel Monitoring",
     description:
-      "Clerk authentication pre-configured with protected routes, user management, and session handling.",
-    icon: Shield
+      "Track fuel levels across all tanks with automated alerts when inventory drops below minimum thresholds.",
+    icon: BarChart
   },
   {
-    name: "Payments Integration",
+    name: "Supplier Management",
     description:
-      "Stripe integration with webhook support, subscription management, and checkout flows.",
-    icon: CreditCard
-  },
-  {
-    name: "Database Setup",
-    description:
-      "PostgreSQL with Drizzle ORM configured and ready. Includes migrations and type-safe queries.",
+      "Manage supplier relationships, track deliveries, and automate purchase orders for seamless restocking.",
     icon: Database
   },
   {
-    name: "Modern UI Components",
+    name: "Multi-Station Dashboard",
     description:
-      "Beautiful, accessible components with shadcn/ui. Dark mode support and Tailwind CSS v4.",
+      "Oversee multiple locations from a single dashboard with role-based access for staff and managers.",
+    icon: Shield
+  },
+  {
+    name: "Lubricant Inventory",
+    description:
+      "Complete tracking for motor oils, filters, and automotive products with detailed specifications.",
     icon: Palette
   },
   {
-    name: "TypeScript First",
+    name: "Compliance Reporting",
     description:
-      "Full TypeScript support with strict mode, path aliases, and type safety throughout.",
+      "Generate regulatory reports for environmental compliance, tax reporting, and audit requirements.",
     icon: Code2
   },
   {
-    name: "Analytics Built-in",
+    name: "Sales Analytics",
     description:
-      "PostHog analytics integration for tracking user behavior and product metrics.",
-    icon: BarChart
+      "Detailed sales reports, profit margins, and performance metrics to optimize your operations.",
+    icon: CreditCard
   }
 ]
 

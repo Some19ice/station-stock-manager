@@ -30,7 +30,7 @@ const productFormSchema = z.object({
   currentStock: z.number().min(0, "Stock cannot be negative"),
   unitPrice: z.number().min(0, "Price must be positive"),
   minThreshold: z.number().min(0, "Threshold must be positive"),
-  unit: z.string().min(1, "Unit is required"),
+  unit: z.enum(["litres", "units"]),
   isActive: z.boolean()
 })
 
@@ -63,7 +63,7 @@ export function ProductForm({
       currentStock: product ? parseFloat(product.currentStock) : 0,
       unitPrice: product ? parseFloat(product.unitPrice) : 0,
       minThreshold: product ? parseFloat(product.minThreshold) : 0,
-      unit: product?.unit || "litres",
+      unit: (product?.unit as "litres" | "units") || "litres",
       isActive: product?.isActive ?? true
     }
   })
@@ -166,7 +166,9 @@ export function ProductForm({
               <Label htmlFor="unit">Unit *</Label>
               <Select
                 value={form.watch("unit")}
-                onValueChange={value => form.setValue("unit", value)}
+                onValueChange={value =>
+                  form.setValue("unit", value as "litres" | "units")
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select unit" />

@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { recordStockAdjustment } from "@/actions/inventory"
 import { Settings, Package, AlertTriangle } from "lucide-react"
@@ -15,7 +21,7 @@ import { formatCurrency } from "@/lib/utils"
 interface Product {
   id: string
   name: string
-  brand?: string
+  brand?: string | null
   type: "pms" | "lubricant"
   currentStock: number
   unitPrice: number
@@ -41,7 +47,11 @@ const adjustmentReasons = [
   { value: "other", label: "Other" }
 ]
 
-export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjustmentFormProps) {
+export function StockAdjustmentForm({
+  product,
+  onSuccess,
+  onCancel
+}: StockAdjustmentFormProps) {
   const [formData, setFormData] = useState({
     adjustmentType: "decrease" as "increase" | "decrease",
     quantity: "",
@@ -53,7 +63,7 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
       toast.error("Please enter a valid quantity")
       return
@@ -70,7 +80,10 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
     }
 
     const adjustmentQuantity = parseFloat(formData.quantity)
-    const finalQuantity = formData.adjustmentType === "decrease" ? -adjustmentQuantity : adjustmentQuantity
+    const finalQuantity =
+      formData.adjustmentType === "decrease"
+        ? -adjustmentQuantity
+        : adjustmentQuantity
     const newStock = product.currentStock + finalQuantity
 
     if (newStock < 0) {
@@ -81,8 +94,11 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
     setSubmitting(true)
 
     try {
-      const reason = formData.reason === "other" ? formData.customReason : 
-                    adjustmentReasons.find(r => r.value === formData.reason)?.label || formData.reason
+      const reason =
+        formData.reason === "other"
+          ? formData.customReason
+          : adjustmentReasons.find(r => r.value === formData.reason)?.label ||
+            formData.reason
 
       const result = await recordStockAdjustment({
         productId: product.id,
@@ -106,7 +122,8 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
   }
 
   const quantity = parseFloat(formData.quantity) || 0
-  const finalQuantity = formData.adjustmentType === "decrease" ? -quantity : quantity
+  const finalQuantity =
+    formData.adjustmentType === "decrease" ? -quantity : quantity
   const newStock = product.currentStock + finalQuantity
   const valueImpact = Math.abs(finalQuantity) * product.unitPrice
 
@@ -123,15 +140,21 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
         <CardContent className="space-y-2">
           <div className="flex justify-between">
             <span className="font-medium">Product:</span>
-            <span>{product.name} {product.brand && `(${product.brand})`}</span>
+            <span>
+              {product.name} {product.brand && `(${product.brand})`}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="font-medium">Current Stock:</span>
-            <span>{product.currentStock} {product.unit}</span>
+            <span>
+              {product.currentStock} {product.unit}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="font-medium">Minimum Threshold:</span>
-            <span>{product.minThreshold} {product.unit}</span>
+            <span>
+              {product.minThreshold} {product.unit}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="font-medium">Unit Price:</span>
@@ -144,9 +167,11 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Adjustment Type</Label>
-          <Select 
-            value={formData.adjustmentType} 
-            onValueChange={(value: "increase" | "decrease") => setFormData({ ...formData, adjustmentType: value })}
+          <Select
+            value={formData.adjustmentType}
+            onValueChange={(value: "increase" | "decrease") =>
+              setFormData({ ...formData, adjustmentType: value })
+            }
           >
             <SelectTrigger>
               <SelectValue />
@@ -167,24 +192,31 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
               step="0.01"
               min="0.01"
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, quantity: e.target.value })
+              }
               placeholder="Enter quantity"
               required
             />
-            <div className="flex items-center px-3 border rounded-md bg-muted">
-              <span className="text-sm text-muted-foreground">{product.unit}</span>
+            <div className="bg-muted flex items-center rounded-md border px-3">
+              <span className="text-muted-foreground text-sm">
+                {product.unit}
+              </span>
             </div>
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="reason">Reason *</Label>
-          <Select value={formData.reason} onValueChange={(value) => setFormData({ ...formData, reason: value })}>
+          <Select
+            value={formData.reason}
+            onValueChange={value => setFormData({ ...formData, reason: value })}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select reason for adjustment" />
             </SelectTrigger>
             <SelectContent>
-              {adjustmentReasons.map((reason) => (
+              {adjustmentReasons.map(reason => (
                 <SelectItem key={reason.value} value={reason.value}>
                   {reason.label}
                 </SelectItem>
@@ -199,7 +231,9 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
             <Input
               id="customReason"
               value={formData.customReason}
-              onChange={(e) => setFormData({ ...formData, customReason: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, customReason: e.target.value })
+              }
               placeholder="Describe the reason for adjustment"
               required
             />
@@ -211,7 +245,9 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
           <Input
             id="reference"
             value={formData.reference}
-            onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+            onChange={e =>
+              setFormData({ ...formData, reference: e.target.value })
+            }
             placeholder="Reference number, document ID, etc."
           />
         </div>
@@ -229,38 +265,55 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span>Current Stock:</span>
-              <span>{product.currentStock} {product.unit}</span>
+              <span>
+                {product.currentStock} {product.unit}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Adjustment:</span>
-              <span className={finalQuantity >= 0 ? "text-green-600" : "text-red-600"}>
-                {finalQuantity >= 0 ? "+" : ""}{finalQuantity} {product.unit}
+              <span
+                className={
+                  finalQuantity >= 0 ? "text-green-600" : "text-red-600"
+                }
+              >
+                {finalQuantity >= 0 ? "+" : ""}
+                {finalQuantity} {product.unit}
               </span>
             </div>
-            <div className="flex justify-between font-medium text-lg border-t pt-2">
+            <div className="flex justify-between border-t pt-2 text-lg font-medium">
               <span>New Stock Level:</span>
-              <span className={newStock < product.minThreshold ? "text-yellow-600" : ""}>
+              <span
+                className={
+                  newStock < product.minThreshold ? "text-yellow-600" : ""
+                }
+              >
                 {newStock} {product.unit}
               </span>
             </div>
             <div className="flex justify-between">
               <span>Value Impact:</span>
-              <span className={finalQuantity >= 0 ? "text-green-600" : "text-red-600"}>
-                {finalQuantity >= 0 ? "+" : "-"}{formatCurrency(valueImpact)}
+              <span
+                className={
+                  finalQuantity >= 0 ? "text-green-600" : "text-red-600"
+                }
+              >
+                {finalQuantity >= 0 ? "+" : "-"}
+                {formatCurrency(valueImpact)}
               </span>
             </div>
-            
+
             {newStock < product.minThreshold && (
-              <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 p-2 rounded mt-2">
+              <div className="mt-2 flex items-center gap-2 rounded bg-yellow-50 p-2 text-yellow-600">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-sm">
-                  Warning: New stock level will be below minimum threshold ({product.minThreshold} {product.unit})
+                  Warning: New stock level will be below minimum threshold (
+                  {product.minThreshold} {product.unit})
                 </span>
               </div>
             )}
 
             {newStock === 0 && (
-              <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2 rounded mt-2">
+              <div className="mt-2 flex items-center gap-2 rounded bg-red-50 p-2 text-red-600">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-sm">
                   Warning: This adjustment will result in zero stock
@@ -281,8 +334,8 @@ export function StockAdjustmentForm({ product, onSuccess, onCancel }: StockAdjus
         >
           Cancel
         </Button>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={submitting || !formData.quantity || !formData.reason}
           variant={newStock < 0 ? "destructive" : "default"}
         >

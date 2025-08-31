@@ -22,10 +22,10 @@ export function Header({ userMembership }: HeaderProps) {
   }, [])
 
   const navigation = [
-    { name: "About", href: "/about" },
-    { name: "Features", href: "/features" },
-    { name: "Pricing", href: "/pricing" },
-    { name: "Contact", href: "/contact" }
+    { name: "Features", href: "#features" },
+    { name: "Pricing", href: "#pricing" },
+    { name: "Demo", href: "#demo" },
+    { name: "Contact", href: "#contact" }
   ]
 
   return (
@@ -37,7 +37,7 @@ export function Header({ userMembership }: HeaderProps) {
         >
           <div className="flex lg:flex-1">
             <Link href="/" className="-m-1.5 p-1.5">
-              <span className="text-xl font-bold">Mckay's App Template</span>
+              <span className="text-xl font-bold">Station Stock Manager</span>
             </Link>
           </div>
           <div className="flex lg:hidden">

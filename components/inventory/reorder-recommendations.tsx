@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { generateReorderRecommendations } from "@/actions/inventory"
-import { 
+import {
   AlertTriangle,
   Clock,
   Phone,
@@ -18,7 +18,7 @@ import { formatDistanceToNow } from "date-fns"
 interface ReorderRecommendation {
   productId: string
   name: string
-  brand?: string
+  brand?: string | null
   type: "pms" | "lubricant"
   currentStock: number
   minThreshold: number
@@ -28,8 +28,8 @@ interface ReorderRecommendation {
   supplier?: {
     id: string
     name: string
-    contactPerson?: string
-    phone?: string
+    contactPerson?: string | null
+    phone?: string | null
   } | null
   priority: "urgent" | "high" | "medium"
 }
@@ -39,11 +39,13 @@ interface ReorderRecommendationsProps {
   onRecordDelivery?: (productId: string) => void
 }
 
-export function ReorderRecommendations({ 
-  stationId, 
-  onRecordDelivery 
+export function ReorderRecommendations({
+  stationId,
+  onRecordDelivery
 }: ReorderRecommendationsProps) {
-  const [recommendations, setRecommendations] = useState<ReorderRecommendation[]>([])
+  const [recommendations, setRecommendations] = useState<
+    ReorderRecommendation[]
+  >([])
   const [summary, setSummary] = useState({
     totalProducts: 0,
     urgentCount: 0,
@@ -53,7 +55,7 @@ export function ReorderRecommendations({
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     try {
       const result = await generateReorderRecommendations(stationId)
       if (result.isSuccess && result.data) {
@@ -66,11 +68,11 @@ export function ReorderRecommendations({
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [stationId])
 
   useEffect(() => {
     fetchRecommendations()
-  }, [stationId])
+  }, [fetchRecommendations])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -112,14 +114,14 @@ export function ReorderRecommendations({
         <CardContent>
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-5 w-32 bg-muted animate-pulse rounded" />
-                  <div className="h-6 w-16 bg-muted animate-pulse rounded" />
+              <div key={i} className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="bg-muted h-5 w-32 animate-pulse rounded" />
+                  <div className="bg-muted h-6 w-16 animate-pulse rounded" />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-4 w-48 bg-muted animate-pulse rounded" />
-                  <div className="h-4 w-36 bg-muted animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-48 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-36 animate-pulse rounded" />
                 </div>
               </div>
             ))}
@@ -135,14 +137,14 @@ export function ReorderRecommendations({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Total Products
+            </CardTitle>
+            <ShoppingCart className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              Need reordering
-            </p>
+            <p className="text-muted-foreground text-xs">Need reordering</p>
           </CardContent>
         </Card>
 
@@ -152,10 +154,10 @@ export function ReorderRecommendations({
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{summary.urgentCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Immediate attention
-            </p>
+            <div className="text-2xl font-bold text-red-600">
+              {summary.urgentCount}
+            </div>
+            <p className="text-muted-foreground text-xs">Immediate attention</p>
           </CardContent>
         </Card>
 
@@ -165,23 +167,25 @@ export function ReorderRecommendations({
             <TrendingDown className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{summary.highPriorityCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Order soon
-            </p>
+            <div className="text-2xl font-bold text-orange-600">
+              {summary.highPriorityCount}
+            </div>
+            <p className="text-muted-foreground text-xs">Order soon</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Medium Priority</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Medium Priority
+            </CardTitle>
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{summary.mediumPriorityCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Plan ahead
-            </p>
+            <div className="text-2xl font-bold text-yellow-600">
+              {summary.mediumPriorityCount}
+            </div>
+            <p className="text-muted-foreground text-xs">Plan ahead</p>
           </CardContent>
         </Card>
       </div>
@@ -200,47 +204,61 @@ export function ReorderRecommendations({
               onClick={handleRefresh}
               disabled={refreshing}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {recommendations.length === 0 ? (
-            <div className="text-center py-8">
-              <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No reorder recommendations</p>
-              <p className="text-sm text-muted-foreground mt-1">
+            <div className="py-8 text-center">
+              <ShoppingCart className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+              <p className="text-muted-foreground">
+                No reorder recommendations
+              </p>
+              <p className="text-muted-foreground mt-1 text-sm">
                 All products are above their minimum thresholds
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {recommendations.map((recommendation) => (
+              {recommendations.map(recommendation => (
                 <div
                   key={recommendation.productId}
-                  className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="mb-3 flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="mb-1 flex items-center gap-2">
                         <h4 className="font-semibold">{recommendation.name}</h4>
                         {recommendation.brand && (
                           <Badge variant="outline" className="text-xs">
                             {recommendation.brand}
                           </Badge>
                         )}
-                        <Badge variant={getPriorityColor(recommendation.priority)}>
+                        <Badge
+                          variant={getPriorityColor(recommendation.priority)}
+                        >
                           {getPriorityIcon(recommendation.priority)}
-                          <span className="ml-1 capitalize">{recommendation.priority}</span>
+                          <span className="ml-1 capitalize">
+                            {recommendation.priority}
+                          </span>
                         </Badge>
                       </div>
-                      
-                      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4 text-sm text-muted-foreground">
+
+                      <div className="text-muted-foreground grid gap-2 text-sm md:grid-cols-2 lg:grid-cols-4">
                         <div>
                           <span className="font-medium">Current Stock:</span>
                           <br />
-                          <span className={recommendation.currentStock === 0 ? "text-red-600 font-medium" : ""}>
+                          <span
+                            className={
+                              recommendation.currentStock === 0
+                                ? "font-medium text-red-600"
+                                : ""
+                            }
+                          >
                             {recommendation.currentStock} units
                           </span>
                         </div>
@@ -250,9 +268,11 @@ export function ReorderRecommendations({
                           <span>{recommendation.minThreshold} units</span>
                         </div>
                         <div>
-                          <span className="font-medium">Recommended Order:</span>
+                          <span className="font-medium">
+                            Recommended Order:
+                          </span>
                           <br />
-                          <span className="text-green-600 font-medium">
+                          <span className="font-medium text-green-600">
                             {recommendation.recommendedQuantity} units
                           </span>
                         </div>
@@ -265,16 +285,25 @@ export function ReorderRecommendations({
 
                       {recommendation.daysUntilStockout !== null && (
                         <div className="mt-2 text-sm">
-                          <span className="font-medium">Days until stockout:</span>
-                          <span className={`ml-1 ${recommendation.daysUntilStockout <= 3 ? "text-red-600 font-medium" : 
-                                                   recommendation.daysUntilStockout <= 7 ? "text-orange-600" : ""}`}>
+                          <span className="font-medium">
+                            Days until stockout:
+                          </span>
+                          <span
+                            className={`ml-1 ${
+                              recommendation.daysUntilStockout <= 3
+                                ? "font-medium text-red-600"
+                                : recommendation.daysUntilStockout <= 7
+                                  ? "text-orange-600"
+                                  : ""
+                            }`}
+                          >
                             {recommendation.daysUntilStockout} days
                           </span>
                         </div>
                       )}
 
                       {recommendation.supplier && (
-                        <div className="mt-2 p-2 bg-muted rounded text-sm">
+                        <div className="bg-muted mt-2 rounded p-2 text-sm">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">Supplier:</span>
                             <span>{recommendation.supplier.name}</span>
@@ -284,7 +313,7 @@ export function ReorderRecommendations({
                               </span>
                             )}
                             {recommendation.supplier.phone && (
-                              <a 
+                              <a
                                 href={`tel:${recommendation.supplier.phone}`}
                                 className="flex items-center gap-1 text-blue-600 hover:underline"
                               >
@@ -297,24 +326,22 @@ export function ReorderRecommendations({
                       )}
                     </div>
 
-                    <div className="flex flex-col gap-2 ml-4">
+                    <div className="ml-4 flex flex-col gap-2">
                       {onRecordDelivery && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onRecordDelivery(recommendation.productId)}
+                          onClick={() =>
+                            onRecordDelivery(recommendation.productId)
+                          }
                         >
                           Record Delivery
                         </Button>
                       )}
                       {recommendation.supplier?.phone && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          asChild
-                        >
+                        <Button variant="outline" size="sm" asChild>
                           <a href={`tel:${recommendation.supplier.phone}`}>
-                            <Phone className="h-4 w-4 mr-1" />
+                            <Phone className="mr-1 h-4 w-4" />
                             Call
                           </a>
                         </Button>

@@ -1,15 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { getStockMovementHistory } from "@/actions/inventory"
 import { getProducts } from "@/actions/products"
-import { 
+import {
   Calendar,
   Filter,
   RefreshCw,
@@ -28,21 +34,21 @@ interface StockMovement {
   quantity: string
   previousStock: string
   newStock: string
-  reference?: string
+  reference?: string | null
   createdAt: Date
   product: {
     id: string
     name: string
-    brand?: string
+    brand?: string | null
     type: "pms" | "lubricant"
     unit: string
-  }
+  } | null
 }
 
 interface Product {
   id: string
   name: string
-  brand?: string
+  brand?: string | null
   type: "pms" | "lubricant"
 }
 
@@ -55,15 +61,15 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  
+
   // Filters
-  const [selectedProduct, setSelectedProduct] = useState<string>("")
-  const [selectedMovementType, setSelectedMovementType] = useState<string>("")
+  const [selectedProduct, setSelectedProduct] = useState<string>("all")
+  const [selectedMovementType, setSelectedMovementType] = useState<string>("all")
   const [startDate, setStartDate] = useState<string>("")
   const [endDate, setEndDate] = useState<string>("")
   const [limit, setLimit] = useState<number>(50)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       // Fetch products for filter dropdown
       const productsResult = await getProducts(stationId)
@@ -72,13 +78,26 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
       }
 
       // Fetch stock movements with filters
-      const filters: any = { limit }
-      if (selectedProduct) filters.productId = selectedProduct
-      if (selectedMovementType) filters.movementType = selectedMovementType
+      const filters: {
+        productId?: string
+        movementType?: "sale" | "adjustment" | "delivery"
+        startDate?: Date
+        endDate?: Date
+        limit?: number
+      } = { limit }
+      if (selectedProduct && selectedProduct !== "all") filters.productId = selectedProduct
+      if (selectedMovementType && selectedMovementType !== "all")
+        filters.movementType = selectedMovementType as
+          | "sale"
+          | "adjustment"
+          | "delivery"
       if (startDate) filters.startDate = new Date(startDate)
       if (endDate) filters.endDate = new Date(endDate)
 
-      const movementsResult = await getStockMovementHistory(stationId, filters)
+      const movementsResult = await getStockMovementHistory({
+        stationId,
+        ...filters
+      })
       if (movementsResult.isSuccess && movementsResult.data) {
         setMovements(movementsResult.data)
       }
@@ -88,11 +107,18 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [
+    stationId,
+    selectedProduct,
+    selectedMovementType,
+    startDate,
+    endDate,
+    limit
+  ])
 
   useEffect(() => {
     fetchData()
-  }, [stationId, selectedProduct, selectedMovementType, startDate, endDate, limit])
+  }, [fetchData])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -161,13 +187,16 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
         <CardContent>
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
-                <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+              <div
+                key={i}
+                className="flex items-center space-x-4 rounded-lg border p-4"
+              >
+                <div className="bg-muted h-8 w-8 animate-pulse rounded" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-                  <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-32 animate-pulse rounded" />
+                  <div className="bg-muted h-3 w-48 animate-pulse rounded" />
                 </div>
-                <div className="h-6 w-16 bg-muted animate-pulse rounded" />
+                <div className="bg-muted h-6 w-16 animate-pulse rounded" />
               </div>
             ))}
           </div>
@@ -196,7 +225,9 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
                 onClick={handleRefresh}
                 disabled={refreshing}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+                />
                 Refresh
               </Button>
             </div>
@@ -206,13 +237,16 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-2">
               <Label htmlFor="product-filter">Product</Label>
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+              <Select
+                value={selectedProduct}
+                onValueChange={setSelectedProduct}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="All products" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All products</SelectItem>
-                  {products.map((product) => (
+                  <SelectItem value="all">All products</SelectItem>
+                  {products.map(product => (
                     <SelectItem key={product.id} value={product.id}>
                       {product.name} {product.brand && `(${product.brand})`}
                     </SelectItem>
@@ -223,12 +257,15 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
 
             <div className="space-y-2">
               <Label htmlFor="type-filter">Movement Type</Label>
-              <Select value={selectedMovementType} onValueChange={setSelectedMovementType}>
+              <Select
+                value={selectedMovementType}
+                onValueChange={setSelectedMovementType}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="all">All types</SelectItem>
                   <SelectItem value="sale">Sales</SelectItem>
                   <SelectItem value="delivery">Deliveries</SelectItem>
                   <SelectItem value="adjustment">Adjustments</SelectItem>
@@ -242,7 +279,7 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
                 id="start-date"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={e => setStartDate(e.target.value)}
               />
             </div>
 
@@ -252,13 +289,16 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
                 id="end-date"
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={e => setEndDate(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="limit">Limit</Label>
-              <Select value={limit.toString()} onValueChange={(value) => setLimit(parseInt(value))}>
+              <Select
+                value={limit.toString()}
+                onValueChange={value => setLimit(parseInt(value))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -284,58 +324,71 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
         </CardHeader>
         <CardContent>
           {movements.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="py-8 text-center">
+              <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">No stock movements found</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-sm">
                 Try adjusting your filters or check back later
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {movements.map((movement) => (
+              {movements.map(movement => (
                 <div
                   key={movement.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-colors"
                 >
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       {getMovementIcon(movement.movementType)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium truncate">
-                          {movement.product.name}
-                        </h4>
-                        {movement.product.brand && (
-                          <Badge variant="outline" className="text-xs">
-                            {movement.product.brand}
-                          </Badge>
-                        )}
-                        <Badge variant={getMovementColor(movement.movementType)}>
-                          {getMovementText(movement.movementType)}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>
-                          {formatQuantity(movement.quantity, movement.movementType)} {movement.product.unit}
-                        </span>
-                        <span>
-                          Stock: {movement.previousStock} → {movement.newStock} {movement.product.unit}
-                        </span>
-                        {movement.reference && (
-                          <span className="truncate">
-                            {movement.reference}
-                          </span>
-                        )}
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      {movement.product && (
+                        <>
+                          <div className="mb-1 flex items-center gap-2">
+                            <h4 className="truncate font-medium">
+                              {movement.product.name}
+                            </h4>
+                            {movement.product.brand && (
+                              <Badge variant="outline" className="text-xs">
+                                {movement.product.brand}
+                              </Badge>
+                            )}
+                            <Badge
+                              variant={getMovementColor(movement.movementType)}
+                            >
+                              {getMovementText(movement.movementType)}
+                            </Badge>
+                          </div>
+                          <div className="text-muted-foreground flex items-center gap-4 text-sm">
+                            <span>
+                              {formatQuantity(
+                                movement.quantity,
+                                movement.movementType
+                              )}{" "}
+                              {movement.product.unit}
+                            </span>
+                            <span>
+                              Stock: {movement.previousStock} →{" "}
+                              {movement.newStock} {movement.product.unit}
+                            </span>
+                            {movement.reference && (
+                              <span className="truncate">
+                                {movement.reference}
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex-shrink-0 text-right">
-                    <div className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(movement.createdAt), { addSuffix: true })}
+                    <div className="text-muted-foreground text-sm">
+                      {formatDistanceToNow(new Date(movement.createdAt), {
+                        addSuffix: true
+                      })}
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-muted-foreground text-xs">
                       {new Date(movement.createdAt).toLocaleDateString()}
                     </div>
                   </div>

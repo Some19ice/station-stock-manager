@@ -9,6 +9,20 @@ export interface Station {
   updatedAt: Date
 }
 
+export interface Supplier {
+  id: string
+  stationId: string
+  name: string
+  contactPerson: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  notes: string | null
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface User {
   id: string
   stationId: string
@@ -214,12 +228,7 @@ export interface DailyReport {
   }>
 }
 
-// API response types
-export interface ApiResponse<T = unknown> {
-  isSuccess: boolean
-  data?: T
-  error?: string
-}
+// API response types - now imported from utils
 
 // Validation schemas (for use with Zod)
 export interface StockUpdateData {

@@ -1,15 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getInventoryStatus } from "@/actions/inventory"
-import { 
-  Package, 
-  AlertTriangle, 
-  TrendingUp, 
+import {
+  Package,
+  AlertTriangle,
+  TrendingUp,
   DollarSign,
   RefreshCw,
   Eye,
@@ -20,7 +20,7 @@ import { formatCurrency } from "@/lib/utils"
 interface InventoryItem {
   id: string
   name: string
-  brand?: string
+  brand?: string | null
   type: "pms" | "lubricant"
   currentStock: number
   minThreshold: number
@@ -57,28 +57,34 @@ export function InventoryDashboard({
   onAdjustStock,
   onRecordDelivery
 }: InventoryDashboardProps) {
-  const [inventoryStatus, setInventoryStatus] = useState<InventoryStatus | null>(null)
+  const [inventoryStatus, setInventoryStatus] =
+    useState<InventoryStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
 
-  const fetchInventoryStatus = async () => {
+  const fetchInventoryStatus = useCallback(async () => {
     try {
+      setError(null)
       const result = await getInventoryStatus(stationId)
       if (result.isSuccess && result.data) {
         setInventoryStatus(result.data)
+      } else {
+        setError(result.error || "Failed to load inventory status")
       }
     } catch (error) {
       console.error("Error fetching inventory status:", error)
+      setError("Failed to load inventory status")
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [stationId])
 
   useEffect(() => {
     fetchInventoryStatus()
-  }, [stationId])
+  }, [fetchInventoryStatus])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -92,12 +98,12 @@ export function InventoryDashboard({
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                <div className="h-4 w-4 bg-muted animate-pulse rounded" />
+                <div className="bg-muted h-4 w-20 animate-pulse rounded" />
+                <div className="bg-muted h-4 w-4 animate-pulse rounded" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 w-16 bg-muted animate-pulse rounded mb-2" />
-                <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+                <div className="bg-muted mb-2 h-8 w-16 animate-pulse rounded" />
+                <div className="bg-muted h-3 w-24 animate-pulse rounded" />
               </CardContent>
             </Card>
           ))}
@@ -106,12 +112,14 @@ export function InventoryDashboard({
     )
   }
 
-  if (!inventoryStatus) {
+  if (!inventoryStatus || error) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Failed to load inventory status</p>
+      <div className="py-8 text-center">
+        <p className="text-muted-foreground">
+          {error || "Failed to load inventory status"}
+        </p>
         <Button onClick={handleRefresh} className="mt-4">
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           Retry
         </Button>
       </div>
@@ -142,7 +150,9 @@ export function InventoryDashboard({
     }
   }
 
-  const lowStockItems = items.filter(item => item.isLowStock && !item.isOutOfStock)
+  const lowStockItems = items.filter(
+    item => item.isLowStock && !item.isOutOfStock
+  )
   const outOfStockItems = items.filter(item => item.isOutOfStock)
   const normalStockItems = items.filter(item => !item.isLowStock)
 
@@ -152,12 +162,14 @@ export function InventoryDashboard({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Total Products
+            </CardTitle>
+            <Package className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Active inventory items
             </p>
           </CardContent>
@@ -165,25 +177,31 @@ export function InventoryDashboard({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inventory Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Inventory Value
+            </CardTitle>
+            <DollarSign className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary.totalValue)}</div>
-            <p className="text-xs text-muted-foreground">
-              Total stock value
-            </p>
+            <div className="text-2xl font-bold">
+              {formatCurrency(summary.totalValue)}
+            </div>
+            <p className="text-muted-foreground text-xs">Total stock value</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Low Stock Alerts
+            </CardTitle>
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{summary.lowStockCount}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-yellow-600">
+              {summary.lowStockCount}
+            </div>
+            <p className="text-muted-foreground text-xs">
               Items below threshold
             </p>
           </CardContent>
@@ -195,8 +213,10 @@ export function InventoryDashboard({
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{summary.outOfStockCount}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-red-600">
+              {summary.outOfStockCount}
+            </div>
+            <p className="text-muted-foreground text-xs">
               Items requiring immediate attention
             </p>
           </CardContent>
@@ -212,7 +232,9 @@ export function InventoryDashboard({
             onClick={handleRefresh}
             disabled={refreshing}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
@@ -319,7 +341,7 @@ function InventoryItemsList({
     return (
       <Card>
         <CardContent className="py-8 text-center">
-          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
           <p className="text-muted-foreground">{emptyMessage}</p>
         </CardContent>
       </Card>
@@ -336,13 +358,13 @@ function InventoryItemsList({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {items.map((item) => (
+          {items.map(item => (
             <div
               key={item.id}
-              className="flex items-center justify-between p-4 border rounded-lg"
+              className="flex items-center justify-between rounded-lg border p-4"
             >
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="mb-1 flex items-center gap-2">
                   <h4 className="font-medium">{item.name}</h4>
                   {item.brand && (
                     <Badge variant="outline" className="text-xs">
@@ -353,21 +375,15 @@ function InventoryItemsList({
                     {getStatusText(item.stockStatus)}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-4 text-sm">
                   <span>
                     Stock: {item.currentStock} {item.unit}
                   </span>
                   <span>
                     Min: {item.minThreshold} {item.unit}
                   </span>
-                  <span>
-                    Value: {formatCurrency(item.value)}
-                  </span>
-                  {item.supplier && (
-                    <span>
-                      Supplier: {item.supplier.name}
-                    </span>
-                  )}
+                  <span>Value: {formatCurrency(item.value)}</span>
+                  {item.supplier && <span>Supplier: {item.supplier.name}</span>}
                 </div>
               </div>
               <div className="flex items-center gap-2">

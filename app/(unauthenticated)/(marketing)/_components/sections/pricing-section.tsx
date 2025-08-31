@@ -8,34 +8,35 @@ import { SectionWrapper } from "./section-wrapper"
 
 const pricing = [
   {
-    name: "Pro Monthly",
-    price: "$19",
+    name: "Single Station",
+    price: "$49",
     period: "/month",
-    description: "Perfect for growing businesses",
+    description: "Perfect for independent gas stations",
     features: [
-      "Unlimited projects",
-      "Advanced analytics",
-      "Priority support",
-      "Custom integrations",
-      "API access",
-      "Export data"
+      "1 station location",
+      "Real-time inventory tracking",
+      "Basic reporting",
+      "Email support",
+      "Mobile app access",
+      "Supplier management"
     ],
     paymentLink: process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY,
     icon: CreditCard,
     highlight: false
   },
   {
-    name: "Pro Yearly",
-    price: "$190",
-    period: "/year",
-    description: "Best value - save $38 per year",
+    name: "Multi-Station Chain",
+    price: "$149",
+    period: "/month",
+    description: "Best for chains - up to 10 locations",
     features: [
-      "Everything in monthly",
-      "2 months free",
-      "Early access to features",
-      "Custom onboarding",
-      "Dedicated account manager",
-      "99.9% uptime SLA"
+      "Up to 10 stations",
+      "Advanced analytics",
+      "Priority support",
+      "Custom integrations",
+      "API access",
+      "Compliance reporting",
+      "Dedicated account manager"
     ],
     paymentLink: process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_YEARLY,
     icon: Zap,

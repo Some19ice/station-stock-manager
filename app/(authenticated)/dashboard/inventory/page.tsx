@@ -1,8 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useState, useEffect } from "react"
+import { useInventoryModalListener } from "@/hooks/use-inventory-modal"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import { ProductForm } from "@/components/products/product-form"
 import { InventoryDashboard } from "@/components/inventory/inventory-dashboard"
 import { StockMovementHistory } from "@/components/inventory/stock-movement-history"
@@ -11,19 +18,20 @@ import { DeliveryForm } from "@/components/inventory/delivery-form"
 import { StockAdjustmentForm } from "@/components/inventory/stock-adjustment-form"
 import { ReorderRecommendations } from "@/components/inventory/reorder-recommendations"
 import { useStationAuth } from "@/hooks/use-station-auth"
-import { 
-  Package, 
-  History, 
-  Building2, 
+import {
+  Package,
+  History,
+  Building2,
   ShoppingCart,
   TrendingUp,
-  Settings
+  Settings,
+  Plus
 } from "lucide-react"
 
 interface InventoryItem {
   id: string
   name: string
-  brand?: string
+  brand?: string | null
   type: "pms" | "lubricant"
   currentStock: number
   minThreshold: number
@@ -36,14 +44,27 @@ interface InventoryItem {
   stockStatus: "out_of_stock" | "low_stock" | "normal"
 }
 
-type DialogMode = "add-product" | "edit-product" | "adjust-stock" | "record-delivery" | "view-product" | null
+type DialogMode =
+  | "add-product"
+  | "edit-product"
+  | "adjust-stock"
+  | "record-delivery"
+  | "view-product"
+  | null
 
 export default function InventoryPage() {
   const { user, station } = useStationAuth()
   const [activeTab, setActiveTab] = useState("dashboard")
   const [dialogMode, setDialogMode] = useState<DialogMode>(null)
-  const [selectedProduct, setSelectedProduct] = useState<InventoryItem | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<InventoryItem | null>(
+    null
+  )
   const [refreshKey, setRefreshKey] = useState(0)
+
+  // Listen for add product modal events from sidebar
+  useInventoryModalListener(() => {
+    setDialogMode("add-product")
+  })
 
   const handleViewProduct = (product: InventoryItem) => {
     setSelectedProduct(product)
@@ -83,7 +104,9 @@ export default function InventoryPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Inventory Management
+          </h1>
           <p className="text-muted-foreground mt-2">
             Loading station information...
           </p>
@@ -96,7 +119,9 @@ export default function InventoryPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Inventory Management
+          </h1>
           <p className="text-muted-foreground mt-2">
             Access restricted to managers only
           </p>
@@ -107,11 +132,19 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
-        <p className="text-muted-foreground mt-2">
-          Comprehensive inventory management for your station
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Inventory Management
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Comprehensive inventory management for your station
+          </p>
+        </div>
+        <Button onClick={() => setDialogMode("add-product")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Product
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -153,16 +186,33 @@ export default function InventoryPage() {
         </TabsContent>
 
         <TabsContent value="reorder" className="space-y-6">
-          <ReorderRecommendations 
+          <ReorderRecommendations
             stationId={station.id}
             onRecordDelivery={handleRecordDeliveryById}
           />
         </TabsContent>
       </Tabs>
 
+      {/* Add Product Dialog */}
+      <Dialog open={dialogMode === "add-product"} onOpenChange={handleCancel}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Add New Product
+            </DialogTitle>
+          </DialogHeader>
+          <ProductForm
+            stationId={station.id}
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
+          />
+        </DialogContent>
+      </Dialog>
+
       {/* Stock Adjustment Dialog */}
       <Dialog open={dialogMode === "adjust-stock"} onOpenChange={handleCancel}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
@@ -180,8 +230,11 @@ export default function InventoryPage() {
       </Dialog>
 
       {/* Record Delivery Dialog */}
-      <Dialog open={dialogMode === "record-delivery"} onOpenChange={handleCancel}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={dialogMode === "record-delivery"}
+        onOpenChange={handleCancel}
+      >
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />

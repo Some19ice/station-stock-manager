@@ -2,9 +2,18 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { db } from "@/db"
-import { suppliers, users } from "@/db/schema"
+import { suppliers, users, products } from "@/db/schema"
 import { eq, and } from "drizzle-orm"
 import { z } from "zod"
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  createValidationErrorResponse,
+  handleDatabaseOperation,
+  validateInput,
+  ErrorCodes,
+  type ApiResponse
+} from "@/lib/utils"
 
 // Input validation schemas
 const createSupplierSchema = z.object({
@@ -28,6 +37,29 @@ const updateSupplierSchema = z.object({
   isActive: z.boolean().optional()
 })
 
+const getSupplierSchema = z.object({
+  supplierId: z.string().min(1, "Supplier ID is required")
+})
+
+const getSuppliersSchema = z.object({
+  stationId: z.string().min(1, "Station ID is required")
+})
+
+const deleteSupplierSchema = z.object({
+  supplierId: z.string().min(1, "Supplier ID is required")
+})
+
+// Type definitions for responses
+type ProductData = typeof products.$inferSelect
+
+type SupplierWithProducts = typeof suppliers.$inferSelect & {
+  products?: ProductData[]
+}
+
+type SupplierWithProductCount = typeof suppliers.$inferSelect & {
+  productCount: number
+}
+
 // Helper function to get user role
 async function getUserRole(userId: string): Promise<string | null> {
   const user = await db.query.users.findFirst({
@@ -36,23 +68,36 @@ async function getUserRole(userId: string): Promise<string | null> {
   return user?.role || null
 }
 
-// Create a new supplier (Manager only)
+/**
+ * Create a new supplier (Manager only)
+ */
 export async function createSupplier(
   input: z.infer<typeof createSupplierSchema>
-) {
-  try {
-    const validatedInput = createSupplierSchema.parse(input)
+): Promise<ApiResponse<typeof suppliers.$inferSelect>> {
+  // Validate input
+  const validation = validateInput(createSupplierSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+  const validatedInput = validation.data
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can create suppliers" }
-    }
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
 
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
     const [supplier] = await db
       .insert(suppliers)
       .values({
@@ -65,24 +110,34 @@ export async function createSupplier(
       })
       .returning()
 
-    return { isSuccess: true, data: supplier }
-  } catch (error) {
-    console.error("Error creating supplier:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return { isSuccess: false, error: "Failed to create supplier" }
-  }
+    return supplier
+  }, "Create supplier")
 }
 
-// Get all suppliers for a station
-export async function getSuppliers(stationId: string) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+/**
+ * Get all suppliers for a station
+ */
+export async function getSuppliers(
+  input: z.infer<typeof getSuppliersSchema>
+): Promise<ApiResponse<Array<typeof suppliers.$inferSelect>>> {
+  // Validate input
+  const validation = validateInput(getSuppliersSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
+  const { stationId } = validation.data
+
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
+
+  return handleDatabaseOperation(async () => {
     const supplierList = await db.query.suppliers.findMany({
       where: and(
         eq(suppliers.stationId, stationId),
@@ -91,59 +146,84 @@ export async function getSuppliers(stationId: string) {
       orderBy: [suppliers.name]
     })
 
-    return { isSuccess: true, data: supplierList }
-  } catch (error) {
-    console.error("Error fetching suppliers:", error)
-    return { isSuccess: false, error: "Failed to fetch suppliers" }
-  }
+    return supplierList
+  }, "Fetch suppliers")
 }
 
-// Get a single supplier by ID
-export async function getSupplier(supplierId: string) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+/**
+ * Get a single supplier by ID
+ */
+export async function getSupplier(
+  input: z.infer<typeof getSupplierSchema>
+): Promise<ApiResponse<SupplierWithProducts>> {
+  // Validate input
+  const validation = validateInput(getSupplierSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
+  const { supplierId } = validation.data
+
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
+
+  return handleDatabaseOperation(async () => {
     const supplier = await db.query.suppliers.findFirst({
       where: eq(suppliers.id, supplierId),
       with: {
         products: {
-          where: eq(suppliers.isActive, true)
+          where: eq(products.isActive, true)
         }
       }
     })
 
     if (!supplier) {
-      return { isSuccess: false, error: "Supplier not found" }
+      throw new Error("Supplier not found")
     }
 
-    return { isSuccess: true, data: supplier }
-  } catch (error) {
-    console.error("Error fetching supplier:", error)
-    return { isSuccess: false, error: "Failed to fetch supplier" }
-  }
+    return supplier as SupplierWithProducts
+  }, "Fetch supplier")
 }
 
-// Update supplier details (Manager only)
+/**
+ * Update supplier details (Manager only)
+ */
 export async function updateSupplier(
   input: z.infer<typeof updateSupplierSchema>
-) {
-  try {
-    const validatedInput = updateSupplierSchema.parse(input)
+): Promise<ApiResponse<typeof suppliers.$inferSelect>> {
+  // Validate input
+  const validation = validateInput(updateSupplierSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
+  const validatedInput = validation.data
+
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
+
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
+    const updateData: Partial<typeof suppliers.$inferInsert> = {
+      updatedAt: new Date()
     }
-
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can update suppliers" }
-    }
-
-    const updateData: any = { updatedAt: new Date() }
 
     if (validatedInput.name !== undefined) updateData.name = validatedInput.name
     if (validatedInput.contactPerson !== undefined)
@@ -166,51 +246,62 @@ export async function updateSupplier(
       .returning()
 
     if (!supplier) {
-      return { isSuccess: false, error: "Supplier not found" }
+      throw new Error("Supplier not found")
     }
 
-    return { isSuccess: true, data: supplier }
-  } catch (error) {
-    console.error("Error updating supplier:", error)
-    if (error instanceof z.ZodError) {
-      return { isSuccess: false, error: error.issues[0].message }
-    }
-    return { isSuccess: false, error: "Failed to update supplier" }
-  }
+    return supplier
+  }, "Update supplier")
 }
 
-// Delete/deactivate a supplier (Manager only)
-export async function deleteSupplier(supplierId: string) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+/**
+ * Delete/deactivate a supplier (Manager only)
+ */
+export async function deleteSupplier(
+  input: z.infer<typeof deleteSupplierSchema>
+): Promise<ApiResponse<typeof suppliers.$inferSelect>> {
+  // Validate input
+  const validation = validateInput(deleteSupplierSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
-    const userRole = await getUserRole(userId)
-    if (userRole !== "manager") {
-      return { isSuccess: false, error: "Only managers can delete suppliers" }
-    }
+  const { supplierId } = validation.data
 
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
+
+  // Check authorization
+  const userRole = await getUserRole(userId)
+  if (userRole !== "manager") {
+    return createErrorResponse("Manager access required", ErrorCodes.FORBIDDEN)
+  }
+
+  return handleDatabaseOperation(async () => {
     // Check if supplier has active products
     const supplier = await db.query.suppliers.findFirst({
       where: eq(suppliers.id, supplierId),
       with: {
         products: {
-          where: eq(suppliers.isActive, true)
+          where: eq(products.isActive, true)
         }
       }
     })
 
     if (!supplier) {
-      return { isSuccess: false, error: "Supplier not found" }
+      throw new Error("Supplier not found")
     }
 
-    if (supplier.products && supplier.products.length > 0) {
-      return {
-        isSuccess: false,
-        error: "Cannot delete supplier with active products. Please reassign or deactivate products first."
-      }
+    const activeProducts = (supplier.products as ProductData[]) || []
+    if (activeProducts.length > 0) {
+      throw new Error(
+        "Cannot delete supplier with active products. Please reassign or deactivate products first."
+      )
     }
 
     // Soft delete by setting isActive to false
@@ -223,21 +314,34 @@ export async function deleteSupplier(supplierId: string) {
       .where(eq(suppliers.id, supplierId))
       .returning()
 
-    return { isSuccess: true, data: deletedSupplier }
-  } catch (error) {
-    console.error("Error deleting supplier:", error)
-    return { isSuccess: false, error: "Failed to delete supplier" }
-  }
+    return deletedSupplier
+  }, "Delete supplier")
 }
 
-// Get suppliers with product counts
-export async function getSuppliersWithProductCounts(stationId: string) {
-  try {
-    const { userId } = await auth()
-    if (!userId) {
-      return { isSuccess: false, error: "Unauthorized" }
-    }
+/**
+ * Get suppliers with product counts
+ */
+export async function getSuppliersWithProductCounts(
+  input: z.infer<typeof getSuppliersSchema>
+): Promise<ApiResponse<Array<SupplierWithProductCount>>> {
+  // Validate input
+  const validation = validateInput(getSuppliersSchema, input)
+  if (!validation.isValid) {
+    return validation.error
+  }
 
+  const { stationId } = validation.data
+
+  // Check authentication
+  const { userId } = await auth()
+  if (!userId) {
+    return createErrorResponse(
+      "Authentication required",
+      ErrorCodes.UNAUTHORIZED
+    )
+  }
+
+  return handleDatabaseOperation(async () => {
     const supplierList = await db.query.suppliers.findMany({
       where: and(
         eq(suppliers.stationId, stationId),
@@ -245,21 +349,20 @@ export async function getSuppliersWithProductCounts(stationId: string) {
       ),
       with: {
         products: {
-          where: eq(suppliers.isActive, true)
+          where: eq(products.isActive, true)
         }
       },
       orderBy: [suppliers.name]
     })
 
-    const suppliersWithCounts = supplierList.map(supplier => ({
-      ...supplier,
-      productCount: supplier.products?.length || 0,
-      products: undefined // Remove products array to reduce payload size
-    }))
+    const suppliersWithCounts: Array<SupplierWithProductCount> =
+      supplierList.map(supplier => ({
+        ...supplier,
+        productCount: ((supplier.products as ProductData[]) || []).length,
+        // Remove products array to reduce payload size
+        products: undefined
+      }))
 
-    return { isSuccess: true, data: suppliersWithCounts }
-  } catch (error) {
-    console.error("Error fetching suppliers with counts:", error)
-    return { isSuccess: false, error: "Failed to fetch suppliers" }
-  }
+    return suppliersWithCounts
+  }, "Fetch suppliers with product counts")
 }

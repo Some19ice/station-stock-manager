@@ -82,7 +82,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  
+
   /* Brand Colors */
   --brand-primary: oklch(0.522 0.223 262.881); /* indigo-600 */
   --brand-primary-hover: oklch(0.475 0.196 264.798); /* indigo-700 */
@@ -90,6 +90,59 @@
   --brand-secondary: oklch(0.531 0.255 286.623); /* purple-600 */
   --brand-secondary-hover: oklch(0.474 0.215 286.03); /* purple-700 */
   --brand-accent: oklch(0.661 0.238 351.367); /* pink-600 */
+
+  /* Station Stock Manager Design System */
+
+  /* Color Palette */
+  /* Primary Colors */
+  --color-primary-50: #eff6ff;
+  --color-primary-600: #1e3a8a;
+  --color-primary-700: #1e40af;
+
+  /* Success Colors */
+  --color-success-50: #f0fdf4;
+  --color-success-600: #166534;
+  --color-success-700: #15803d;
+
+  /* Warning Colors */
+  --color-warning-50: #fffbeb;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+
+  /* Danger Colors */
+  --color-danger-50: #fef2f2;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+
+  /* Neutral Colors */
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-600: #475569;
+  --color-gray-900: #1f2937;
+
+  /* Typography Scale */
+  --text-display: 2.25rem; /* 36px */
+  --text-display-line-height: 2.5rem; /* 40px */
+  --text-display-weight: 700;
+
+  --text-heading: 1.5rem; /* 24px */
+  --text-heading-line-height: 2rem; /* 32px */
+  --text-heading-weight: 600;
+
+  --text-body: 1rem; /* 16px */
+  --text-body-line-height: 1.5rem; /* 24px */
+  --text-body-weight: 400;
+
+  --text-caption: 0.875rem; /* 14px */
+  --text-caption-line-height: 1.25rem; /* 20px */
+  --text-caption-weight: 400;
+
+  /* Component Spacing System */
+  --spacing-xs: 0.25rem; /* 4px */
+  --spacing-sm: 0.5rem;  /* 8px */
+  --spacing-md: 1rem;    /* 16px */
+  --spacing-lg: 1.5rem;  /* 24px */
+  --spacing-xl: 2rem;    /* 32px */
 }
 
 .dark {
@@ -141,5 +194,100 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Typography Scale Utilities */
+  .text-display {
+    font-size: var(--text-display);
+    line-height: var(--text-display-line-height);
+    font-weight: var(--text-display-weight);
+  }
+
+  .text-heading {
+    font-size: var(--text-heading);
+    line-height: var(--text-heading-line-height);
+    font-weight: var(--text-heading-weight);
+  }
+
+  .text-body {
+    font-size: var(--text-body);
+    line-height: var(--text-body-line-height);
+    font-weight: var(--text-body-weight);
+  }
+
+  .text-caption {
+    font-size: var(--text-caption);
+    line-height: var(--text-caption-line-height);
+    font-weight: var(--text-caption-weight);
+  }
+
+  /* Component Spacing System */
+  .spacing-xs { margin: var(--spacing-xs); }
+  .spacing-sm { margin: var(--spacing-sm); }
+  .spacing-md { margin: var(--spacing-md); }
+  .spacing-lg { margin: var(--spacing-lg); }
+  .spacing-xl { margin: var(--spacing-xl); }
+
+  /* Padding utilities */
+  .p-spacing-xs { padding: var(--spacing-xs); }
+  .p-spacing-sm { padding: var(--spacing-sm); }
+  .p-spacing-md { padding: var(--spacing-md); }
+  .p-spacing-lg { padding: var(--spacing-lg); }
+  .p-spacing-xl { padding: var(--spacing-xl); }
+
+  /* Margin utilities */
+  .m-spacing-xs { margin: var(--spacing-xs); }
+  .m-spacing-sm { margin: var(--spacing-sm); }
+  .m-spacing-md { margin: var(--spacing-md); }
+  .m-spacing-lg { margin: var(--spacing-lg); }
+  .m-spacing-xl { margin: var(--spacing-xl); }
+
+  /* Responsive Design Breakpoints */
+  /* Mobile First Approach */
+  .container {
+    padding: var(--spacing-md);
+  }
+
+  /* Tablet (768px and up) */
+  @media (min-width: 768px) {
+    .container {
+      padding: var(--spacing-lg);
+    }
+
+    .grid-responsive {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Desktop (1024px and up) */
+  @media (min-width: 1024px) {
+    .container {
+      padding: var(--spacing-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .grid-responsive {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* Mobile Optimization */
+  /* Ensure minimum touch targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Mobile-specific button styling */
+  .btn-mobile {
+    @apply w-full min-h-[44px] bg-blue-600 text-white font-semibold rounded-lg shadow-sm active:bg-blue-700 transition-colors duration-150;
+  }
+
+  /* Improved focus states for mobile */
+  .focus-mobile:focus {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
   }
 }

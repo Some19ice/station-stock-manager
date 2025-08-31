@@ -1,4 +1,4 @@
-import { getCustomerByUserId } from "@/actions/customers"
+import { getCurrentUserProfile } from "@/actions/auth"
 import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import DashboardClientLayout from "./_components/layout-client"
@@ -14,23 +14,24 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  const customer = await getCustomerByUserId(user.id)
+  const userProfile = await getCurrentUserProfile()
 
-  // Gate dashboard access for pro members only
-  // Store a message to show why they were redirected
-  if (!customer || customer.membership !== "pro") {
-    // Using searchParams to pass a message that can be read by client components
-    redirect("/?redirect=dashboard#pricing")
+  if (!userProfile.isSuccess || !userProfile.data) {
+    redirect("/setup-profile")
+  }
+
+  const { user: profileUser } = userProfile.data
+
+  // Verify user is a manager
+  if (profileUser.role !== "manager") {
+    redirect("/staff")
   }
 
   const userData = {
-    name:
-      user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : user.firstName || user.username || "User",
+    name: user.fullName || user.firstName || user.username || "Manager",
     email: user.emailAddresses[0]?.emailAddress || "",
     avatar: user.imageUrl,
-    membership: customer.membership
+    membership: "manager"
   }
 
   return (
