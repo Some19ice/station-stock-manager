@@ -25,12 +25,14 @@ import {
 } from "lucide-react"
 
 export function LowStockAlertsTab() {
-  const { user } = useStationAuth()
+  const { user, isLoading: userLoading } = useStationAuth()
   const [alerts, setAlerts] = useState<LowStockAlert[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const fetchAlerts = useCallback(async () => {
+    if (userLoading) return
+    
     if (!user?.stationId) {
       toast.error("Station information not found")
       return
@@ -54,12 +56,14 @@ export function LowStockAlertsTab() {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.stationId])
+  }, [user?.stationId, userLoading])
 
   // Auto-fetch on component mount
   useEffect(() => {
-    fetchAlerts()
-  }, [fetchAlerts])
+    if (!userLoading && user?.stationId) {
+      fetchAlerts()
+    }
+  }, [fetchAlerts, userLoading, user?.stationId])
 
   const handlePrint = () => {
     window.print()

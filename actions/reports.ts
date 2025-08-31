@@ -14,14 +14,14 @@ import { z } from "zod"
 
 // Input validation schemas
 const dateRangeSchema = z.object({
-  startDate: z.string().transform(str => new Date(str)),
-  endDate: z.string().transform(str => new Date(str))
+  startDate: z.union([z.string(), z.date()]).transform(val => val instanceof Date ? val : new Date(val)),
+  endDate: z.union([z.string(), z.date()]).transform(val => val instanceof Date ? val : new Date(val))
 })
 
 const reportFiltersSchema = z.object({
   stationId: z.string().uuid(),
-  startDate: z.string().transform(str => new Date(str)),
-  endDate: z.string().transform(str => new Date(str)),
+  startDate: z.union([z.string(), z.date()]).transform(val => val instanceof Date ? val : new Date(val)),
+  endDate: z.union([z.string(), z.date()]).transform(val => val instanceof Date ? val : new Date(val)),
   userId: z.string().uuid().optional()
 })
 

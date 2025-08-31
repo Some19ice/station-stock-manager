@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -26,6 +26,14 @@ export function DailyReportTab() {
   const [reportData, setReportData] = useState<DailyReportData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Load saved report data after hydration
+  useEffect(() => {
+    const saved = localStorage.getItem('dailyReportData')
+    if (saved) {
+      setReportData(JSON.parse(saved))
+    }
+  }, [])
+
   const handleGenerateReport = async () => {
     if (!user?.stationId) {
       toast.error("Station information not found")
@@ -42,6 +50,7 @@ export function DailyReportTab() {
 
       if (result.isSuccess && result.data) {
         setReportData(result.data)
+        localStorage.setItem('dailyReportData', JSON.stringify(result.data))
         toast.success("Daily report generated successfully")
       } else {
         toast.error(result.error || "Failed to generate report")
