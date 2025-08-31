@@ -23,12 +23,14 @@ interface CustomizableDashboardProps {
   widgets: Widget[]
   onWidgetToggle: (id: string) => void
   onWidgetReorder: (widgets: Widget[]) => void
+  userRole?: string
 }
 
-export function CustomizableDashboard({ 
-  widgets, 
-  onWidgetToggle, 
-  onWidgetReorder 
+export function CustomizableDashboard({
+  widgets,
+  onWidgetToggle,
+  onWidgetReorder,
+  userRole
 }: CustomizableDashboardProps) {
   const [isCustomizing, setIsCustomizing] = useState(false)
   const [draggedWidget, setDraggedWidget] = useState<string | null>(null)
@@ -66,6 +68,13 @@ export function CustomizableDashboard({
     setDraggedWidget(null)
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent, widgetId: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onWidgetToggle(widgetId)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -75,16 +84,21 @@ export function CustomizableDashboard({
             variant={isCustomizing ? "default" : "outline"}
             size="sm"
             onClick={() => setIsCustomizing(!isCustomizing)}
+            aria-label={isCustomizing ? "Exit customization mode" : "Enter customization mode"}
           >
-            <Settings className="h-4 w-4 mr-1" />
+            <Settings className="mr-1 h-4 w-4" />
             {isCustomizing ? "Done" : "Customize"}
           </Button>
-          
+
           {isCustomizing && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Eye className="h-4 w-4 mr-1" />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  aria-label="Toggle widget visibility"
+                >
+                  <Eye className="mr-1 h-4 w-4" />
                   Widgets
                 </Button>
               </DropdownMenuTrigger>
@@ -93,7 +107,10 @@ export function CustomizableDashboard({
                   <DropdownMenuItem
                     key={widget.id}
                     onClick={() => onWidgetToggle(widget.id)}
+                    onKeyDown={(e) => handleKeyDown(e, widget.id)}
                     className="flex items-center gap-2"
+                    role="menuitemcheckbox"
+                    aria-checked={widget.visible}
                   >
                     {widget.visible ? (
                       <Eye className="h-4 w-4" />
@@ -109,23 +126,26 @@ export function CustomizableDashboard({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4" role="main" aria-label="Dashboard widgets">
         {visibleWidgets.map(widget => (
           <div
             key={widget.id}
             draggable={isCustomizing}
-            onDragStart={(e) => handleDragStart(e, widget.id)}
+            onDragStart={e => handleDragStart(e, widget.id)}
             onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, widget.id)}
+            onDrop={e => handleDrop(e, widget.id)}
             className={`${
-              isCustomizing 
-                ? 'cursor-move border-2 border-dashed border-gray-300 rounded-lg p-2' 
-                : ''
+              isCustomizing
+                ? "cursor-move rounded-lg border-2 border-dashed border-gray-300 p-2"
+                : ""
             }`}
+            role="region"
+            aria-label={`${widget.title} widget`}
+            tabIndex={isCustomizing ? 0 : -1}
           >
             {isCustomizing && (
-              <div className="flex items-center gap-2 mb-2 text-sm text-gray-600">
-                <GripVertical className="h-4 w-4" />
+              <div className="mb-2 flex items-center gap-2 text-sm text-gray-600">
+                <GripVertical className="h-4 w-4" aria-hidden="true" />
                 {widget.title}
               </div>
             )}

@@ -5,6 +5,7 @@ import { useInventoryModalListener } from "@/hooks/use-inventory-modal"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
@@ -18,6 +19,7 @@ import { DeliveryForm } from "@/components/inventory/delivery-form"
 import { StockAdjustmentForm } from "@/components/inventory/stock-adjustment-form"
 import { ReorderRecommendations } from "@/components/inventory/reorder-recommendations"
 import { useStationAuth } from "@/hooks/use-station-auth"
+import { deleteProduct } from "@/actions/products"
 import {
   Package,
   History,
@@ -25,7 +27,8 @@ import {
   ShoppingCart,
   TrendingUp,
   Settings,
-  Plus
+  Plus,
+  List
 } from "lucide-react"
 
 interface InventoryItem {
@@ -50,6 +53,7 @@ type DialogMode =
   | "adjust-stock"
   | "record-delivery"
   | "view-product"
+  | "delete-product"
   | null
 
 export default function InventoryPage() {
@@ -93,6 +97,11 @@ export default function InventoryPage() {
     setDialogMode(null)
     setSelectedProduct(null)
     setRefreshKey(prev => prev + 1)
+  }
+
+  const handleDeleteProduct = (product: InventoryItem) => {
+    setSelectedProduct(product)
+    setDialogMode("delete-product")
   }
 
   const handleCancel = () => {
@@ -148,10 +157,14 @@ export default function InventoryPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="all-products" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            All Products
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <History className="h-4 w-4" />
@@ -174,6 +187,18 @@ export default function InventoryPage() {
             onViewProduct={handleViewProduct}
             onAdjustStock={handleAdjustStock}
             onRecordDelivery={handleRecordDelivery}
+            onDeleteProduct={handleDeleteProduct}
+          />
+        </TabsContent>
+
+        <TabsContent value="all-products" className="space-y-6">
+          <InventoryDashboard
+            key={refreshKey}
+            stationId={station.id}
+            onViewProduct={handleViewProduct}
+            onAdjustStock={handleAdjustStock}
+            onRecordDelivery={handleRecordDelivery}
+            onDeleteProduct={handleDeleteProduct}
           />
         </TabsContent>
 
@@ -249,6 +274,42 @@ export default function InventoryPage() {
               onCancel={handleCancel}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Product Dialog */}
+      <Dialog open={dialogMode === "delete-product"} onOpenChange={handleCancel}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Product</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{selectedProduct?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={async () => {
+                if (selectedProduct) {
+                  try {
+                    const result = await deleteProduct(selectedProduct.id)
+                    if (result.isSuccess) {
+                      handleSuccess()
+                    } else {
+                      console.error("Failed to delete product:", result.error)
+                    }
+                  } catch (error) {
+                    console.error("Error deleting product:", error)
+                  }
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -17,6 +17,8 @@ import { QuickActions } from "@/components/dashboard/quick-actions"
 import { CustomizableDashboard } from "@/components/dashboard/customizable-dashboard"
 import { DashboardErrorBoundary, WidgetError } from "@/components/dashboard/error-boundary"
 import { useDashboardCache } from "@/hooks/use-dashboard-cache"
+import { useRealtimeUpdates } from "@/hooks/use-realtime-updates"
+import { WidgetWrapper } from "@/components/dashboard/widget-wrapper"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface UserProfile {
@@ -113,17 +115,56 @@ function StockAlertsWidget() {
   return <LowStockAlerts alerts={alerts.data || []} />
 }
 
+function EnhancedQuickActionsWidget({ 
+  userRole, 
+  lowStockCount = 0, 
+  isLoading = false 
+}: { 
+  userRole: string
+  lowStockCount?: number
+  isLoading?: boolean 
+}) {
+  const pendingTasks = 3 // This could be fetched from a tasks API
+
+  return (
+    <QuickActions
+      lowStockCount={lowStockCount}
+      pendingTasks={pendingTasks}
+      userRole={userRole as "staff" | "manager"}
+      isLoading={isLoading}
+    />
+  )
+}
+
 function RecentActivityWidget() {
-  const { data: transactions, isLoading, error, refresh } = useDashboardCache(
-    'recent-transactions',
+  const {
+    data: transactions,
+    isLoading,
+    error,
+    refresh
+  } = useDashboardCache(
+    "recent-transactions",
     () => getRecentTransactions(10),
     { ttl: 1 * 60 * 1000, refreshInterval: 15000 }
   )
 
   if (isLoading) return <ActivityLoading />
-  if (error) return <WidgetError title="Recent Activity" error="Failed to load activity" onRetry={refresh} />
+  if (error)
+    return (
+      <WidgetError
+        title="Recent Activity"
+        error="Failed to load activity"
+        onRetry={refresh}
+      />
+    )
   if (!transactions?.isSuccess) {
-    return <WidgetError title="Recent Activity" error="Unable to load recent transactions" onRetry={refresh} />
+    return (
+      <WidgetError
+        title="Recent Activity"
+        error="Unable to load recent transactions"
+        onRetry={refresh}
+      />
+    )
   }
 
   return <RecentActivity transactions={transactions.data || []} />
@@ -131,11 +172,67 @@ function RecentActivityWidget() {
 
 export default function ManagerDashboard() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  
+  // Shared data fetching
+  const { data: alerts, isLoading: alertsLoading, invalidate: invalidateAlerts } = useDashboardCache(
+    'stock-alerts',
+    getLowStockAlerts,
+    { ttl: 2 * 60 * 1000, refreshInterval: 60000 }
+  )
+  
+  const lowStockCount = alerts?.isSuccess ? alerts.data?.length || 0 : 0
+
+  // Real-time updates
+  useRealtimeUpdates({
+    enabled: true,
+    onUpdate: (event) => {
+      if (event === 'data_update' || event === 'visibility_change' || event === 'connection_restored') {
+        invalidateAlerts()
+      }
+    }
+  })
+  
   const [widgets, setWidgets] = useState<Widget[]>([
-    { id: 'metrics', title: 'Key Metrics', component: <DashboardMetricsWidget />, visible: true, order: 1 },
-    { id: 'alerts', title: 'Stock Alerts', component: <StockAlertsWidget />, visible: true, order: 2 },
-    { id: 'activity', title: 'Recent Activity', component: <RecentActivityWidget />, visible: true, order: 3 },
-    { id: 'actions', title: 'Quick Actions', component: <QuickActions />, visible: true, order: 4 }
+    {
+      id: "metrics",
+      title: "Key Metrics",
+      component: (
+        <WidgetWrapper title="Key Metrics">
+          <DashboardMetricsWidget />
+        </WidgetWrapper>
+      ),
+      visible: true,
+      order: 1
+    },
+    {
+      id: "alerts",
+      title: "Stock Alerts",
+      component: (
+        <WidgetWrapper title="Stock Alerts">
+          <StockAlertsWidget />
+        </WidgetWrapper>
+      ),
+      visible: true,
+      order: 2
+    },
+    {
+      id: "activity",
+      title: "Recent Activity",
+      component: (
+        <WidgetWrapper title="Recent Activity">
+          <RecentActivityWidget />
+        </WidgetWrapper>
+      ),
+      visible: true,
+      order: 3
+    },
+    {
+      id: "actions",
+      title: "Quick Actions",
+      component: null,
+      visible: true,
+      order: 4
+    }
   ])
 
   useEffect(() => {
@@ -155,7 +252,7 @@ export default function ManagerDashboard() {
 
         setUserProfile(profile.data)
       } catch (error) {
-        console.error('Auth check failed:', error)
+        console.error("Auth check failed:", error)
         redirect("/login")
       }
     }
@@ -164,9 +261,9 @@ export default function ManagerDashboard() {
   }, [])
 
   const handleWidgetToggle = (id: string) => {
-    setWidgets(prev => prev.map(w => 
-      w.id === id ? { ...w, visible: !w.visible } : w
-    ))
+    setWidgets(prev =>
+      prev.map(w => (w.id === id ? { ...w, visible: !w.visible } : w))
+    )
   }
 
   const handleWidgetReorder = (newWidgets: Widget[]) => {
@@ -208,9 +305,25 @@ export default function ManagerDashboard() {
 
         {/* Customizable Dashboard */}
         <CustomizableDashboard
-          widgets={widgets}
+          widgets={widgets.map(widget => 
+            widget.id === "actions" 
+              ? {
+                  ...widget,
+                  component: (
+                    <WidgetWrapper title="Quick Actions">
+                      <EnhancedQuickActionsWidget
+                        userRole={user.role}
+                        lowStockCount={lowStockCount}
+                        isLoading={alertsLoading}
+                      />
+                    </WidgetWrapper>
+                  )
+                }
+              : widget
+          )}
           onWidgetToggle={handleWidgetToggle}
           onWidgetReorder={handleWidgetReorder}
+          userRole={user.role}
         />
       </div>
     </DashboardErrorBoundary>

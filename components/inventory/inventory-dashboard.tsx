@@ -13,7 +13,8 @@ import {
   DollarSign,
   RefreshCw,
   Eye,
-  Settings
+  Settings,
+  Trash2
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 
@@ -49,13 +50,15 @@ interface InventoryDashboardProps {
   onViewProduct: (product: InventoryItem) => void
   onAdjustStock: (product: InventoryItem) => void
   onRecordDelivery: (product: InventoryItem) => void
+  onDeleteProduct?: (product: InventoryItem) => void
 }
 
 export function InventoryDashboard({
   stationId,
   onViewProduct,
   onAdjustStock,
-  onRecordDelivery
+  onRecordDelivery,
+  onDeleteProduct
 }: InventoryDashboardProps) {
   const [inventoryStatus, setInventoryStatus] =
     useState<InventoryStatus | null>(null)
@@ -269,6 +272,7 @@ export function InventoryDashboard({
             onViewProduct={onViewProduct}
             onAdjustStock={onAdjustStock}
             onRecordDelivery={onRecordDelivery}
+            onDeleteProduct={onDeleteProduct}
           />
         </TabsContent>
 
@@ -279,6 +283,7 @@ export function InventoryDashboard({
             onViewProduct={onViewProduct}
             onAdjustStock={onAdjustStock}
             onRecordDelivery={onRecordDelivery}
+            onDeleteProduct={onDeleteProduct}
             emptyMessage="No low stock items found"
           />
         </TabsContent>
@@ -290,6 +295,7 @@ export function InventoryDashboard({
             onViewProduct={onViewProduct}
             onAdjustStock={onAdjustStock}
             onRecordDelivery={onRecordDelivery}
+            onDeleteProduct={onDeleteProduct}
             emptyMessage="No out of stock items found"
           />
         </TabsContent>
@@ -304,6 +310,7 @@ interface InventoryItemsListProps {
   onViewProduct: (product: InventoryItem) => void
   onAdjustStock: (product: InventoryItem) => void
   onRecordDelivery: (product: InventoryItem) => void
+  onDeleteProduct?: (product: InventoryItem) => void
   emptyMessage?: string
 }
 
@@ -313,6 +320,7 @@ function InventoryItemsList({
   onViewProduct,
   onAdjustStock,
   onRecordDelivery,
+  onDeleteProduct,
   emptyMessage = "No products found"
 }: InventoryItemsListProps) {
   const getStatusColor = (status: string) => {
@@ -408,6 +416,16 @@ function InventoryItemsList({
                 >
                   <TrendingUp className="h-4 w-4" />
                 </Button>
+                {onDeleteProduct && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDeleteProduct(item)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}

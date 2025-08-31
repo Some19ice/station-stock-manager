@@ -194,7 +194,7 @@ export function DeliveryForm({
                 <SelectValue placeholder="Select supplier (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No supplier selected</SelectItem>
+                <SelectItem value="no-supplier">No supplier selected</SelectItem>
                 {suppliers.map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.name}

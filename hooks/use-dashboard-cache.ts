@@ -57,16 +57,23 @@ export const useDashboardCache = <T>(
     ttl?: number
     refreshInterval?: number
     staleWhileRevalidate?: boolean
+    maxRetries?: number
   } = {}
 ) => {
-  const { ttl, refreshInterval = 30000, staleWhileRevalidate = true } = options
+  const { 
+    ttl, 
+    refreshInterval = 30000, 
+    staleWhileRevalidate = true,
+    maxRetries = 3
+  } = options
   
   const [data, setData] = useState<T | null>(() => dashboardCache.get<T>(key))
   const [isLoading, setIsLoading] = useState(!data)
   const [error, setError] = useState<Error | null>(null)
   const [isValidating, setIsValidating] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
-  const fetchData = async (showLoading = true) => {
+  const fetchData = async (showLoading = true, attempt = 0) => {
     try {
       if (showLoading) setIsLoading(true)
       setIsValidating(true)
@@ -75,28 +82,39 @@ export const useDashboardCache = <T>(
       const result = await fetcher()
       dashboardCache.set(key, result, ttl)
       setData(result)
+      setRetryCount(0)
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'))
+      const error = err instanceof Error ? err : new Error('Unknown error')
+      
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000)
+        setTimeout(() => {
+          setRetryCount(attempt + 1)
+          fetchData(false, attempt + 1)
+        }, delay)
+      } else {
+        setError(error)
+      }
     } finally {
       setIsLoading(false)
       setIsValidating(false)
     }
   }
 
-  const refresh = () => fetchData(false)
+  const refresh = () => {
+    setRetryCount(0)
+    fetchData(false)
+  }
 
   useEffect(() => {
-    // Initial fetch if no cached data
     if (!data) {
       fetchData()
     }
 
-    // Set up refresh interval
     if (refreshInterval > 0) {
       const interval = setInterval(() => {
         if (dashboardCache.isStale(key)) {
           if (staleWhileRevalidate && data) {
-            // Refresh in background without showing loading
             fetchData(false)
           } else {
             fetchData()
@@ -115,6 +133,7 @@ export const useDashboardCache = <T>(
     isLoading,
     error,
     isValidating,
+    retryCount,
     refresh,
     invalidate: () => {
       dashboardCache.invalidate(key)
