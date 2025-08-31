@@ -1,6 +1,6 @@
 "use client"
 
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { useEffect, useState } from "react"
 import { ChevronRight, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 
@@ -45,24 +45,39 @@ export function NavMain({
 }) {
   const { state } = useSidebar()
   const isCollapsed = state === "collapsed"
+  const [isClient, setIsClient] = useState(false)
 
-  // Initialize with default open state - all items start as open
+  // Default state - all items closed to prevent hydration mismatch
   const defaultOpenState = items.reduce(
     (acc, item) => ({
       ...acc,
-      [item.title]: true // Default to open to avoid visual jumps
+      [item.title]: false
     }),
     {} as Record<string, boolean>
   )
 
-  const [openItems, setOpenItems] = useLocalStorage(
-    "sidebar-open-items",
-    defaultOpenState
-  )
+  const [openItems, setOpenItems] = useState(defaultOpenState)
+
+  useEffect(() => {
+    setIsClient(true)
+    // Load saved state from localStorage after client mount
+    const saved = localStorage.getItem("sidebar-open-items")
+    if (saved) {
+      try {
+        setOpenItems(JSON.parse(saved))
+      } catch (error) {
+        console.error("Failed to parse sidebar state:", error)
+      }
+    }
+  }, [])
 
   // Handle open/close state changes
   const handleOpenChange = (itemTitle: string, isOpen: boolean) => {
-    setOpenItems(prev => ({ ...prev, [itemTitle]: isOpen }))
+    const newState = { ...openItems, [itemTitle]: isOpen }
+    setOpenItems(newState)
+    if (isClient) {
+      localStorage.setItem("sidebar-open-items", JSON.stringify(newState))
+    }
   }
 
   return (
@@ -109,7 +124,7 @@ export function NavMain({
             ) : (
               <Collapsible
                 asChild
-                open={openItems[item.title] ?? true}
+                open={openItems[item.title] ?? false}
                 onOpenChange={isOpen => handleOpenChange(item.title, isOpen)}
                 className="group/collapsible"
               >

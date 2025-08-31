@@ -6,7 +6,7 @@ import { Download, FileText, FileSpreadsheet, Printer, Mail } from "lucide-react
 import { toast } from "sonner"
 
 interface ExportUtilsProps {
-  data: any
+  data: Record<string, unknown>
   filename: string
   reportType: string
 }
@@ -56,7 +56,7 @@ export function ExportUtils({ data, filename, reportType }: ExportUtilsProps) {
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   }
 
-  const convertToCSV = (data: any): string => {
+  const convertToCSV = (data: Record<string, unknown>): string => {
     if (!data || typeof data !== 'object') return ''
     
     // Simple CSV conversion - would need enhancement based on data structure

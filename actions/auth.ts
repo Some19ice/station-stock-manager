@@ -5,13 +5,15 @@ import { db } from "@/db"
 import { users, stations } from "@/db/schema"
 import { eq, and } from "drizzle-orm"
 import { z } from "zod"
+import { sendUserInvitation } from "@/lib/clerk-admin"
 
 // Input validation schemas
 const createUserSchema = z.object({
   stationId: z.string().uuid(),
   username: z.string().min(3).max(50),
   role: z.enum(["staff", "manager"]),
-  clerkUserId: z.string()
+  email: z.string().email(),
+  sendInvitation: z.boolean().optional().default(true)
 })
 
 const roleValidationSchema = z.object({
@@ -161,27 +163,39 @@ export async function createStationUser(input: z.infer<typeof createUserSchema>)
       return { isSuccess: false, error: "Username already exists" }
     }
 
-    // Check if Clerk user ID already exists
-    const existingClerkUser = await db.query.users.findFirst({
-      where: eq(users.clerkUserId, validatedInput.clerkUserId)
+    // Step 1: Send invitation email first
+    const invitationResult = await sendUserInvitation({
+      email: validatedInput.email,
+      username: validatedInput.username,
+      role: validatedInput.role,
+      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`
     })
 
-    if (existingClerkUser) {
-      return { isSuccess: false, error: "User already has a station account" }
+    if (!invitationResult.success) {
+      return { isSuccess: false, error: `Failed to send invitation: ${invitationResult.error}` }
     }
 
-    // Create the user
+    // Step 2: Create database user record with temporary Clerk ID
+    const tempClerkUserId = `temp_${Date.now()}_${validatedInput.email}`
+
     const [newUser] = await db.insert(users).values({
       stationId: validatedInput.stationId,
-      clerkUserId: validatedInput.clerkUserId,
+      clerkUserId: tempClerkUserId,
       username: validatedInput.username,
-      role: validatedInput.role
+      role: validatedInput.role,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }).returning()
 
     return { isSuccess: true, data: newUser }
+
   } catch (error) {
     console.error("Error creating station user:", error)
-    return { isSuccess: false, error: "Failed to create user account" }
+    if (error instanceof z.ZodError) {
+      return { isSuccess: false, error: `Invalid input: ${error.issues.map(e => e.message).join(", ")}` }
+    }
+    return { isSuccess: false, error: "Failed to create user" }
   }
 }
 

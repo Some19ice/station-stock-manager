@@ -174,8 +174,8 @@ export function ReportScheduler() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label>Report Type</Label>
-                <Select value={newReport.type} onValueChange={(value: any) => 
-                  setNewReport(prev => ({ ...prev, type: value }))
+                <Select value={newReport.type} onValueChange={(value: string) => 
+                  setNewReport(prev => ({ ...prev, type: value as "daily" }))
                 }>
                   <SelectTrigger>
                     <SelectValue />
@@ -206,8 +206,8 @@ export function ReportScheduler() {
 
               <div>
                 <Label>Format</Label>
-                <Select value={newReport.format} onValueChange={(value: any) => 
-                  setNewReport(prev => ({ ...prev, format: value }))
+                <Select value={newReport.format} onValueChange={(value: string) => 
+                  setNewReport(prev => ({ ...prev, format: value as "pdf" }))
                 }>
                   <SelectTrigger>
                     <SelectValue />

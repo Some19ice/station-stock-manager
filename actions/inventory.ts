@@ -349,21 +349,28 @@ export async function getStockMovementHistory(
       whereConditions.push(lte(stockMovements.createdAt, endDate))
     }
 
+    // Add station filter to where conditions
+    whereConditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM ${products} 
+        WHERE ${products.id} = ${stockMovements.productId} 
+        AND ${products.stationId} = ${stationId}
+      )`
+    )
+
     const movements = await db.query.stockMovements.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
       with: {
-        product: {
-          where: eq(products.stationId, stationId)
-        }
+        product: true
       },
       orderBy: [desc(stockMovements.createdAt)],
       limit
     })
 
-    // Filter out movements for products not in this station
-    const filteredMovements = movements.filter(movement => movement.product)
-
-    return filteredMovements
+    // Return movements (product will be null for movements not in this station)
+    return movements as Array<typeof stockMovements.$inferSelect & {
+      product: typeof products.$inferSelect | null
+    }>
   }, "Fetch stock movement history")
 }
 
@@ -673,16 +680,21 @@ export async function getInventoryAnalytics(
 
     // Get stock movements for the period
     const movements = await db.query.stockMovements.findMany({
-      where: gte(stockMovements.createdAt, startDate),
+      where: and(
+        gte(stockMovements.createdAt, startDate),
+        sql`EXISTS (
+          SELECT 1 FROM ${products} 
+          WHERE ${products.id} = ${stockMovements.productId} 
+          AND ${products.stationId} = ${stationId}
+        )`
+      ),
       with: {
-        product: {
-          where: eq(products.stationId, stationId)
-        }
+        product: true
       }
     })
 
-    // Filter movements for this station's products
-    const stationMovements = movements.filter(movement => movement.product)
+    // All movements are already filtered for this station
+    const stationMovements = movements
 
     // Calculate analytics
     const analytics = {

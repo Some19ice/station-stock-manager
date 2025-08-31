@@ -31,7 +31,13 @@ export interface DailyReportData {
     totalSales: string
     totalTransactions: number
     averageTransaction: string
-    topSellingProduct: string
+    productsSold: Array<{
+      productName: string
+      brand: string
+      quantitySold: string
+      revenue: string
+      unit: string
+    }>
   }
   pmsReport: {
     openingStock: string
@@ -101,11 +107,14 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
         )
       )
 
-    // Get top selling product
-    const topProduct = await db
+    // Get all products sold during the day
+    const productsSold = await db
       .select({
         productName: products.name,
-        totalQuantity: sum(transactionItems.quantity)
+        brand: products.brand,
+        unit: products.unit,
+        totalQuantity: sum(transactionItems.quantity),
+        totalRevenue: sum(transactionItems.totalPrice)
       })
       .from(transactionItems)
       .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
@@ -117,9 +126,8 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
           lte(transactions.transactionDate, endOfDay)
         )
       )
-      .groupBy(products.id, products.name)
-      .orderBy(desc(sum(transactionItems.quantity)))
-      .limit(1)
+      .groupBy(products.id, products.name, products.brand, products.unit)
+      .orderBy(desc(sum(transactionItems.totalPrice)))
 
     // Get PMS data
     const pmsProducts = await db
@@ -185,7 +193,13 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
         totalSales,
         totalTransactions,
         averageTransaction,
-        topSellingProduct: topProduct[0]?.productName || "N/A"
+        productsSold: productsSold.map(item => ({
+          productName: item.productName,
+          brand: item.brand || "N/A",
+          quantitySold: item.totalQuantity || "0",
+          revenue: item.totalRevenue || "0",
+          unit: item.unit
+        }))
       },
       pmsReport: {
         openingStock: pmsProducts[0]?.currentStock || "0",

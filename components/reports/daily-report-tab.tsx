@@ -139,7 +139,7 @@ export function DailyReportTab() {
               <CardTitle>Sales Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
                   <p className="text-muted-foreground text-sm">Total Sales</p>
                   <p className="text-2xl font-bold text-green-600">
@@ -162,12 +162,38 @@ export function DailyReportTab() {
                     )}
                   </p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-sm">Top Product</p>
-                  <p className="text-lg font-semibold">
-                    {reportData.salesOverview.topSellingProduct}
+              </div>
+              
+              {/* All Products Sold */}
+              <Separator className="my-4" />
+              <div>
+                <h4 className="font-semibold mb-3">Products Sold</h4>
+                {reportData.salesOverview.productsSold && reportData.salesOverview.productsSold.length > 0 ? (
+                  <div className="space-y-3">
+                    {reportData.salesOverview.productsSold.map((product, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-slate-50">
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <p className="font-medium">{product.productName}</p>
+                            <p className="text-sm text-muted-foreground">{product.brand}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-green-600">
+                            {formatCurrency(product.revenue)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {parseFloat(product.quantitySold).toLocaleString()} {product.unit}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">
+                    No products sold on this date
                   </p>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -282,7 +308,22 @@ function generateCSVContent(data: DailyReportData, date: string): string {
     `Total Sales,${data.salesOverview.totalSales}`,
     `Total Transactions,${data.salesOverview.totalTransactions}`,
     `Average Transaction,${data.salesOverview.averageTransaction}`,
-    `Top Selling Product,${data.salesOverview.topSellingProduct}`,
+    "",
+    "Products Sold",
+    "Product Name,Brand,Quantity Sold,Unit,Revenue"
+  ]
+
+  if (data.salesOverview.productsSold && data.salesOverview.productsSold.length > 0) {
+    data.salesOverview.productsSold.forEach(product => {
+      lines.push(
+        `${product.productName},${product.brand},${product.quantitySold},${product.unit},${product.revenue}`
+      )
+    })
+  } else {
+    lines.push("No products sold")
+  }
+
+  lines.push(
     "",
     "PMS Report",
     `Opening Stock (L),${data.pmsReport.openingStock}`,
@@ -292,7 +333,7 @@ function generateCSVContent(data: DailyReportData, date: string): string {
     "",
     "Lubricant Breakdown",
     "Product Name,Brand,Opening Stock,Units Sold,Closing Stock,Revenue"
-  ]
+  )
 
   data.lubricantBreakdown.forEach(item => {
     lines.push(

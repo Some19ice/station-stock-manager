@@ -86,7 +86,7 @@ export function CustomerInteractionTracker() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
-          <Select value={feedbackType} onValueChange={(value: any) => setFeedbackType(value)}>
+          <Select value={feedbackType} onValueChange={(value: string) => setFeedbackType(value as "complaint" | "compliment" | "suggestion")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
