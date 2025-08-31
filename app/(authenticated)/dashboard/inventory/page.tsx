@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useInventoryModalListener } from "@/hooks/use-inventory-modal"
 import {
   Dialog,
@@ -30,6 +30,8 @@ import {
   Plus,
   List
 } from "lucide-react"
+import { gsap } from "gsap"
+import { RiveLoading } from "@/components/ui/rive-loading"
 
 interface InventoryItem {
   id: string
@@ -64,6 +66,53 @@ export default function InventoryPage() {
     null
   )
   const [refreshKey, setRefreshKey] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  // Simulate loading and animate page entrance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 1500)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Animate page elements when loading completes
+  useEffect(() => {
+    if (!isLoading && headerRef.current && tabsRef.current && contentRef.current) {
+      const tl = gsap.timeline()
+
+      tl.fromTo(
+        headerRef.current,
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+      ).fromTo(
+        tabsRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+        "-=0.3"
+      ).fromTo(
+        contentRef.current,
+        { opacity: 0, scale: 0.95 },
+        { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" },
+        "-=0.2"
+      )
+    }
+  }, [isLoading])
+
+  // Animate tab content changes
+  useEffect(() => {
+    if (!isLoading && contentRef.current) {
+      gsap.fromTo(
+        contentRef.current,
+        { opacity: 0, x: 20 },
+        { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }
+      )
+    }
+  }, [activeTab, isLoading])
 
   // Listen for add product modal events from sidebar
   useInventoryModalListener(() => {
@@ -109,17 +158,10 @@ export default function InventoryPage() {
     setSelectedProduct(null)
   }
 
-  if (!station) {
+  if (!station || isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Inventory Management
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Loading station information...
-          </p>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <RiveLoading message="Loading Inventory Management" />
       </div>
     )
   }
@@ -141,7 +183,7 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div ref={headerRef} className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Inventory Management
@@ -156,67 +198,71 @@ export default function InventoryPage() {
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="all-products" className="flex items-center gap-2">
-            <List className="h-4 w-4" />
-            All Products
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            History
-          </TabsTrigger>
-          <TabsTrigger value="suppliers" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            Suppliers
-          </TabsTrigger>
-          <TabsTrigger value="reorder" className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" />
-            Reorder
-          </TabsTrigger>
-        </TabsList>
+      <div ref={tabsRef}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="all-products" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              All Products
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              History
+            </TabsTrigger>
+            <TabsTrigger value="suppliers" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Suppliers
+            </TabsTrigger>
+            <TabsTrigger value="reorder" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Reorder
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-6">
-          <InventoryDashboard
-            key={refreshKey}
-            stationId={station.id}
-            onViewProduct={handleViewProduct}
-            onAdjustStock={handleAdjustStock}
-            onRecordDelivery={handleRecordDelivery}
-            onDeleteProduct={handleDeleteProduct}
-          />
-        </TabsContent>
+          <div ref={contentRef}>
+            <TabsContent value="dashboard" className="space-y-6">
+              <InventoryDashboard
+                key={refreshKey}
+                stationId={station.id}
+                onViewProduct={handleViewProduct}
+                onAdjustStock={handleAdjustStock}
+                onRecordDelivery={handleRecordDelivery}
+                onDeleteProduct={handleDeleteProduct}
+              />
+            </TabsContent>
 
-        <TabsContent value="all-products" className="space-y-6">
-          <InventoryDashboard
-            key={refreshKey}
-            stationId={station.id}
-            onViewProduct={handleViewProduct}
-            onAdjustStock={handleAdjustStock}
-            onRecordDelivery={handleRecordDelivery}
-            onDeleteProduct={handleDeleteProduct}
-          />
-        </TabsContent>
+            <TabsContent value="all-products" className="space-y-6">
+              <InventoryDashboard
+                key={refreshKey}
+                stationId={station.id}
+                onViewProduct={handleViewProduct}
+                onAdjustStock={handleAdjustStock}
+                onRecordDelivery={handleRecordDelivery}
+                onDeleteProduct={handleDeleteProduct}
+              />
+            </TabsContent>
 
-        <TabsContent value="history" className="space-y-6">
-          <StockMovementHistory stationId={station.id} />
-        </TabsContent>
+            <TabsContent value="history" className="space-y-6">
+              <StockMovementHistory stationId={station.id} />
+            </TabsContent>
 
-        <TabsContent value="suppliers" className="space-y-6">
-          <SupplierManagement stationId={station.id} />
-        </TabsContent>
+            <TabsContent value="suppliers" className="space-y-6">
+              <SupplierManagement stationId={station.id} />
+            </TabsContent>
 
-        <TabsContent value="reorder" className="space-y-6">
-          <ReorderRecommendations
-            stationId={station.id}
-            onRecordDelivery={handleRecordDeliveryById}
-          />
-        </TabsContent>
-      </Tabs>
+            <TabsContent value="reorder" className="space-y-6">
+              <ReorderRecommendations
+                stationId={station.id}
+                onRecordDelivery={handleRecordDeliveryById}
+              />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
 
       {/* Add Product Dialog */}
       <Dialog open={dialogMode === "add-product"} onOpenChange={handleCancel}>

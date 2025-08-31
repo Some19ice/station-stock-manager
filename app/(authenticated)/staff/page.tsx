@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { AnimatedCard } from "@/components/ui/animated-card"
 
 export default async function StaffDashboard() {
   const userProfile = await getCurrentUserProfile()
@@ -84,20 +85,20 @@ export default async function StaffDashboard() {
         </div>
 
         {/* Primary Action */}
-        <Card className="border-2 border-dashed border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:border-blue-300 transition-colors">
-          <CardContent className="p-6">
+        <AnimatedCard hoverEffect={true} className="border-2 border-dashed border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="p-6">
             <Button asChild size="lg" className="w-full h-16 text-lg font-semibold">
               <Link href="/staff/sales" className="flex items-center justify-center space-x-3">
                 <Plus className="h-6 w-6" />
                 <span>Record New Sale</span>
               </Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </AnimatedCard>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="hover:shadow-md transition-shadow">
+          <AnimatedCard hoverEffect={true}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-600">
                 Today's Sales
@@ -112,9 +113,9 @@ export default async function StaffDashboard() {
                 Your sales today
               </p>
             </CardContent>
-          </Card>
+          </AnimatedCard>
 
-          <Card className="hover:shadow-md transition-shadow">
+          <AnimatedCard hoverEffect={true}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-600">
                 Transactions
@@ -129,9 +130,9 @@ export default async function StaffDashboard() {
                 Sales completed
               </p>
             </CardContent>
-          </Card>
+          </AnimatedCard>
 
-          <Card className="hover:shadow-md transition-shadow">
+          <AnimatedCard hoverEffect={true}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-600">
                 Fuel Sales
@@ -146,9 +147,9 @@ export default async function StaffDashboard() {
                 {todaysSales.totalAmount > 0 ? Math.round((todaysSales.fuelSales / todaysSales.totalAmount) * 100) : 0}% of total sales
               </p>
             </CardContent>
-          </Card>
+          </AnimatedCard>
 
-          <Card className="hover:shadow-md transition-shadow">
+          <AnimatedCard hoverEffect={true}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-600">
                 Products
@@ -163,27 +164,25 @@ export default async function StaffDashboard() {
                 {todaysSales.totalAmount > 0 ? Math.round((todaysSales.productSales / todaysSales.totalAmount) * 100) : 0}% of total sales
               </p>
             </CardContent>
-          </Card>
+          </AnimatedCard>
         </div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Activity */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Clock className="h-5 w-5" />
-                <span>Recent Transactions</span>
-              </CardTitle>
-              <CardDescription>
-                Your latest sales activity
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <AnimatedCard 
+            title="Recent Transactions"
+            hoverEffect={true}
+            className="lg:col-span-2"
+          >
+            <CardDescription className="mb-4">
+              Your latest sales activity
+            </CardDescription>
+            <div className="space-y-4">
               {recentTransactions.length > 0 ? (
                 <>
                   {recentTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+                    <div key={transaction.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-all hover:scale-[1.02]">
                       <div className="flex items-center space-x-3">
                         <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
                           <Fuel className="h-4 w-4 text-blue-600" />
@@ -213,21 +212,18 @@ export default async function StaffDashboard() {
                   <p className="text-sm">Start by recording your first sale!</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </AnimatedCard>
 
           {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5" />
-                <span>Quick Actions</span>
-              </CardTitle>
-              <CardDescription>
-                Common tasks and shortcuts
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <AnimatedCard 
+            title="Quick Actions"
+            hoverEffect={true}
+          >
+            <CardDescription className="mb-4">
+              Common tasks and shortcuts
+            </CardDescription>
+            <div className="space-y-3">
               <Button variant="outline" className="w-full justify-start" asChild>
                 <Link href="/staff/sales">
                   <Plus className="h-4 w-4 mr-2" />
@@ -260,8 +256,8 @@ export default async function StaffDashboard() {
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </AnimatedCard>
         </div>
       </div>
     </div>

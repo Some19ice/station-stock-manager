@@ -258,3 +258,4 @@ export const FrequentlySoldProducts: React.FC<FrequentlySoldProductsProps> = ({
 }
 
 
+

@@ -10,6 +10,8 @@ import {
   Shield
 } from "lucide-react"
 import { SectionWrapper } from "./section-wrapper"
+import { useStaggerAnimation } from "@/hooks/use-gsap"
+import { useEffect } from "react"
 
 const features = [
   {
@@ -51,6 +53,8 @@ const features = [
 ]
 
 export function FeaturesSection() {
+  useStaggerAnimation("#features-grid", ".feature-item")
+
   return (
     <SectionWrapper className="relative" id="features">
       <div className="bg-[radial-gradient(45%_45%_at_50%_50%,theme(colors.brand-primary/20),transparent)] absolute inset-0 -z-10 opacity-20 dark:opacity-40" />
@@ -74,7 +78,7 @@ export function FeaturesSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Start with a complete foundation
+            Complete Gas Station Management
           </motion.p>
           <motion.p
             className="text-muted-foreground mt-6 text-lg leading-8"
@@ -83,25 +87,16 @@ export function FeaturesSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            No more setup headaches. Clone the repo and start building your
-            product immediately.
+            Everything you need to manage fuel inventory, track sales, and optimize operations.
           </motion.p>
         </div>
 
         <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-          <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
+          <dl id="features-grid" className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
             {features.map((feature, index) => (
-              <motion.div
+              <div
                 key={feature.name}
-                className="group relative flex flex-col"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{
-                  duration: 0.5,
-                  delay: index * 0.1,
-                  ease: "easeOut"
-                }}
+                className="feature-item group relative flex flex-col"
               >
                 <motion.div
                   className="bg-card ring-border w-fit rounded-lg p-2 ring-1"
@@ -119,26 +114,12 @@ export function FeaturesSection() {
 
                 <dt className="text-foreground mt-4 flex items-center gap-x-3 text-base leading-7 font-semibold">
                   {feature.name}
-                  <motion.div
-                    className="from-primary/50 h-px flex-1 bg-gradient-to-r to-transparent"
-                    initial={{ scaleX: 0 }}
-                    whileInView={{ scaleX: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8, delay: 0.3 + index * 0.1 }}
-                    style={{ transformOrigin: "left" }}
-                  />
                 </dt>
 
                 <dd className="text-muted-foreground mt-4 flex flex-auto flex-col text-base leading-7">
                   <p className="flex-auto">{feature.description}</p>
                 </dd>
-
-                <motion.div
-                  className="bg-accent/50 absolute -inset-x-4 -inset-y-2 scale-95 rounded-2xl opacity-0"
-                  whileHover={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </motion.div>
+              </div>
             ))}
           </dl>
         </div>

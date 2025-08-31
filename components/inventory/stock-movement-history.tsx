@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +26,8 @@ import {
   Settings
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { gsap } from "gsap"
+import { AnimatedCard } from "@/components/ui/animated-card"
 
 interface StockMovement {
   id: string
@@ -61,12 +63,33 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const filtersRef = useRef<HTMLDivElement>(null)
+  const movementsRef = useRef<HTMLDivElement>(null)
 
   // Filters
   const [selectedProduct, setSelectedProduct] = useState<string>("all")
-  const [selectedMovementType, setSelectedMovementType] = useState<string>("all")
+  const [selectedMovementType, setSelectedMovementType] =
+    useState<string>("all")
   const [startDate, setStartDate] = useState<string>("")
   const [endDate, setEndDate] = useState<string>("")
+
+  // Animate content when data loads
+  useEffect(() => {
+    if (!loading && filtersRef.current && movementsRef.current) {
+      const tl = gsap.timeline()
+
+      tl.fromTo(
+        filtersRef.current,
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+      ).fromTo(
+        movementsRef.current.children,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.4, stagger: 0.1, ease: "power2.out" },
+        "-=0.2"
+      )
+    }
+  }, [loading])
   const [limit, setLimit] = useState<number>(50)
 
   const fetchData = useCallback(async () => {
@@ -85,7 +108,8 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
         endDate?: Date
         limit?: number
       } = { limit }
-      if (selectedProduct && selectedProduct !== "all") filters.productId = selectedProduct
+      if (selectedProduct && selectedProduct !== "all")
+        filters.productId = selectedProduct
       if (selectedMovementType && selectedMovementType !== "all")
         filters.movementType = selectedMovementType as
           | "sale"
@@ -208,196 +232,199 @@ export function StockMovementHistory({ stationId }: StockMovementHistoryProps) {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filters
-            </span>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                Clear
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={refreshing}
-              >
-                <RefreshCw
-                  className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+      <div ref={filtersRef}>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Filters</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                >
+                  <RefreshCw
+                    className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+                  />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+              <div className="space-y-2">
+                <Label htmlFor="product-filter">Product</Label>
+                <Select
+                  value={selectedProduct}
+                  onValueChange={setSelectedProduct}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All products" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All products</SelectItem>
+                    {products.map(product => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name} {product.brand && `(${product.brand})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="type-filter">Movement Type</Label>
+                <Select
+                  value={selectedMovementType}
+                  onValueChange={setSelectedMovementType}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    <SelectItem value="sale">Sales</SelectItem>
+                    <SelectItem value="delivery">Deliveries</SelectItem>
+                    <SelectItem value="adjustment">Adjustments</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Start Date</Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
                 />
-                Refresh
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <div className="space-y-2">
-              <Label htmlFor="product-filter">Product</Label>
-              <Select
-                value={selectedProduct}
-                onValueChange={setSelectedProduct}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All products" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All products</SelectItem>
-                  {products.map(product => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name} {product.brand && `(${product.brand})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="type-filter">Movement Type</Label>
-              <Select
-                value={selectedMovementType}
-                onValueChange={setSelectedMovementType}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  <SelectItem value="sale">Sales</SelectItem>
-                  <SelectItem value="delivery">Deliveries</SelectItem>
-                  <SelectItem value="adjustment">Adjustments</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date">End Date</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="start-date">Start Date</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="limit">Limit</Label>
+                <Select
+                  value={limit.toString()}
+                  onValueChange={value => setLimit(parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25 records</SelectItem>
+                    <SelectItem value="50">50 records</SelectItem>
+                    <SelectItem value="100">100 records</SelectItem>
+                    <SelectItem value="200">200 records</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="end-date">End Date</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="limit">Limit</Label>
-              <Select
-                value={limit.toString()}
-                onValueChange={value => setLimit(parseInt(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="25">25 records</SelectItem>
-                  <SelectItem value="50">50 records</SelectItem>
-                  <SelectItem value="100">100 records</SelectItem>
-                  <SelectItem value="200">200 records</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Movement History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            Stock Movement History
-            <Badge variant="outline">{movements.length} movements</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {movements.length === 0 ? (
-            <div className="py-8 text-center">
-              <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-              <p className="text-muted-foreground">No stock movements found</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Try adjusting your filters or check back later
-              </p>
+      <div ref={movementsRef}>
+        <Card>
+          <CardContent>
+            <div className="mb-4 flex items-center justify-between">
+              <span>Stock Movement History</span>
+              <Badge variant="outline">{movements.length} movements</Badge>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {movements.map(movement => (
-                <div
-                  key={movement.id}
-                  className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-colors"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
-                      {getMovementIcon(movement.movementType)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      {movement.product && (
-                        <>
-                          <div className="mb-1 flex items-center gap-2">
-                            <h4 className="truncate font-medium">
-                              {movement.product.name}
-                            </h4>
-                            {movement.product.brand && (
-                              <Badge variant="outline" className="text-xs">
-                                {movement.product.brand}
+            {movements.length === 0 ? (
+              <div className="py-8 text-center">
+                <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+                <p className="text-muted-foreground">
+                  No stock movements found
+                </p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Try adjusting your filters or check back later
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {movements.map(movement => (
+                  <div
+                    key={movement.id}
+                    className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4 transition-all hover:scale-[1.02]"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        {getMovementIcon(movement.movementType)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {movement.product && (
+                          <>
+                            <div className="mb-1 flex items-center gap-2">
+                              <h4 className="truncate font-medium">
+                                {movement.product.name}
+                              </h4>
+                              {movement.product.brand && (
+                                <Badge variant="outline" className="text-xs">
+                                  {movement.product.brand}
+                                </Badge>
+                              )}
+                              <Badge
+                                variant={getMovementColor(
+                                  movement.movementType
+                                )}
+                              >
+                                {getMovementText(movement.movementType)}
                               </Badge>
-                            )}
-                            <Badge
-                              variant={getMovementColor(movement.movementType)}
-                            >
-                              {getMovementText(movement.movementType)}
-                            </Badge>
-                          </div>
-                          <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                            <span>
-                              {formatQuantity(
-                                movement.quantity,
-                                movement.movementType
-                              )}{" "}
-                              {movement.product.unit}
-                            </span>
-                            <span>
-                              Stock: {movement.previousStock} →{" "}
-                              {movement.newStock} {movement.product.unit}
-                            </span>
-                            {movement.reference && (
-                              <span className="truncate">
-                                {movement.reference}
+                            </div>
+                            <div className="text-muted-foreground flex items-center gap-4 text-sm">
+                              <span>
+                                {formatQuantity(
+                                  movement.quantity,
+                                  movement.movementType
+                                )}{" "}
+                                {movement.product.unit}
                               </span>
-                            )}
-                          </div>
-                        </>
-                      )}
+                              <span>
+                                Stock: {movement.previousStock} →{" "}
+                                {movement.newStock} {movement.product.unit}
+                              </span>
+                              {movement.reference && (
+                                <span className="truncate">
+                                  {movement.reference}
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <div className="text-muted-foreground text-sm">
+                        {formatDistanceToNow(new Date(movement.createdAt), {
+                          addSuffix: true
+                        })}
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        {new Date(movement.createdAt).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 text-right">
-                    <div className="text-muted-foreground text-sm">
-                      {formatDistanceToNow(new Date(movement.createdAt), {
-                        addSuffix: true
-                      })}
-                    </div>
-                    <div className="text-muted-foreground text-xs">
-                      {new Date(movement.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation"
 import { currentUser } from "@clerk/nextjs/server"
+import { HeroSection } from "./_components/sections/hero-section"
+import { FeaturesSection } from "./_components/sections/features-section"
+import { CompaniesSection } from "./_components/sections/companies-section"
+import { SocialProofSection } from "./_components/sections/social-proof-section"
+import { PricingSection } from "./_components/sections/pricing-section"
+import { CTASection } from "./_components/sections/cta-section"
 
 export default async function MarketingPage() {
   const user = await currentUser()
@@ -14,6 +20,14 @@ export default async function MarketingPage() {
     }
   }
   
-  // For unauthenticated users, redirect to login
-  redirect('/login')
+  return (
+    <>
+      <HeroSection />
+      <CompaniesSection />
+      <FeaturesSection />
+      <SocialProofSection />
+      <PricingSection />
+      <CTASection />
+    </>
+  )
 }

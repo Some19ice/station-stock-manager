@@ -5,12 +5,26 @@ import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { SectionWrapper } from "./section-wrapper"
+import { useEffect, useRef } from "react"
+import { gsap } from "gsap"
 
 export function HeroSection() {
+  const floatingRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (floatingRef.current) {
+      gsap.to(floatingRef.current, {
+        y: -10,
+        duration: 2,
+        ease: "power2.inOut",
+        yoyo: true,
+        repeat: -1
+      })
+    }
+  }, [])
+
   return (
     <SectionWrapper className="py-16 sm:py-32">
-      {/* Animated gradient background */}
-
       <div className="mx-auto max-w-3xl text-center">
         <motion.div
           className="mb-8 flex justify-center"
@@ -18,7 +32,10 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="group ring-border hover:bg-accent hover:text-accent-foreground relative inline-flex items-center rounded-full px-3 py-1 text-xs leading-6 shadow-sm ring-1 transition-colors sm:text-sm">
+          <div 
+            ref={floatingRef}
+            className="group ring-border hover:bg-accent hover:text-accent-foreground relative inline-flex items-center rounded-full px-3 py-1 text-xs leading-6 shadow-sm ring-1 transition-colors sm:text-sm"
+          >
             <span className="mr-2 inline-block">⛽</span>
             <span className="inline">Trusted by 500+ Gas Stations</span>
           </div>
