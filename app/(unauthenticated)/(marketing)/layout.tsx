@@ -1,9 +1,9 @@
 import { RedirectToast } from "@/components/payments/redirect-toast"
+import { CursorWrapper } from "@/components/ui/cursor-wrapper"
 import { Footer } from "./_components/footer"
 import { HeaderWrapper } from "./_components/header-wrapper"
 import { ScrollIndicator } from "./_components/scroll-indicator"
 import { SiteBanner } from "./_components/site-banner"
-import { StickyCTA } from "./_components/sticky-cta"
 
 export default async function MarketingLayout({
   children
@@ -12,12 +12,30 @@ export default async function MarketingLayout({
 }) {
   return (
     <>
+      {/* Custom cursor for enhanced interactivity */}
+      <CursorWrapper
+        size={24}
+        magneticStrength={0.3}
+        blendMode="difference"
+        className="hidden lg:block"
+      />
+
       <SiteBanner />
       <HeaderWrapper />
-      {children}
+
+      {/* Main content wrapper with smooth transitions */}
+      <main className="relative min-h-screen">{children}</main>
+
       <Footer />
-      <StickyCTA />
-      <ScrollIndicator />
+
+      {/* Enhanced scroll indicators */}
+      <ScrollIndicator
+        showProgress={true}
+        showBackToTop={true}
+        showButton={true}
+        showFade={true}
+      />
+
       <RedirectToast />
     </>
   )

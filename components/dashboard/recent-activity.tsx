@@ -134,7 +134,7 @@ function AnimatedTransactionItem({
         </div>
 
         {!isLast && (
-          <div className="h-full w-px bg-gradient-to-b from-blue-300 to-transparent" />
+          <div className="h-full w-px bg-border" />
         )}
       </div>
 
@@ -161,7 +161,7 @@ function AnimatedTransactionItem({
           <div
             className={cn(
               "absolute inset-0 opacity-0 transition-opacity duration-300",
-              "bg-gradient-to-r from-transparent via-white/50 to-transparent",
+              "bg-muted/20",
               isHovered && "opacity-100"
             )}
           />
@@ -498,7 +498,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
 
       <div ref={timelineRef} className="relative">
         {/* Timeline Background */}
-        <div className="absolute top-8 bottom-0 left-4 w-px bg-gradient-to-b from-blue-300 via-blue-200 to-transparent opacity-30" />
+        <div className="absolute top-8 bottom-0 left-4 w-px bg-border opacity-30" />
 
         <div className="space-y-6">
           {timeGroups.map((group, groupIndex) => (

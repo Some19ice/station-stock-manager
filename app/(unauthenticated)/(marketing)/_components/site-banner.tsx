@@ -19,7 +19,7 @@ export function SiteBanner() {
           animate={{ y: 0 }}
           exit={{ y: -100 }}
           transition={{ duration: 0.2 }}
-          className="bg-brand-primary text-brand-primary-foreground relative"
+          className="bg-primary text-primary-foreground relative"
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="relative flex items-center justify-center py-3">

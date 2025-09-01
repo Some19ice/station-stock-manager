@@ -144,7 +144,7 @@ export const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ alerts }) => {
             All Good
           </Badge>
         </div>
-        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+        <Card className="border-chart-1/20 bg-chart-1/5">
           <CardContent className="p-6">
             <div ref={emptyStateRef} className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -204,9 +204,9 @@ export const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ alerts }) => {
                 "group relative cursor-pointer overflow-hidden transition-all duration-300",
                 "transform-gpu hover:-translate-y-1 hover:shadow-lg",
                 isCritical &&
-                  "border-red-300 bg-gradient-to-r from-red-50 to-rose-50",
+                  "border-destructive/30 bg-destructive/5",
                 isWarning &&
-                  "border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50",
+                  "border-chart-4/30 bg-chart-4/5",
                 hoveredAlert === alert.id && "z-10 scale-[1.02]"
               )}
               onMouseEnter={() => setHoveredAlert(alert.id)}
@@ -216,8 +216,8 @@ export const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ alerts }) => {
               <div
                 className={cn(
                   "absolute top-0 left-0 h-full w-1 transition-all duration-300",
-                  isCritical && "bg-gradient-to-b from-red-500 to-red-600",
-                  isWarning && "bg-gradient-to-b from-amber-500 to-amber-600",
+                  isCritical && "bg-destructive",
+                  isWarning && "bg-chart-4",
                   hoveredAlert === alert.id && "w-2"
                 )}
               />

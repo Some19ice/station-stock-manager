@@ -1,33 +1,19 @@
-import { redirect } from "next/navigation"
 import { currentUser } from "@clerk/nextjs/server"
 import { HeroSection } from "./_components/sections/hero-section"
 import { FeaturesSection } from "./_components/sections/features-section"
-import { CompaniesSection } from "./_components/sections/companies-section"
-import { SocialProofSection } from "./_components/sections/social-proof-section"
-import { PricingSection } from "./_components/sections/pricing-section"
-import { CTASection } from "./_components/sections/cta-section"
+import { DemoSection } from "./_components/sections/demo-section"
+// import { PricingSection } from "./_components/sections/pricing-section"
 
 export default async function MarketingPage() {
   const user = await currentUser()
-  
-  // If user is already authenticated, redirect to appropriate dashboard
-  if (user) {
-    const userRole = user.publicMetadata?.role as string
-    if (userRole === 'manager') {
-      redirect('/dashboard')
-    } else {
-      redirect('/staff')
-    }
-  }
-  
+  const userRole = user?.publicMetadata?.role as string
+
   return (
     <>
-      <HeroSection />
-      <CompaniesSection />
+      <HeroSection isAuthenticated={!!user} userRole={userRole} />
       <FeaturesSection />
-      <SocialProofSection />
-      <PricingSection />
-      <CTASection />
+      <DemoSection />
+      {/* <PricingSection /> */}
     </>
   )
 }
