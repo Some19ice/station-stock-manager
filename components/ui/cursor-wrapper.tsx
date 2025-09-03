@@ -5,8 +5,6 @@ import { useState, useEffect } from "react"
 
 interface CursorWrapperProps {
   size?: number
-  magneticStrength?: number
-  blendMode?: string
   className?: string
   disabled?: boolean
 }
@@ -20,9 +18,7 @@ const CustomCursor = dynamic(
 )
 
 export function CursorWrapper({
-  size = 24,
-  magneticStrength = 0.3,
-  blendMode = "difference",
+  size = 20,
   className = "",
   disabled = false
 }: CursorWrapperProps) {
@@ -39,8 +35,6 @@ export function CursorWrapper({
   return (
     <CustomCursor
       size={size}
-      magneticStrength={magneticStrength}
-      blendMode={blendMode}
       className={className}
       disabled={disabled}
     />

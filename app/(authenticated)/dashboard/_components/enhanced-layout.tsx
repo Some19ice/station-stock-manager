@@ -109,9 +109,8 @@ export default function EnhancedDashboardLayout({
       {/* Enhanced cursor for desktop */}
       <CursorWrapper
         size={20}
-        magneticStrength={0.2}
-        blendMode="difference"
         className="hidden lg:block"
+        disabled={false}
       />
 
       <SidebarProvider defaultOpen={defaultOpen}>
