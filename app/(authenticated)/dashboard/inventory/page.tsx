@@ -12,6 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { ProductForm } from "@/components/products/product-form"
+import { ProductList } from "@/components/products/product-list"
 import { InventoryDashboard } from "@/components/inventory/inventory-dashboard"
 import { StockMovementHistory } from "@/components/inventory/stock-movement-history"
 import { SupplierManagement } from "@/components/inventory/supplier-management"
@@ -31,23 +32,8 @@ import {
   List
 } from "lucide-react"
 import { gsap } from "gsap"
-import { RiveLoading } from "@/components/ui/rive-loading"
-
-interface InventoryItem {
-  id: string
-  name: string
-  brand?: string | null
-  type: "pms" | "lubricant"
-  currentStock: number
-  minThreshold: number
-  unitPrice: number
-  value: number
-  unit: string
-  isLowStock: boolean
-  isOutOfStock: boolean
-  supplier?: { id: string; name: string } | null
-  stockStatus: "out_of_stock" | "low_stock" | "normal"
-}
+import { SimpleLoading } from "@/components/ui/simple-loading"
+import { InventoryItem } from "@/lib/types/station-stock"
 
 type DialogMode =
   | "add-product"
@@ -71,14 +57,12 @@ export default function InventoryPage() {
   const tabsRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  // Simulate loading and animate page entrance
+  // Check if data is ready
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (station) {
       setIsLoading(false)
-    }, 1500)
-
-    return () => clearTimeout(timer)
-  }, [])
+    }
+  }, [station])
 
   // Animate page elements when loading completes
   useEffect(() => {
@@ -158,10 +142,10 @@ export default function InventoryPage() {
     setSelectedProduct(null)
   }
 
-  if (!station || isLoading) {
+  if (!station) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <RiveLoading message="Loading Inventory Management" />
+        <SimpleLoading message="Loading Inventory Management" />
       </div>
     )
   }
@@ -205,7 +189,10 @@ export default function InventoryPage() {
               <Package className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="all-products" className="flex items-center gap-2">
+            <TabsTrigger
+              value="all-products"
+              className="flex items-center gap-2"
+            >
               <List className="h-4 w-4" />
               All Products
             </TabsTrigger>
@@ -236,13 +223,10 @@ export default function InventoryPage() {
             </TabsContent>
 
             <TabsContent value="all-products" className="space-y-6">
-              <InventoryDashboard
+              <ProductList
                 key={refreshKey}
                 stationId={station.id}
-                onViewProduct={handleViewProduct}
                 onAdjustStock={handleAdjustStock}
-                onRecordDelivery={handleRecordDelivery}
-                onDeleteProduct={handleDeleteProduct}
               />
             </TabsContent>
 
@@ -324,20 +308,24 @@ export default function InventoryPage() {
       </Dialog>
 
       {/* Delete Product Dialog */}
-      <Dialog open={dialogMode === "delete-product"} onOpenChange={handleCancel}>
+      <Dialog
+        open={dialogMode === "delete-product"}
+        onOpenChange={handleCancel}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Product</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedProduct?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{selectedProduct?.name}"? This
+              action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={async () => {
                 if (selectedProduct) {
                   try {

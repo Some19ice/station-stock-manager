@@ -19,7 +19,7 @@ import { toast } from "sonner"
 import { Loader2, Download, Printer } from "lucide-react"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
-import { RiveLoading } from "@/components/ui/rive-loading"
+import { SimpleLoading } from "@/components/ui/simple-loading"
 
 export function DailyReportTab() {
   const { user } = useStationAuth()
@@ -226,7 +226,7 @@ export function DailyReportTab() {
 
       {isLoading && (
         <AnimatedCard className="text-center">
-          <RiveLoading message="Generating Daily Report" />
+          <SimpleLoading message="Generating Daily Report" />
         </AnimatedCard>
       )}
 

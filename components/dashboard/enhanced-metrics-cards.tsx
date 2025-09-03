@@ -172,40 +172,42 @@ export function EnhancedMetricsCards({
   const metricCards = [
     {
       title: "Total Sales",
-      value: `₦${(metrics.totalSales || 0).toLocaleString()}`,
+      value: `₦${parseFloat(metrics.todaysSales.totalValue || "0").toLocaleString()}`,
       icon: DollarSign,
-      trend: (metrics.salesTrend || 0) > 0 ? "up" : (metrics.salesTrend || 0) < 0 ? "down" : "neutral" as const,
-      trendValue: `${Math.abs(metrics.salesTrend || 0)}%`,
+      trend: "neutral" as const, // No trend data available in current interface
+      trendValue: "Today",
       variant: "metric" as const,
       priority: "high" as const,
       bgColor: "bg-chart-1/10"
     },
     {
       title: "Transactions",
-      value: (metrics.totalTransactions || 0).toString(),
+      value: (metrics.todaysSales.transactionCount || 0).toString(),
       icon: ShoppingCart,
-      trend: (metrics.transactionsTrend || 0) > 0 ? "up" : (metrics.transactionsTrend || 0) < 0 ? "down" : "neutral" as const,
-      trendValue: `${Math.abs(metrics.transactionsTrend || 0)}%`,
+      trend: "neutral" as const, // No trend data available in current interface
+      trendValue: "Today",
       variant: "metric" as const,
       priority: "normal" as const,
       bgColor: "bg-chart-2/10"
     },
     {
       title: "Low Stock Items",
-      value: (metrics.lowStockCount || 0).toString(),
+      value: (metrics.stockStatus.lowStockCount || 0).toString(),
       icon: Package,
-      trend: (metrics.lowStockCount || 0) > 5 ? "down" : "up" as const,
-      trendValue: `${metrics.lowStockCount || 0} items`,
-      variant: (metrics.lowStockCount || 0) > 5 ? "alert" : "metric" as const,
-      priority: (metrics.lowStockCount || 0) > 5 ? "high" : "normal" as const,
+      trend: (metrics.stockStatus.lowStockCount || 0) > 5 ? "down" : "up",
+      trendValue: `${metrics.stockStatus.lowStockCount || 0} items`,
+      variant:
+        (metrics.stockStatus.lowStockCount || 0) > 5 ? "alert" : "metric",
+      priority:
+        (metrics.stockStatus.lowStockCount || 0) > 5 ? "high" : "normal",
       bgColor: "bg-chart-3/10"
     },
     {
       title: "Active Staff",
-      value: (metrics.activeStaff || 0).toString(),
+      value: (metrics.staffActivity.activeStaffCount || 0).toString(),
       icon: Users,
       trend: "neutral" as const,
-      trendValue: "Online",
+      trendValue: `${metrics.staffActivity.activeStaffCount || 0}/${metrics.staffActivity.totalStaff || 0} online`,
       variant: "metric" as const,
       priority: "normal" as const,
       bgColor: "bg-chart-4/10"
@@ -247,49 +249,48 @@ export function EnhancedMetricsCards({
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {metricCards.map((metric, index) => {
           const Icon = metric.icon
-          
+
           return (
             <EnhancedCard
               key={metric.title}
-              variant={metric.variant}
+              variant={
+                metric.variant as "default" | "metric" | "alert" | "feature"
+              }
               hover={true}
               glow={metric.priority === "high"}
               magnetic={true}
               delay={index}
-              className={cn(
-                "relative overflow-hidden",
-                metric.bgColor
-              )}
+              className={cn("relative overflow-hidden", metric.bgColor)}
             >
               <EnhancedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <EnhancedCardTitle className="text-sm font-medium text-muted-foreground">
+                <EnhancedCardTitle className="text-muted-foreground text-sm font-medium">
                   {metric.title}
                 </EnhancedCardTitle>
                 <motion.div
-                  whileHover={{ 
+                  whileHover={{
                     scale: 1.1,
                     rotate: 5
                   }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Icon className="h-5 w-5 text-muted-foreground" />
+                  <Icon className="text-muted-foreground h-5 w-5" />
                 </motion.div>
               </EnhancedCardHeader>
-              
+
               <EnhancedCardContent>
                 <AnimatedNumber
                   value={metric.value}
                   delay={index}
-                  priority={metric.priority}
+                  priority={metric.priority as "high" | "normal"}
                   className="mb-3"
                 />
-                
+
                 <div className="flex items-center justify-between">
                   <TrendIndicator
-                    trend={metric.trend}
+                    trend={metric.trend as "up" | "down" | "neutral"}
                     value={metric.trendValue}
                   />
-                  
+
                   {metric.priority === "high" && (
                     <Badge variant="secondary" className="text-xs">
                       Priority
@@ -300,7 +301,7 @@ export function EnhancedMetricsCards({
 
               {/* Subtle background pattern */}
               <div className="absolute inset-0 opacity-5">
-                <div className="absolute inset-0 bg-primary/10" />
+                <div className="bg-primary/10 absolute inset-0" />
               </div>
             </EnhancedCard>
           )

@@ -162,90 +162,68 @@ const AnimatedLoadingGrid = forwardRef<HTMLDivElement, AnimatedLoadingGridProps>
 
 AnimatedLoadingGrid.displayName = "AnimatedLoadingGrid"
 
-interface LoadingCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  title?: boolean
+interface LoadingCardProps {
+  showTitle?: boolean
   description?: boolean
-  content?: boolean
+  showContent?: boolean
   footer?: boolean
   avatar?: boolean
+  className?: string
 }
 
 const LoadingCard = forwardRef<HTMLDivElement, LoadingCardProps>(
-  ({ 
-    className, 
-    title = true, 
-    description = true, 
-    content = true, 
-    footer = false,
-    avatar = false,
-    ...props 
-  }, ref) => {
+  (
+    {
+      className,
+      showTitle = true,
+      description = true,
+      showContent = true,
+      footer = false,
+      avatar = false
+    },
+    ref
+  ) => {
     return (
       <motion.div
         ref={ref}
-        className={cn(
-          "rounded-lg border bg-card p-6 space-y-4",
-          className
-        )}
+        className={cn("bg-card space-y-4 rounded-lg border p-6", className)}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        {...props}
       >
         {/* Header */}
         <div className="flex items-center space-x-3">
           {avatar && (
-            <AnimatedSkeleton 
+            <AnimatedSkeleton
               variant="circular"
               className="h-12 w-12"
               animation="pulse"
             />
           )}
-          <div className="space-y-2 flex-1">
-            {title && (
-              <AnimatedSkeleton 
-                className="h-5 w-2/3"
-                animation="shimmer"
-              />
+          <div className="flex-1 space-y-2">
+            {showTitle && (
+              <AnimatedSkeleton className="h-5 w-2/3" animation="shimmer" />
             )}
             {description && (
-              <AnimatedSkeleton 
-                className="h-4 w-1/2"
-                animation="shimmer"
-              />
+              <AnimatedSkeleton className="h-4 w-1/2" animation="shimmer" />
             )}
           </div>
         </div>
 
         {/* Content */}
-        {content && (
+        {showContent && (
           <div className="space-y-3">
-            <AnimatedSkeleton 
-              className="h-4 w-full"
-              animation="wave"
-            />
-            <AnimatedSkeleton 
-              className="h-4 w-4/5"
-              animation="wave"
-            />
-            <AnimatedSkeleton 
-              className="h-4 w-3/5"
-              animation="wave"
-            />
+            <AnimatedSkeleton className="h-4 w-full" animation="wave" />
+            <AnimatedSkeleton className="h-4 w-4/5" animation="wave" />
+            <AnimatedSkeleton className="h-4 w-3/5" animation="wave" />
           </div>
         )}
 
         {/* Footer */}
         {footer && (
-          <div className="flex justify-between items-center pt-2">
-            <AnimatedSkeleton 
-              className="h-8 w-20 rounded"
-              animation="pulse"
-            />
-            <AnimatedSkeleton 
-              className="h-8 w-16 rounded"
-              animation="pulse"
-            />
+          <div className="flex items-center justify-between pt-2">
+            <AnimatedSkeleton className="h-8 w-20 rounded" animation="pulse" />
+            <AnimatedSkeleton className="h-8 w-16 rounded" animation="pulse" />
           </div>
         )}
       </motion.div>

@@ -71,12 +71,13 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
           })
         }
 
-        cardRef.current.addEventListener("mousemove", handleMouseMove)
-        cardRef.current.addEventListener("mouseleave", handleMouseLeave)
+        const cardElement = cardRef.current
+        cardElement.addEventListener("mousemove", handleMouseMove)
+        cardElement.addEventListener("mouseleave", handleMouseLeave)
 
         return () => {
-          cardRef.current?.removeEventListener("mousemove", handleMouseMove)
-          cardRef.current?.removeEventListener("mouseleave", handleMouseLeave)
+          cardElement?.removeEventListener("mousemove", handleMouseMove)
+          cardElement?.removeEventListener("mouseleave", handleMouseLeave)
         }
       }
     }, [delay, magnetic])

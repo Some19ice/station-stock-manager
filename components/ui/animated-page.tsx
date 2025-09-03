@@ -5,13 +5,15 @@ import { motion } from "framer-motion"
 import { gsap } from "gsap"
 import { cn } from "@/lib/utils"
 
-interface AnimatedPageProps extends React.HTMLAttributes<HTMLDivElement> {
+interface AnimatedPageProps {
   variant?: "default" | "dashboard" | "form"
   stagger?: boolean
+  className?: string
+  children?: React.ReactNode
 }
 
 const AnimatedPage = forwardRef<HTMLDivElement, AnimatedPageProps>(
-  ({ className, variant = "default", stagger = true, children, ...props }, ref) => {
+  ({ className, variant = "default", stagger = true, children }, ref) => {
     const pageRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -19,19 +21,19 @@ const AnimatedPage = forwardRef<HTMLDivElement, AnimatedPageProps>(
 
       // Enhanced page entrance animation
       const tl = gsap.timeline()
-      
+
       tl.fromTo(
         pageRef.current,
-        { 
-          opacity: 0, 
+        {
+          opacity: 0,
           y: 30,
           scale: 0.98
         },
-        { 
-          opacity: 1, 
+        {
+          opacity: 1,
           y: 0,
           scale: 1,
-          duration: 0.8, 
+          duration: 0.8,
           ease: "power2.out"
         }
       )
@@ -65,16 +67,11 @@ const AnimatedPage = forwardRef<HTMLDivElement, AnimatedPageProps>(
     return (
       <motion.div
         ref={ref || pageRef}
-        className={cn(
-          "relative w-full",
-          variants[variant],
-          className
-        )}
+        className={cn("relative w-full", variants[variant], className)}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.5 }}
-        {...props}
       >
         {children}
       </motion.div>
@@ -84,164 +81,158 @@ const AnimatedPage = forwardRef<HTMLDivElement, AnimatedPageProps>(
 
 AnimatedPage.displayName = "AnimatedPage"
 
-const AnimatedGrid = forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    cols?: number
-    gap?: number
-    staggerDelay?: number
-  }
->(({ className, cols = 1, gap = 4, staggerDelay = 0.1, children, ...props }, ref) => {
-  const gridRef = useRef<HTMLDivElement>(null)
+interface AnimatedGridProps {
+  cols?: number
+  gap?: number
+  staggerDelay?: number
+  className?: string
+  children?: React.ReactNode
+}
 
-  useEffect(() => {
-    if (!gridRef.current) return
+const AnimatedGrid = forwardRef<HTMLDivElement, AnimatedGridProps>(
+  ({ className, cols = 1, gap = 4, staggerDelay = 0.1, children }, ref) => {
+    const gridRef = useRef<HTMLDivElement>(null)
 
-    const items = gridRef.current.children
-    gsap.fromTo(
-      items,
-      { opacity: 0, y: 30, scale: 0.9 },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.6,
-        stagger: staggerDelay,
-        ease: "back.out(1.2)"
-      }
-    )
-  }, [staggerDelay])
+    useEffect(() => {
+      if (!gridRef.current) return
 
-  return (
-    <div
-      ref={ref || gridRef}
-      className={cn(
-        "grid",
-        `grid-cols-${cols}`,
-        `gap-${gap}`,
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </div>
-  )
-})
+      const items = gridRef.current.children
+      gsap.fromTo(
+        items,
+        { opacity: 0, y: 30, scale: 0.9 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.6,
+          stagger: staggerDelay,
+          ease: "back.out(1.2)"
+        }
+      )
+    }, [staggerDelay])
 
-AnimatedGrid.displayName = "AnimatedGrid"
-
-const AnimatedText = forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    text: string
-    delay?: number
-    speed?: number
-  }
->(({ className, text, delay = 0, speed = 0.05, ...props }, ref) => {
-  const textRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!textRef.current) return
-
-    const chars = text.split("")
-    textRef.current.innerHTML = chars
-      .map(char => `<span class="inline-block opacity-0">${char === " " ? "&nbsp;" : char}</span>`)
-      .join("")
-
-    const spans = textRef.current.querySelectorAll("span")
-    
-    gsap.to(spans, {
-      opacity: 1,
-      duration: 0.1,
-      stagger: speed,
-      delay: delay,
-      ease: "power2.out"
-    })
-  }, [text, delay, speed])
-
-  return (
-    <div
-      ref={ref || textRef}
-      className={cn("overflow-hidden", className)}
-      {...props}
-    />
-  )
-})
-
-AnimatedText.displayName = "AnimatedText"
-
-const AnimatedLoader = forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    size?: "sm" | "md" | "lg"
-    variant?: "spinner" | "dots" | "pulse"
-  }
->(({ className, size = "md", variant = "spinner", ...props }, ref) => {
-  const sizes = {
-    sm: "h-4 w-4",
-    md: "h-8 w-8", 
-    lg: "h-12 w-12"
-  }
-
-  if (variant === "spinner") {
-    return (
-      <motion.div
-        ref={ref}
-        className={cn(
-          "border-2 border-primary/20 border-t-primary rounded-full",
-          sizes[size],
-          className
-        )}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        {...props}
-      />
-    )
-  }
-
-  if (variant === "dots") {
     return (
       <div
-        ref={ref}
-        className={cn("flex space-x-1", className)}
-        {...props}
+        ref={ref || gridRef}
+        className={cn("grid", `grid-cols-${cols}`, `gap-${gap}`, className)}
       >
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className={cn(
-              "bg-primary rounded-full",
-              size === "sm" ? "h-1 w-1" : size === "md" ? "h-2 w-2" : "h-3 w-3"
-            )}
-            animate={{
-              scale: [1, 1.5, 1],
-              opacity: [0.5, 1, 0.5]
-            }}
-            transition={{
-              duration: 1,
-              repeat: Infinity,
-              delay: i * 0.2
-            }}
-          />
-        ))}
+        {children}
       </div>
     )
   }
+)
 
-  return (
-    <motion.div
-      ref={ref}
-      className={cn(
-        "bg-primary/20 rounded",
-        sizes[size],
-        className
-      )}
-      animate={{ opacity: [0.5, 1, 0.5] }}
-      transition={{ duration: 1.5, repeat: Infinity }}
-      {...props}
-    />
-  )
-})
+AnimatedGrid.displayName = "AnimatedGrid"
+
+interface AnimatedTextProps {
+  text: string
+  delay?: number
+  speed?: number
+  className?: string
+}
+
+const AnimatedText = forwardRef<HTMLDivElement, AnimatedTextProps>(
+  ({ className, text, delay = 0, speed = 0.05 }, ref) => {
+    const textRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      if (!textRef.current) return
+
+      const chars = text.split("")
+      textRef.current.innerHTML = chars
+        .map(
+          char =>
+            `<span class="inline-block opacity-0">${char === " " ? "&nbsp;" : char}</span>`
+        )
+        .join("")
+
+      const spans = textRef.current.querySelectorAll("span")
+
+      gsap.to(spans, {
+        opacity: 1,
+        duration: 0.1,
+        stagger: speed,
+        delay: delay,
+        ease: "power2.out"
+      })
+    }, [text, delay, speed])
+
+    return (
+      <div ref={ref || textRef} className={cn("overflow-hidden", className)} />
+    )
+  }
+)
+
+AnimatedText.displayName = "AnimatedText"
+
+interface AnimatedLoaderProps {
+  size?: "sm" | "md" | "lg"
+  variant?: "spinner" | "dots" | "pulse"
+  className?: string
+}
+
+const AnimatedLoader = forwardRef<HTMLDivElement, AnimatedLoaderProps>(
+  ({ className, size = "md", variant = "spinner" }, ref) => {
+    const sizes = {
+      sm: "h-4 w-4",
+      md: "h-8 w-8",
+      lg: "h-12 w-12"
+    }
+
+    if (variant === "spinner") {
+      return (
+        <motion.div
+          ref={ref}
+          className={cn(
+            "border-primary/20 border-t-primary rounded-full border-2",
+            sizes[size],
+            className
+          )}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
+      )
+    }
+
+    if (variant === "dots") {
+      return (
+        <div ref={ref} className={cn("flex space-x-1", className)}>
+          {[0, 1, 2].map(i => (
+            <motion.div
+              key={i}
+              className={cn(
+                "bg-primary rounded-full",
+                size === "sm"
+                  ? "h-1 w-1"
+                  : size === "md"
+                    ? "h-2 w-2"
+                    : "h-3 w-3"
+              )}
+              animate={{
+                scale: [1, 1.5, 1],
+                opacity: [0.5, 1, 0.5]
+              }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                delay: i * 0.2
+              }}
+            />
+          ))}
+        </div>
+      )
+    }
+
+    return (
+      <motion.div
+        ref={ref}
+        className={cn("bg-primary/20 rounded", sizes[size], className)}
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      />
+    )
+  }
+)
 
 AnimatedLoader.displayName = "AnimatedLoader"
 

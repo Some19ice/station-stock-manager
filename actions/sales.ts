@@ -1,6 +1,8 @@
 "use server"
 
+// Fixed imports for sales actions
 import { auth } from "@clerk/nextjs/server"
+import { getCurrentUserProfile } from "@/actions/auth"
 import { db } from "@/db"
 import {
   products,
@@ -292,40 +294,36 @@ export async function getTodaysSalesSummary(
       return { isSuccess: false, error: "Unauthorized" }
     }
 
-    // Get user info
-    const userInfo = await getUserInfo(authUserId)
-    if (!userInfo) {
-      return { isSuccess: false, error: "User not found" }
+    // Get user profile using the same method as other functions
+    const userProfileResult = await getCurrentUserProfile()
+    if (!userProfileResult.isSuccess || !userProfileResult.data) {
+      return { isSuccess: false, error: "User profile not found" }
     }
 
+    const { user } = userProfileResult.data
+
     // Verify user belongs to the station
-    if (userInfo.stationId !== stationId) {
+    if (user.stationId !== stationId) {
       return { isSuccess: false, error: "Access denied for this station" }
     }
 
     // Use provided userId or current user's ID
-    const targetUserId = userId || userInfo.id
+    const targetUserId = userId || user.id
 
     // Get today's date range
     const today = new Date()
-    const startOfDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    )
-    const endOfDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate() + 1
-    )
+    const startOfDay = new Date(today)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(today)
+    endOfDay.setHours(23, 59, 59, 999)
 
     // Get today's transactions
     const todaysTransactions = (await db.query.transactions.findMany({
       where: and(
         eq(transactions.stationId, stationId),
         eq(transactions.userId, targetUserId),
-        sql`${transactions.transactionDate} >= ${startOfDay}`,
-        sql`${transactions.transactionDate} < ${endOfDay}`
+        sql`${transactions.transactionDate} >= ${startOfDay.toISOString()}`,
+        sql`${transactions.transactionDate} <= ${endOfDay.toISOString()}`
       ),
       with: {
         items: {

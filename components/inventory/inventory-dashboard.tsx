@@ -19,22 +19,7 @@ import {
 import { formatCurrency } from "@/lib/utils"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
-
-interface InventoryItem {
-  id: string
-  name: string
-  brand?: string | null
-  type: "pms" | "lubricant"
-  currentStock: number
-  minThreshold: number
-  unitPrice: number
-  value: number
-  unit: string
-  isLowStock: boolean
-  isOutOfStock: boolean
-  supplier?: { id: string; name: string } | null
-  stockStatus: "out_of_stock" | "low_stock" | "normal"
-}
+import { InventoryItem } from "@/lib/types/station-stock"
 
 interface InventoryStatus {
   items: InventoryItem[]

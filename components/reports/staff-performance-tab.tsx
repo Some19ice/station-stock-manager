@@ -21,7 +21,7 @@ import { toast } from "sonner"
 import { Loader2, Download, Printer, TrendingUp, Users } from "lucide-react"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
-import { RiveLoading } from "@/components/ui/rive-loading"
+import { SimpleLoading } from "@/components/ui/simple-loading"
 
 export function StaffPerformanceTab() {
   const { user } = useStationAuth()
@@ -180,7 +180,7 @@ export function StaffPerformanceTab() {
 
       {isLoading && (
         <AnimatedCard className="text-center">
-          <RiveLoading message="Generating Staff Performance Report" />
+          <SimpleLoading message="Generating Staff Performance Report" />
         </AnimatedCard>
       )}
 

@@ -45,7 +45,7 @@ import {
 import Link from "next/link"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
-import { RiveLoading } from "@/components/ui/rive-loading"
+import { SimpleLoading } from "@/components/ui/simple-loading"
 import { toast } from "sonner"
 
 interface UserData {
@@ -74,6 +74,8 @@ interface UserEditPageProps {
 export default function UserEditPage({ params }: UserEditPageProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [paramsResolved, setParamsResolved] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
   const [user, setUser] = useState<UserData | null>(null)
   const [userActivity, setUserActivity] = useState<ActivityItem[]>([])
@@ -84,7 +86,6 @@ export default function UserEditPage({ params }: UserEditPageProps) {
     username: "",
     role: "staff" as "staff" | "manager"
   })
-  const resolvedParams = use(params)
   const headerRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
   const actionsRef = useRef<HTMLDivElement>(null)
@@ -127,9 +128,11 @@ export default function UserEditPage({ params }: UserEditPageProps) {
   }, [loading, user])
 
   const handleStatusToggle = async (isActive: boolean) => {
+    if (!userId) return
+    
     setUpdating(true)
     try {
-      const result = await updateUserStatus(resolvedParams.id, isActive)
+      const result = await updateUserStatus(userId, isActive)
       if (result.isSuccess) {
         setUser(prev => (prev ? { ...prev, isActive } : null))
         toast.success(
@@ -181,8 +184,28 @@ export default function UserEditPage({ params }: UserEditPageProps) {
     }
   }
 
+  // Resolve params first
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params
+        setUserId(resolvedParams.id)
+        setParamsResolved(true)
+      } catch (error) {
+        console.error("Failed to resolve params:", error)
+        setParamsResolved(true)
+      }
+    }
+    resolveParams()
+  }, [params])
+
   // Fetch real user data
   useEffect(() => {
+    if (!paramsResolved || !userId) {
+      if (paramsResolved) setLoading(false)
+      return
+    }
+
     const fetchUser = async () => {
       try {
         const roleCheck = await validateUserRole("manager")
@@ -194,7 +217,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
         const usersResult = await getStationUsers()
         if (usersResult.isSuccess && usersResult.data) {
           const foundUser = usersResult.data.find(
-            u => u.id === resolvedParams.id
+            u => u.id === userId
           )
           if (foundUser) {
             setUser(foundUser)
@@ -203,11 +226,16 @@ export default function UserEditPage({ params }: UserEditPageProps) {
               role: foundUser.role
             })
 
-            // Fetch real user activities
-            const activitiesResult = await getUserActivities(foundUser.id)
-            if (activitiesResult.isSuccess && activitiesResult.data) {
-              setUserActivity(activitiesResult.data)
-            }
+            // Fetch activities in background
+            getUserActivities(foundUser.id)
+              .then(activitiesResult => {
+                if (activitiesResult.isSuccess && activitiesResult.data) {
+                  setUserActivity(activitiesResult.data)
+                }
+              })
+              .catch(error => {
+                console.error("Failed to load activities:", error)
+              })
           } else {
             setUser(null)
           }
@@ -221,12 +249,12 @@ export default function UserEditPage({ params }: UserEditPageProps) {
     }
 
     fetchUser()
-  }, [resolvedParams.id, router])
+  }, [paramsResolved, userId, router])
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <RiveLoading message="Loading User Profile" />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <SimpleLoading message="Loading User Profile" />
       </div>
     )
   }

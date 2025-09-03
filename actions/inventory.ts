@@ -3,7 +3,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { db } from "@/db"
 import { products, stockMovements, users, suppliers } from "@/db/schema"
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm"
+import { eq, and, desc, gte, lte, sql, inArray } from "drizzle-orm"
 import { z } from "zod"
 import {
   createSuccessResponse,
@@ -349,13 +349,15 @@ export async function getStockMovementHistory(
       whereConditions.push(lte(stockMovements.createdAt, endDate))
     }
 
-    // Add station filter to where conditions
+    // Add station filter using proper relationship
     whereConditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM ${products} 
-        WHERE ${products.id} = ${stockMovements.productId} 
-        AND ${products.stationId} = ${stationId}
-      )`
+      inArray(
+        stockMovements.productId,
+        db
+          .select({ id: products.id })
+          .from(products)
+          .where(eq(products.stationId, stationId))
+      )
     )
 
     const movements = await db.query.stockMovements.findMany({
@@ -368,9 +370,11 @@ export async function getStockMovementHistory(
     })
 
     // Return movements (product will be null for movements not in this station)
-    return movements as Array<typeof stockMovements.$inferSelect & {
-      product: typeof products.$inferSelect | null
-    }>
+    return movements as Array<
+      typeof stockMovements.$inferSelect & {
+        product: typeof products.$inferSelect | null
+      }
+    >
   }, "Fetch stock movement history")
 }
 

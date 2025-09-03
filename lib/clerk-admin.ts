@@ -22,6 +22,7 @@ export interface InviteUserParams {
   email: string
   username?: string
   role?: string
+  stationId?: string
   redirectUrl?: string
 }
 
@@ -58,17 +59,15 @@ export async function createClerkUser(params: CreateUserParams) {
  */
 export async function sendUserInvitation(params: InviteUserParams) {
   try {
-    const invitationData = {
+    const invitation = await clerkClient.invitations.createInvitation({
       emailAddress: params.email,
-      redirectUrl: params.redirectUrl || `${process.env.NEXT_PUBLIC_APP_URL}/login`,
-      notify: true, // Send email notification
+      redirectUrl: params.redirectUrl || `${process.env.NEXT_PUBLIC_APP_URL}/signup`,
+      notify: true,
       publicMetadata: {
         ...(params.username && { username: params.username }),
         ...(params.role && { role: params.role })
       }
-    }
-
-    const invitation = await clerkClient.invitations.createInvitation(invitationData)
+    })
 
     return {
       success: true,

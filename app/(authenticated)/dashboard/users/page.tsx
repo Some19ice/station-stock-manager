@@ -37,7 +37,7 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
-import { RiveLoading } from "@/components/ui/rive-loading"
+import { SimpleLoading } from "@/components/ui/simple-loading"
 
 interface UserData {
   id: string
@@ -158,7 +158,7 @@ export default function UsersManagementPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <RiveLoading message="Loading User Management" />
+        <SimpleLoading message="Loading User Management" />
       </div>
     )
   }
@@ -320,85 +320,83 @@ const UserCard = ({
 
   return (
     <div ref={cardRef}>
-      <AnimatedCard hoverEffect={true}>
-        <CardContent className="flex items-center justify-between p-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-gray-100 to-gray-200 transition-all hover:scale-110">
-              {user.role === "manager" ? (
-                <Shield className="h-5 w-5 text-blue-600" />
-              ) : (
-                <User className="h-5 w-5 text-gray-600" />
-              )}
-            </div>
-            <div>
-              <h3 className="font-semibold">{user.username}</h3>
-              <p className="text-muted-foreground text-sm">
-                Created {new Date(user.createdAt).toLocaleDateString()}
-                {user.clerkUserId?.startsWith('temp_') && (
-                  <span className="ml-2 text-orange-600">• Pending activation</span>
+      <Link href={`/dashboard/users/${user.id}`}>
+        <AnimatedCard hoverEffect={true} className="cursor-pointer">
+          <CardContent className="flex items-center justify-between p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-gray-100 to-gray-200 transition-all hover:scale-110">
+                {user.role === "manager" ? (
+                  <Shield className="h-5 w-5 text-blue-600" />
+                ) : (
+                  <User className="h-5 w-5 text-gray-600" />
                 )}
-              </p>
+              </div>
+              <div>
+                <h3 className="font-semibold">{user.username}</h3>
+                <p className="text-muted-foreground text-sm">
+                  Created {new Date(user.createdAt).toLocaleDateString()}
+                  {user.clerkUserId?.startsWith('temp_') && (
+                    <span className="ml-2 text-orange-600">• Pending activation</span>
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Badge 
-                variant={user.role === "manager" ? "default" : "secondary"}
-                className="transition-all hover:scale-105"
-              >
-                {user.role}
-              </Badge>
-              {user.clerkUserId?.startsWith('temp_') ? (
-                <Badge variant="outline" className="text-orange-600 border-orange-200 transition-all hover:scale-105">
-                  Invitation Sent
-                </Badge>
-              ) : (
+            
+            <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-2">
                 <Badge 
-                  variant={user.isActive ? "default" : "destructive"}
+                  variant={user.role === "manager" ? "default" : "secondary"}
                   className="transition-all hover:scale-105"
                 >
-                  {user.isActive ? "Active" : "Inactive"}
+                  {user.role}
                 </Badge>
-              )}
-            </div>
+                {user.clerkUserId?.startsWith('temp_') ? (
+                  <Badge variant="outline" className="text-orange-600 border-orange-200 transition-all hover:scale-105">
+                    Invitation Sent
+                  </Badge>
+                ) : (
+                  <Badge 
+                    variant={user.isActive ? "default" : "destructive"}
+                    className="transition-all hover:scale-105"
+                  >
+                    {user.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                )}
+              </div>
 
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={user.isActive}
-                onCheckedChange={(checked) => onStatusToggle(user.id, checked)}
-                className="transition-all hover:scale-105"
-              />
-              
-              <Button variant="outline" size="sm" asChild className="transition-all hover:scale-105">
-                <Link href={`/dashboard/users/${user.id}`}>Edit</Link>
-              </Button>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 transition-all hover:scale-105">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Deactivate User</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to deactivate {user.username}? They will no longer be able to access the system.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onDeactivate(user.id)}>
-                      Deactivate
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={user.isActive}
+                  onCheckedChange={(checked) => onStatusToggle(user.id, checked)}
+                  className="transition-all hover:scale-105"
+                />
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 transition-all hover:scale-105">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to deactivate {user.username}? They will no longer be able to access the system.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDeactivate(user.id)}>
+                        Deactivate
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </AnimatedCard>
+          </CardContent>
+        </AnimatedCard>
+      </Link>
     </div>
   )
 }

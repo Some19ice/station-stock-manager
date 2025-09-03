@@ -182,39 +182,44 @@ export function Header({ userMembership }: HeaderProps) {
             ))}
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:gap-x-3">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                aria-label="Toggle theme"
-                className="header-button bg-card/50 hover:bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg"
+            {mounted && (
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <AnimatePresence mode="wait">
-                  {theme === "dark" ? (
-                    <motion.div
-                      key="sun"
-                      initial={{ rotate: -180, scale: 0 }}
-                      animate={{ rotate: 0, scale: 1 }}
-                      exit={{ rotate: 180, scale: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Sun className="h-5 w-5" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="moon"
-                      initial={{ rotate: 180, scale: 0 }}
-                      animate={{ rotate: 0, scale: 1 }}
-                      exit={{ rotate: -180, scale: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Moon className="h-5 w-5" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Button>
-            </motion.div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  aria-label="Toggle theme"
+                  className="header-button bg-card/50 hover:bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg"
+                >
+                  <AnimatePresence mode="wait">
+                    {theme === "dark" ? (
+                      <motion.div
+                        key="sun"
+                        initial={{ rotate: -180, scale: 0 }}
+                        animate={{ rotate: 0, scale: 1 }}
+                        exit={{ rotate: 180, scale: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Sun className="h-5 w-5" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="moon"
+                        initial={{ rotate: 180, scale: 0 }}
+                        animate={{ rotate: 0, scale: 1 }}
+                        exit={{ rotate: -180, scale: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Moon className="h-5 w-5" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </motion.div>
+            )}
             <SignedOut>
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -393,39 +398,41 @@ export function Header({ userMembership }: HeaderProps) {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <Button
-                      variant="outline"
-                      className="bg-card/50 hover:bg-card w-full justify-start backdrop-blur-sm transition-all duration-300 hover:shadow-lg"
-                      onClick={() => {
-                        setTheme(theme === "dark" ? "light" : "dark")
-                        setMobileMenuOpen(false)
-                      }}
-                    >
-                      <AnimatePresence mode="wait">
-                        {theme === "dark" ? (
-                          <motion.div
-                            key="sun-mobile"
-                            initial={{ rotate: -180, scale: 0 }}
-                            animate={{ rotate: 0, scale: 1 }}
-                            exit={{ rotate: 180, scale: 0 }}
-                            className="mr-2"
-                          >
-                            <Sun className="h-4 w-4" />
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="moon-mobile"
-                            initial={{ rotate: 180, scale: 0 }}
-                            animate={{ rotate: 0, scale: 1 }}
-                            exit={{ rotate: -180, scale: 0 }}
-                            className="mr-2"
-                          >
-                            <Moon className="h-4 w-4" />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                    </Button>
+                    {mounted && (
+                      <Button
+                        variant="outline"
+                        className="bg-card/50 hover:bg-card w-full justify-start backdrop-blur-sm transition-all duration-300 hover:shadow-lg"
+                        onClick={() => {
+                          setTheme(theme === "dark" ? "light" : "dark")
+                          setMobileMenuOpen(false)
+                        }}
+                      >
+                        <AnimatePresence mode="wait">
+                          {theme === "dark" ? (
+                            <motion.div
+                              key="sun-mobile"
+                              initial={{ rotate: -180, scale: 0 }}
+                              animate={{ rotate: 0, scale: 1 }}
+                              exit={{ rotate: 180, scale: 0 }}
+                              className="mr-2"
+                            >
+                              <Sun className="h-4 w-4" />
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="moon-mobile"
+                              initial={{ rotate: 180, scale: 0 }}
+                              animate={{ rotate: 0, scale: 1 }}
+                              exit={{ rotate: -180, scale: 0 }}
+                              className="mr-2"
+                            >
+                              <Moon className="h-4 w-4" />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                        {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                      </Button>
+                    )}
                     <SignedOut>
                       <Button variant="outline" className="w-full" asChild>
                         <Link

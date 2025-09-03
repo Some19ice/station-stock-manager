@@ -13,12 +13,7 @@ export default async function MarketingLayout({
   return (
     <>
       {/* Custom cursor for enhanced interactivity */}
-      <CursorWrapper
-        size={24}
-        magneticStrength={0.3}
-        blendMode="difference"
-        className="hidden lg:block"
-      />
+      <CursorWrapper size={24} className="hidden lg:block" />
 
       <SiteBanner />
       <HeaderWrapper />

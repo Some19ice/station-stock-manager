@@ -83,6 +83,22 @@ export interface StockMovement {
   createdAt: Date
 }
 
+export interface InventoryItem {
+  id: string
+  name: string
+  brand?: string | null
+  type: "pms" | "lubricant"
+  currentStock: number
+  minThreshold: number
+  unitPrice: number
+  value: number
+  unit: string
+  isLowStock: boolean
+  isOutOfStock: boolean
+  supplier?: { id: string; name: string } | null
+  stockStatus: "out_of_stock" | "low_stock" | "normal"
+}
+
 // Offline data models for PWA functionality
 export interface OfflineTransaction {
   tempId: string

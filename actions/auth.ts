@@ -168,6 +168,7 @@ export async function createStationUser(input: z.infer<typeof createUserSchema>)
       email: validatedInput.email,
       username: validatedInput.username,
       role: validatedInput.role,
+      stationId: validatedInput.stationId,
       redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`
     })
 

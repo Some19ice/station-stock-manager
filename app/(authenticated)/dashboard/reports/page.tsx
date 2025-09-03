@@ -14,7 +14,7 @@ export default async function ReportsPage() {
   }
 
   return (
-    <AnimatedPage animation="slideUp" className="space-y-6">
+    <AnimatedPage className="space-y-6">
       <div className="reports-header">
         <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
         <p className="text-muted-foreground mt-2">

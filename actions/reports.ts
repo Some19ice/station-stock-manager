@@ -193,13 +193,15 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
         totalSales,
         totalTransactions,
         averageTransaction,
-        productsSold: productsSold.map(item => ({
-          productName: item.productName,
-          brand: item.brand || "N/A",
-          quantitySold: item.totalQuantity || "0",
-          revenue: item.totalRevenue || "0",
-          unit: item.unit
-        }))
+        productsSold: productsSold
+          .filter(item => item.totalQuantity && parseFloat(item.totalQuantity) > 0)
+          .map(item => ({
+            productName: item.productName,
+            brand: item.brand || "N/A",
+            quantitySold: item.totalQuantity || "0",
+            revenue: item.totalRevenue || "0",
+            unit: item.unit
+          }))
       },
       pmsReport: {
         openingStock: pmsProducts[0]?.currentStock || "0",
@@ -209,14 +211,16 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
           : "0",
         revenue: pmsSales[0]?.totalRevenue || "0"
       },
-      lubricantBreakdown: lubricantSales.map(item => ({
-        productName: item.productName,
-        brand: item.brand || "N/A",
-        openingStock: item.currentStock,
-        unitsSold: item.totalQuantity || "0",
-        closingStock: (parseFloat(item.currentStock) - parseFloat(item.totalQuantity || "0")).toString(),
-        revenue: item.totalRevenue || "0"
-      }))
+      lubricantBreakdown: lubricantSales
+        .filter(item => item.totalQuantity && parseFloat(item.totalQuantity) > 0)
+        .map(item => ({
+          productName: item.productName,
+          brand: item.brand || "N/A",
+          openingStock: item.currentStock,
+          unitsSold: item.totalQuantity || "0",
+          closingStock: (parseFloat(item.currentStock) - parseFloat(item.totalQuantity || "0")).toString(),
+          revenue: item.totalRevenue || "0"
+        }))
     }
 
     return { isSuccess: true, data: reportData }

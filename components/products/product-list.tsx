@@ -30,7 +30,39 @@ import {
 } from "lucide-react"
 import { getProducts, deleteProduct } from "@/actions/products"
 import { SelectProduct } from "@/db/schema"
+import { InventoryItem } from "@/lib/types/station-stock"
 import { toast } from "sonner"
+
+// Helper function to transform SelectProduct to InventoryItem
+function transformToInventoryItem(product: SelectProduct): InventoryItem {
+  const currentStock = parseFloat(product.currentStock)
+  const minThreshold = parseFloat(product.minThreshold)
+  const unitPrice = parseFloat(product.unitPrice)
+  const value = currentStock * unitPrice
+
+  const isLowStock = currentStock <= minThreshold
+  const isOutOfStock = currentStock === 0
+
+  return {
+    id: product.id,
+    name: product.name,
+    brand: product.brand,
+    type: product.type,
+    currentStock,
+    minThreshold,
+    unitPrice,
+    value,
+    unit: product.unit,
+    isLowStock,
+    isOutOfStock,
+    supplier: null, // ProductList doesn't load supplier data
+    stockStatus: isOutOfStock
+      ? "out_of_stock"
+      : isLowStock
+        ? "low_stock"
+        : "normal"
+  }
+}
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +79,7 @@ interface ProductListProps {
   stationId: string
   onEditProduct?: (product: SelectProduct) => void
   onAddProduct?: () => void
-  onAdjustStock?: (product: SelectProduct) => void
+  onAdjustStock?: (product: InventoryItem) => void
 }
 
 export function ProductList({
@@ -319,7 +351,9 @@ export function ProductList({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => onAdjustStock(product)}
+                              onClick={() =>
+                                onAdjustStock(transformToInventoryItem(product))
+                              }
                               title="Adjust Stock"
                             >
                               <Settings className="h-4 w-4" />
