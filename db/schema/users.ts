@@ -4,7 +4,9 @@ import { stations } from "./stations"
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  stationId: uuid("station_id").references(() => stations.id).notNull(),
+  stationId: uuid("station_id")
+    .references(() => stations.id)
+    .notNull(),
   clerkUserId: text("clerk_user_id").unique().notNull(),
   username: text("username").unique().notNull(),
   role: userRole("role").notNull(),

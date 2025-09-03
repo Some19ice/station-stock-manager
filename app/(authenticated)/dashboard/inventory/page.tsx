@@ -66,24 +66,31 @@ export default function InventoryPage() {
 
   // Animate page elements when loading completes
   useEffect(() => {
-    if (!isLoading && headerRef.current && tabsRef.current && contentRef.current) {
+    if (
+      !isLoading &&
+      headerRef.current &&
+      tabsRef.current &&
+      contentRef.current
+    ) {
       const tl = gsap.timeline()
 
       tl.fromTo(
         headerRef.current,
         { opacity: 0, y: -20 },
         { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
-      ).fromTo(
-        tabsRef.current,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
-        "-=0.3"
-      ).fromTo(
-        contentRef.current,
-        { opacity: 0, scale: 0.95 },
-        { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" },
-        "-=0.2"
       )
+        .fromTo(
+          tabsRef.current,
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+          "-=0.3"
+        )
+        .fromTo(
+          contentRef.current,
+          { opacity: 0, scale: 0.95 },
+          { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" },
+          "-=0.2"
+        )
     }
   }, [isLoading])
 
@@ -144,7 +151,7 @@ export default function InventoryPage() {
 
   if (!station) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <SimpleLoading message="Loading Inventory Management" />
       </div>
     )

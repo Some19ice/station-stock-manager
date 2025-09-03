@@ -8,7 +8,7 @@ import { eq, like } from "drizzle-orm"
 import { z } from "zod"
 
 const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY!,
+  secretKey: process.env.CLERK_SECRET_KEY!
 })
 
 const setupStaffProfileSchema = z.object({
@@ -48,7 +48,10 @@ export async function setupStaffProfile(
     })
 
     if (!pendingUser || pendingUser.role !== "staff") {
-      return { isSuccess: false, error: "No valid invitation found for this email" }
+      return {
+        isSuccess: false,
+        error: "No valid invitation found for this email"
+      }
     }
 
     // Update the pending user record with actual Clerk ID

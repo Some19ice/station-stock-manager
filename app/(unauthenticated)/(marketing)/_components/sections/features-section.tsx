@@ -127,10 +127,8 @@ export function FeaturesSection() {
               Everything Included
             </h2>
             <h3 className="text-foreground mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              <span className="text-primary">
-                Complete
-              </span>{" "}
-              Gas Station Management
+              <span className="text-primary">Complete</span> Gas Station
+              Management
             </h3>
             <p className="text-foreground/75 mx-auto mt-6 max-w-2xl text-lg leading-relaxed sm:text-xl">
               Everything you need to manage fuel inventory, track sales, and
@@ -179,10 +177,8 @@ export function FeaturesSection() {
             transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
           >
             <h3 className="text-foreground mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              <span className="text-primary">
-                Complete
-              </span>{" "}
-              Gas Station Management
+              <span className="text-primary">Complete</span> Gas Station
+              Management
             </h3>
           </motion.div>
 

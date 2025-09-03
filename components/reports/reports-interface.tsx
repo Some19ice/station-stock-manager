@@ -1,7 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DailyReportTab } from "./daily-report-tab"
 import { StaffPerformanceTab } from "./staff-performance-tab"
@@ -49,7 +55,8 @@ export function ReportsInterface() {
       <CardHeader>
         <CardTitle>Business Reports & Analytics</CardTitle>
         <CardDescription>
-          Generate comprehensive reports, view analytics, and schedule automated reporting
+          Generate comprehensive reports, view analytics, and schedule automated
+          reporting
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -68,20 +75,20 @@ export function ReportsInterface() {
               Scheduler
             </TabsTrigger>
           </TabsList>
-          
+
           <div ref={tabContentRef}>
             <TabsContent value="daily" className="mt-6">
               <DailyReportTab />
             </TabsContent>
-            
+
             <TabsContent value="staff" className="mt-6">
               <StaffPerformanceTab />
             </TabsContent>
-            
+
             <TabsContent value="alerts" className="mt-6">
               <LowStockAlertsTab />
             </TabsContent>
-            
+
             <TabsContent value="periodic" className="mt-6">
               <WeeklyMonthlyTab />
             </TabsContent>
@@ -89,12 +96,14 @@ export function ReportsInterface() {
             <TabsContent value="analytics" className="mt-6">
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Visual Analytics Dashboard</h3>
+                  <h3 className="mb-2 text-lg font-semibold">
+                    Visual Analytics Dashboard
+                  </h3>
                   <p className="text-muted-foreground mb-4">
                     Interactive charts and graphs for better data insights
                   </p>
                 </div>
-                <AnalyticsCharts 
+                <AnalyticsCharts
                   salesData={[]} // Would be populated with real data
                   productData={[]} // Would be populated with real data
                   staffData={[]} // Would be populated with real data
@@ -105,7 +114,9 @@ export function ReportsInterface() {
             <TabsContent value="scheduler" className="mt-6">
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Automated Report Scheduling</h3>
+                  <h3 className="mb-2 text-lg font-semibold">
+                    Automated Report Scheduling
+                  </h3>
                   <p className="text-muted-foreground mb-4">
                     Set up automatic report generation and email delivery
                   </p>

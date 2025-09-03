@@ -55,28 +55,35 @@ export function ShiftHandover() {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="text-muted-foreground h-4 w-4" />
             <span className="text-sm">
               {mockShiftData.startTime} - {mockShiftData.endTime}
             </span>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Total Sales</p>
-            <p className="font-semibold">₦{mockShiftData.totalSales.toLocaleString()}</p>
+            <p className="text-muted-foreground text-sm">Total Sales</p>
+            <p className="font-semibold">
+              ₦{mockShiftData.totalSales.toLocaleString()}
+            </p>
           </div>
         </div>
 
         <div>
-          <p className="text-sm font-medium mb-2">Shift Summary</p>
+          <p className="mb-2 text-sm font-medium">Shift Summary</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>Transactions: {mockShiftData.transactionCount}</div>
-            <div>Avg Sale: ₦{(mockShiftData.totalSales / mockShiftData.transactionCount).toFixed(0)}</div>
+            <div>
+              Avg Sale: ₦
+              {(
+                mockShiftData.totalSales / mockShiftData.transactionCount
+              ).toFixed(0)}
+            </div>
           </div>
         </div>
 
         {mockShiftData.issues.length > 0 && (
           <div>
-            <p className="text-sm font-medium mb-2 flex items-center gap-1">
+            <p className="mb-2 flex items-center gap-1 text-sm font-medium">
               <AlertCircle className="h-4 w-4 text-orange-500" />
               Issues to Report
             </p>
@@ -91,18 +98,18 @@ export function ShiftHandover() {
         )}
 
         <div>
-          <label className="text-sm font-medium mb-2 block">
+          <label className="mb-2 block text-sm font-medium">
             Handover Notes
           </label>
           <Textarea
             placeholder="Add any important notes for the next shift..."
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={e => setNotes(e.target.value)}
             rows={3}
           />
         </div>
 
-        <Button 
+        <Button
           onClick={handleSubmitHandover}
           disabled={submitting}
           className="w-full"

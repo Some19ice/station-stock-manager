@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button"
 import { AnimatedBackground } from "@/components/ui/animated-background"
 import { FloatingElements } from "@/components/ui/floating-elements"
 import { motion } from "framer-motion"
-import { ArrowRight, LayoutDashboard, Sparkles, CheckCircle } from "lucide-react"
+import {
+  ArrowRight,
+  LayoutDashboard,
+  Sparkles,
+  CheckCircle
+} from "lucide-react"
 import Link from "next/link"
 import { SectionWrapper } from "./section-wrapper"
 import { useEffect, useRef, useState } from "react"
@@ -34,39 +39,55 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
 
     // Simplified, performance-optimized animations
     const tl = gsap.timeline({ delay: 0.2 })
-    
+
     tl.from(".hero-badge", {
       opacity: 0,
       y: -20,
       duration: 0.6,
       ease: "back.out(1.7)"
     })
-    .from(".hero-title-line", {
-      opacity: 0,
-      y: 30,
-      duration: 0.8,
-      stagger: 0.2,
-      ease: "power2.out"
-    }, "-=0.3")
-    .from(".hero-subtitle", {
-      opacity: 0,
-      y: 20,
-      duration: 0.6,
-      ease: "power2.out"
-    }, "-=0.4")
-    .from(".hero-cta", {
-      opacity: 0,
-      y: 20,
-      duration: 0.6,
-      ease: "power2.out"
-    }, "-=0.3")
-    .from(".trust-indicator", {
-      opacity: 0,
-      x: -20,
-      duration: 0.5,
-      stagger: 0.1,
-      ease: "power2.out"
-    }, "-=0.2")
+      .from(
+        ".hero-title-line",
+        {
+          opacity: 0,
+          y: 30,
+          duration: 0.8,
+          stagger: 0.2,
+          ease: "power2.out"
+        },
+        "-=0.3"
+      )
+      .from(
+        ".hero-subtitle",
+        {
+          opacity: 0,
+          y: 20,
+          duration: 0.6,
+          ease: "power2.out"
+        },
+        "-=0.4"
+      )
+      .from(
+        ".hero-cta",
+        {
+          opacity: 0,
+          y: 20,
+          duration: 0.6,
+          ease: "power2.out"
+        },
+        "-=0.3"
+      )
+      .from(
+        ".trust-indicator",
+        {
+          opacity: 0,
+          x: -20,
+          duration: 0.5,
+          stagger: 0.1,
+          ease: "power2.out"
+        },
+        "-=0.2"
+      )
 
     // Sparkle animation
     const sparkles = document.querySelectorAll(".sparkle")
@@ -82,7 +103,6 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
         ease: "power2.inOut"
       })
     })
-
   }, [mounted])
 
   const dashboardUrl = userRole === "manager" ? "/dashboard" : "/staff"
@@ -122,15 +142,20 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
         <Sparkles className="sparkle text-primary/30 absolute right-[25%] bottom-20 h-3 w-3" />
       </div>
 
-      <div ref={heroRef} className="relative z-10 mx-auto max-w-5xl text-center px-4 sm:px-6 lg:px-8">
+      <div
+        ref={heroRef}
+        className="relative z-10 mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8"
+      >
         {/* Trust Badge */}
-        <motion.div 
+        <motion.div
           className="hero-badge mb-8 flex justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
           <div className="group bg-card/90 hover:bg-card border-border/50 hover:border-primary/30 relative inline-flex items-center rounded-full px-6 py-3 text-sm font-medium shadow-lg ring-1 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
-            <span className="mr-3 text-lg" aria-hidden="true">⛽</span>
+            <span className="mr-3 text-lg" aria-hidden="true">
+              ⛽
+            </span>
             <span>Trusted by 500+ Gas Stations</span>
             <div className="from-primary/0 via-primary/10 to-primary/0 absolute inset-0 rounded-full bg-gradient-to-r opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </div>
@@ -147,8 +172,9 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
         {/* Subtitle */}
         <div className="hero-subtitle mx-auto max-w-4xl">
           <p className="text-foreground/80 text-lg leading-relaxed sm:text-xl sm:leading-8">
-            Complete inventory management for fuel and lubricants. Real-time monitoring, 
-            automated alerts, and comprehensive reporting for single stations or entire chains.
+            Complete inventory management for fuel and lubricants. Real-time
+            monitoring, automated alerts, and comprehensive reporting for single
+            stations or entire chains.
           </p>
           <p className="text-primary mt-4 text-base font-medium">
             Join the future of gas station management
@@ -180,19 +206,23 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
               </Link>
             </Button>
           )}
-          
+
           <Button
             variant="outline"
             size="lg"
             asChild
-            className="group hover:border-primary hover:text-primary bg-card/60 w-full border-2 px-8 py-4 backdrop-blur-sm transition-all duration-300 hover:bg-card/80 sm:w-auto"
+            className="group hover:border-primary hover:text-primary bg-card/60 hover:bg-card/80 w-full border-2 px-8 py-4 backdrop-blur-sm transition-all duration-300 sm:w-auto"
           >
             <Link href="#features" className="flex items-center gap-3">
               <span>View Features</span>
               <motion.span
                 className="inline-block"
                 animate={{ y: [0, 4, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
               >
                 ↓
               </motion.span>
@@ -207,7 +237,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
               key={item.text}
               className="trust-indicator group hover:bg-card/60 flex w-full items-center justify-center gap-4 rounded-xl px-6 py-4 transition-all duration-300 hover:shadow-lg sm:w-auto"
             >
-              <div className="text-primary bg-primary/10 flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-primary/20">
+              <div className="text-primary bg-primary/10 group-hover:bg-primary/20 flex h-8 w-8 items-center justify-center rounded-full transition-colors">
                 <CheckCircle className="h-4 w-4" />
               </div>
               <span className="group-hover:text-primary text-sm font-medium transition-colors">
@@ -231,8 +261,12 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1 + i * 0.1 }}
             >
-              <div className="text-primary text-3xl font-bold sm:text-4xl">{stat.number}</div>
-              <div className="text-foreground/70 mt-2 text-sm font-medium">{stat.label}</div>
+              <div className="text-primary text-3xl font-bold sm:text-4xl">
+                {stat.number}
+              </div>
+              <div className="text-foreground/70 mt-2 text-sm font-medium">
+                {stat.label}
+              </div>
             </motion.div>
           ))}
         </div>

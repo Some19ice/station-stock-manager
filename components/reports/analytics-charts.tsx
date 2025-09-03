@@ -1,7 +1,20 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts"
 
 interface AnalyticsChartsProps {
   salesData: Array<{ date: string; sales: number; transactions: number }>
@@ -9,11 +22,15 @@ interface AnalyticsChartsProps {
   staffData: Array<{ name: string; sales: number }>
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 
-export function AnalyticsCharts({ salesData, productData, staffData }: AnalyticsChartsProps) {
+export function AnalyticsCharts({
+  salesData,
+  productData,
+  staffData
+}: AnalyticsChartsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Sales Trend</CardTitle>
@@ -25,7 +42,12 @@ export function AnalyticsCharts({ salesData, productData, staffData }: Analytics
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="sales" stroke="#8884d8" strokeWidth={2} />
+              <Line
+                type="monotone"
+                dataKey="sales"
+                stroke="#8884d8"
+                strokeWidth={2}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -43,13 +65,18 @@ export function AnalyticsCharts({ salesData, productData, staffData }: Analytics
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                label={({ name, percent }) =>
+                  `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                }
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="revenue"
               >
                 {productData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip />

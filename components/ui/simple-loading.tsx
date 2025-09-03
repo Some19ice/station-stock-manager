@@ -19,20 +19,21 @@ export function SimpleLoading({
 }: SimpleLoadingProps) {
   const sizes = {
     sm: "h-4 w-4",
-    md: "h-8 w-8", 
+    md: "h-8 w-8",
     lg: "h-12 w-12"
   }
 
   const SpinnerVariant = () => (
-    <Loader2 className={cn("animate-spin text-primary", sizes[size])} />
+    <Loader2 className={cn("text-primary animate-spin", sizes[size])} />
   )
 
   const DotsVariant = () => (
     <div className="flex space-x-1">
-      {[0, 1, 2].map((i) => (
+      {[0, 1, 2].map(i => (
         <motion.div
           key={i}
-          className={cn("bg-primary rounded-full", 
+          className={cn(
+            "bg-primary rounded-full",
             size === "sm" ? "h-2 w-2" : size === "md" ? "h-3 w-3" : "h-4 w-4"
           )}
           animate={{
@@ -62,17 +63,20 @@ export function SimpleLoading({
         ease: "easeInOut"
       }}
     >
-      <div className={cn("bg-primary rounded-full h-full w-full", 
-        "animate-pulse"
-      )} />
+      <div
+        className={cn("bg-primary h-full w-full rounded-full", "animate-pulse")}
+      />
     </motion.div>
   )
 
   const renderVariant = () => {
     switch (variant) {
-      case "dots": return <DotsVariant />
-      case "pulse": return <PulseVariant />
-      default: return <SpinnerVariant />
+      case "dots":
+        return <DotsVariant />
+      case "pulse":
+        return <PulseVariant />
+      default:
+        return <SpinnerVariant />
     }
   }
 
@@ -81,7 +85,10 @@ export function SimpleLoading({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={cn("flex flex-col items-center justify-center gap-3", className)}
+      className={cn(
+        "flex flex-col items-center justify-center gap-3",
+        className
+      )}
     >
       {renderVariant()}
       {message && (

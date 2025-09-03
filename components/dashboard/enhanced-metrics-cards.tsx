@@ -1,8 +1,8 @@
-import { 
-  EnhancedCard, 
-  EnhancedCardContent, 
-  EnhancedCardHeader, 
-  EnhancedCardTitle 
+import {
+  EnhancedCard,
+  EnhancedCardContent,
+  EnhancedCardHeader,
+  EnhancedCardTitle
 } from "@/components/ui/enhanced-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -100,37 +100,37 @@ function AnimatedNumber({
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
-      <div ref={numberRef} className="font-bold text-2xl lg:text-3xl">
+      <div ref={numberRef} className="text-2xl font-bold lg:text-3xl">
         0
       </div>
       {priority === "high" && (
         <motion.div
           className="absolute -top-1 -right-1"
-          animate={{ 
+          animate={{
             scale: [1, 1.2, 1],
             rotate: [0, 5, -5, 0]
           }}
-          transition={{ 
+          transition={{
             duration: 2,
             repeat: Infinity,
             repeatType: "reverse"
           }}
         >
-          <Sparkles className="h-4 w-4 text-primary" />
+          <Sparkles className="text-primary h-4 w-4" />
         </motion.div>
       )}
     </div>
   )
 }
 
-function TrendIndicator({ 
-  trend, 
-  value, 
-  className 
-}: { 
+function TrendIndicator({
+  trend,
+  value,
+  className
+}: {
   trend: "up" | "down" | "neutral"
   value: string
-  className?: string 
+  className?: string
 }) {
   const icons = {
     up: TrendingUp,
@@ -140,7 +140,7 @@ function TrendIndicator({
 
   const colors = {
     up: "text-green-600 bg-green-50 border-green-200",
-    down: "text-red-600 bg-red-50 border-red-200", 
+    down: "text-red-600 bg-red-50 border-red-200",
     neutral: "text-gray-600 bg-gray-50 border-gray-200"
   }
 
@@ -149,7 +149,7 @@ function TrendIndicator({
   return (
     <motion.div
       className={cn(
-        "flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-medium",
+        "flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium",
         colors[trend],
         className
       )}
@@ -162,10 +162,10 @@ function TrendIndicator({
   )
 }
 
-export function EnhancedMetricsCards({ 
-  metrics, 
-  onRetry, 
-  isRefreshing = false 
+export function EnhancedMetricsCards({
+  metrics,
+  onRetry,
+  isRefreshing = false
 }: EnhancedMetricsCardsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -217,7 +217,7 @@ export function EnhancedMetricsCards({
   return (
     <div ref={containerRef} className="mb-8">
       <motion.div
-        className="flex items-center justify-between mb-6"
+        className="mb-6 flex items-center justify-between"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -227,13 +227,11 @@ export function EnhancedMetricsCards({
             whileHover={{ rotate: 180 }}
             transition={{ duration: 0.3 }}
           >
-            <BarChart3 className="h-6 w-6 text-primary" />
+            <BarChart3 className="text-primary h-6 w-6" />
           </motion.div>
-          <h2 className="text-2xl font-bold text-foreground">
-            Key Metrics
-          </h2>
+          <h2 className="text-foreground text-2xl font-bold">Key Metrics</h2>
         </div>
-        
+
         <Button
           variant="outline"
           size="sm"
@@ -241,7 +239,9 @@ export function EnhancedMetricsCards({
           disabled={isRefreshing}
           className="hover:bg-accent/50 transition-colors"
         >
-          <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
+          <RefreshCw
+            className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
+          />
           Refresh
         </Button>
       </motion.div>

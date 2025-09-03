@@ -1,11 +1,20 @@
-import { boolean, decimal, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  decimal,
+  pgTable,
+  text,
+  timestamp,
+  uuid
+} from "drizzle-orm/pg-core"
 import { productType } from "./enums"
 import { stations } from "./stations"
 import { suppliers } from "./suppliers"
 
 export const products = pgTable("products", {
   id: uuid("id").defaultRandom().primaryKey(),
-  stationId: uuid("station_id").references(() => stations.id).notNull(),
+  stationId: uuid("station_id")
+    .references(() => stations.id)
+    .notNull(),
   supplierId: uuid("supplier_id").references(() => suppliers.id),
   name: text("name").notNull(),
   brand: text("brand"),

@@ -1,10 +1,10 @@
 "use client"
 
-import { 
-  BarChart3, 
-  Package, 
-  Users, 
-  Settings, 
+import {
+  BarChart3,
+  Package,
+  Users,
+  Settings,
   ShoppingCart,
   FileText,
   AlertTriangle,
@@ -143,7 +143,7 @@ export function AppSidebar({
       }
     ]
   }
-  
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -152,8 +152,12 @@ export function AppSidebar({
             <Package className="h-4 w-4 text-white" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">Station Stock Manager</span>
-            <span className="truncate text-xs text-muted-foreground">Manager Portal</span>
+            <span className="truncate font-semibold">
+              Station Stock Manager
+            </span>
+            <span className="text-muted-foreground truncate text-xs">
+              Manager Portal
+            </span>
           </div>
         </div>
       </SidebarHeader>

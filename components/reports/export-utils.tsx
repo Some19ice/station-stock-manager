@@ -1,8 +1,19 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Download, FileText, FileSpreadsheet, Printer, Mail } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
+import {
+  Download,
+  FileText,
+  FileSpreadsheet,
+  Printer,
+  Mail
+} from "lucide-react"
 import { toast } from "sonner"
 
 interface ExportUtilsProps {
@@ -24,9 +35,9 @@ export function ExportUtils({ data, filename, reportType }: ExportUtilsProps) {
   const exportToCSV = () => {
     try {
       const csvContent = convertToCSV(data)
-      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const blob = new Blob([csvContent], { type: "text/csv" })
       const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
+      const a = document.createElement("a")
       a.href = url
       a.download = `${filename}.csv`
       a.click()
@@ -57,13 +68,13 @@ export function ExportUtils({ data, filename, reportType }: ExportUtilsProps) {
   }
 
   const convertToCSV = (data: Record<string, unknown>): string => {
-    if (!data || typeof data !== 'object') return ''
-    
+    if (!data || typeof data !== "object") return ""
+
     // Simple CSV conversion - would need enhancement based on data structure
     const headers = Object.keys(data)
     const values = Object.values(data)
-    
-    return [headers.join(','), values.join(',')].join('\n')
+
+    return [headers.join(","), values.join(",")].join("\n")
   }
 
   return (
@@ -76,23 +87,23 @@ export function ExportUtils({ data, filename, reportType }: ExportUtilsProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={exportToPDF}>
-          <FileText className="h-4 w-4 mr-2" />
+          <FileText className="mr-2 h-4 w-4" />
           Export as PDF
         </DropdownMenuItem>
         <DropdownMenuItem onClick={exportToCSV}>
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
           Export as CSV
         </DropdownMenuItem>
         <DropdownMenuItem onClick={exportToExcel}>
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
           Export as Excel
         </DropdownMenuItem>
         <DropdownMenuItem onClick={printReport}>
-          <Printer className="h-4 w-4 mr-2" />
+          <Printer className="mr-2 h-4 w-4" />
           Print Report
         </DropdownMenuItem>
         <DropdownMenuItem onClick={emailReport}>
-          <Mail className="h-4 w-4 mr-2" />
+          <Mail className="mr-2 h-4 w-4" />
           Email Report
         </DropdownMenuItem>
       </DropdownMenuContent>

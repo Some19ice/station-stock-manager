@@ -17,16 +17,22 @@ export async function POST(request: NextRequest) {
     })
 
     if (!pendingUser) {
-      return NextResponse.json({ error: "No pending invitation found" }, { status: 404 })
+      return NextResponse.json(
+        { error: "No pending invitation found" },
+        { status: 404 }
+      )
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       username: pendingUser.username,
       role: pendingUser.role,
       stationId: pendingUser.stationId
     })
   } catch (error) {
     console.error("Error fetching pending user:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
 }

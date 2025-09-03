@@ -73,9 +73,8 @@ interface UserEditPageProps {
 
 export default function UserEditPage({ params }: UserEditPageProps) {
   const router = useRouter()
+  const { id: userId } = use(params)
   const [loading, setLoading] = useState(true)
-  const [paramsResolved, setParamsResolved] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
   const [user, setUser] = useState<UserData | null>(null)
   const [userActivity, setUserActivity] = useState<ActivityItem[]>([])
@@ -129,7 +128,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
 
   const handleStatusToggle = async (isActive: boolean) => {
     if (!userId) return
-    
+
     setUpdating(true)
     try {
       const result = await updateUserStatus(userId, isActive)
@@ -184,41 +183,24 @@ export default function UserEditPage({ params }: UserEditPageProps) {
     }
   }
 
-  // Resolve params first
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params
-        setUserId(resolvedParams.id)
-        setParamsResolved(true)
-      } catch (error) {
-        console.error("Failed to resolve params:", error)
-        setParamsResolved(true)
-      }
-    }
-    resolveParams()
-  }, [params])
-
   // Fetch real user data
   useEffect(() => {
-    if (!paramsResolved || !userId) {
-      if (paramsResolved) setLoading(false)
-      return
-    }
-
     const fetchUser = async () => {
       try {
-        const roleCheck = await validateUserRole("manager")
+        // Parallel execution of role check and user data fetch
+        const [roleCheck, usersResult] = await Promise.all([
+          validateUserRole("manager"),
+          getStationUsers()
+        ])
+
         if (!roleCheck.isSuccess) {
           router.push("/unauthorized")
           return
         }
 
-        const usersResult = await getStationUsers()
         if (usersResult.isSuccess && usersResult.data) {
-          const foundUser = usersResult.data.find(
-            u => u.id === userId
-          )
+          const foundUser = usersResult.data.find(u => u.id === userId)
+
           if (foundUser) {
             setUser(foundUser)
             setEditForm({
@@ -226,7 +208,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
               role: foundUser.role
             })
 
-            // Fetch activities in background
+            // Fetch activities in background without blocking UI
             getUserActivities(foundUser.id)
               .then(activitiesResult => {
                 if (activitiesResult.isSuccess && activitiesResult.data) {
@@ -248,13 +230,164 @@ export default function UserEditPage({ params }: UserEditPageProps) {
       }
     }
 
-    fetchUser()
-  }, [paramsResolved, userId, router])
+    if (userId) {
+      fetchUser()
+    } else {
+      setLoading(false)
+    }
+  }, [userId, router])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <SimpleLoading message="Loading User Profile" />
+      <div className="space-y-8">
+        {/* Enhanced Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 animate-pulse rounded-full bg-blue-200" />
+            <div>
+              <div className="mb-2 h-8 w-48 animate-pulse rounded bg-gradient-to-r from-blue-200 to-indigo-200" />
+              <div className="h-4 w-64 animate-pulse rounded bg-gray-200" />
+            </div>
+          </div>
+          <div className="h-8 w-20 animate-pulse rounded bg-gray-200" />
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-3 lg:items-start">
+          {/* Profile skeleton - 2 columns */}
+          <div className="lg:col-span-2">
+            <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+              {/* Header with gradient */}
+              <div className="h-16 animate-pulse bg-gradient-to-r from-blue-100 to-indigo-100" />
+
+              <div className="space-y-6 p-6">
+                {/* User header skeleton */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-6">
+                    <div className="relative">
+                      <div className="h-20 w-20 animate-pulse rounded-2xl bg-gradient-to-br from-blue-200 to-indigo-300" />
+                      <div className="absolute -right-1 -bottom-1 h-6 w-6 animate-pulse rounded-full bg-green-300" />
+                    </div>
+                    <div className="space-y-3">
+                      <div className="h-8 w-48 animate-pulse rounded bg-gray-300" />
+                      <div className="h-5 w-32 animate-pulse rounded bg-gray-200" />
+                      <div className="flex gap-2">
+                        <div className="h-6 w-16 animate-pulse rounded-full bg-blue-200" />
+                        <div className="h-6 w-16 animate-pulse rounded-full bg-green-200" />
+                        <div className="h-6 w-20 animate-pulse rounded-full bg-orange-200" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-10 w-20 animate-pulse rounded bg-gray-200" />
+                </div>
+
+                <div className="h-px bg-gray-200" />
+
+                {/* Details grid skeleton */}
+                <div className="grid gap-6 sm:grid-cols-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-4 rounded-lg bg-gray-50 p-4"
+                    >
+                      <div
+                        className={`h-10 w-10 animate-pulse rounded-full ${
+                          i === 0
+                            ? "bg-blue-200"
+                            : i === 1
+                              ? "bg-green-200"
+                              : i === 2
+                                ? "bg-purple-200"
+                                : "bg-orange-200"
+                        }`}
+                      />
+                      <div className="space-y-2">
+                        <div className="h-4 w-20 animate-pulse rounded bg-gray-300" />
+                        <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions skeleton */}
+          <div>
+            <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+              {/* Header with gradient */}
+              <div className="h-16 animate-pulse bg-gradient-to-r from-gray-100 to-gray-200" />
+
+              <div className="space-y-4 p-6">
+                {/* Status indicator skeleton */}
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                  <div className="mx-auto mb-2 h-12 w-12 animate-pulse rounded-full bg-green-200" />
+                  <div className="mx-auto mb-1 h-4 w-24 animate-pulse rounded bg-green-300" />
+                  <div className="mx-auto h-3 w-32 animate-pulse rounded bg-gray-200" />
+                </div>
+
+                {/* Toggle skeleton */}
+                <div className="flex items-center justify-between rounded-lg bg-blue-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 w-5 animate-pulse rounded bg-blue-200" />
+                    <div className="h-4 w-24 animate-pulse rounded bg-gray-300" />
+                  </div>
+                  <div className="h-6 w-12 animate-pulse rounded-full bg-blue-200" />
+                </div>
+
+                {/* Buttons skeleton */}
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-10 w-full animate-pulse rounded ${
+                        i === 2 ? "bg-gray-200" : "bg-gray-100"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Activity skeleton */}
+        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+          <div className="h-16 animate-pulse bg-gradient-to-r from-slate-100 to-slate-200" />
+          <div className="space-y-4 p-6">
+            <div className="flex items-center gap-2 border-b pb-4">
+              <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
+              <div className="flex gap-2">
+                <div className="h-8 w-16 animate-pulse rounded bg-blue-200" />
+                <div className="h-8 w-20 animate-pulse rounded bg-green-200" />
+                <div className="h-8 w-24 animate-pulse rounded bg-purple-200" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-3 rounded-lg bg-slate-50 p-3"
+                >
+                  <div
+                    className={`mt-1 h-8 w-8 animate-pulse rounded-full ${
+                      i === 0
+                        ? "bg-green-200"
+                        : i === 1
+                          ? "bg-blue-200"
+                          : "bg-purple-200"
+                    }`}
+                  />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-48 animate-pulse rounded bg-gray-300" />
+                    <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
+                    <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+                  </div>
+                  <div className="h-6 w-16 animate-pulse rounded bg-orange-200" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -320,44 +453,61 @@ export default function UserEditPage({ params }: UserEditPageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div ref={headerRef} className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          asChild
-          className="transition-transform hover:scale-105"
-        >
-          <Link href="/dashboard/users">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">User Profile</h1>
-          <p className="text-muted-foreground">
-            Manage user settings and permissions
-          </p>
+    <div className="space-y-8">
+      {/* Enhanced Header */}
+      <div ref={headerRef} className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="h-10 w-10 rounded-full transition-all hover:scale-110"
+          >
+            <Link href="/dashboard/users">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">User Profile</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage user settings and permissions
+            </p>
+          </div>
         </div>
+        <Badge variant="outline" className="px-3 py-1">
+          ID: {userId?.slice(-8)}
+        </Badge>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Profile Information */}
+      {/* Main Content Grid */}
+      <div className="grid gap-8 lg:grid-cols-3 lg:items-start">
+        {/* Profile Information - Takes 2 columns */}
         <div ref={profileRef} className="lg:col-span-2">
-          <AnimatedCard title="Profile Information" hoverEffect={true}>
-            <div className="space-y-6">
+          <AnimatedCard className="overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Profile Information
+              </h2>
+            </div>
+            <div className="space-y-6 p-6">
               {/* User Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-200 transition-all hover:scale-110">
-                    {user.role === "manager" ? (
-                      <Shield className="h-8 w-8 text-blue-600" />
-                    ) : (
-                      <User className="h-8 w-8 text-gray-600" />
-                    )}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 via-blue-200 to-indigo-300 shadow-lg transition-all hover:scale-105">
+                      {user.role === "manager" ? (
+                        <Shield className="h-10 w-10 text-blue-700" />
+                      ) : (
+                        <User className="h-10 w-10 text-gray-700" />
+                      )}
+                    </div>
+                    <div
+                      className={`absolute -right-1 -bottom-1 h-6 w-6 rounded-full border-2 border-white ${user.isActive ? "bg-green-500" : "bg-red-500"}`}
+                    />
                   </div>
-                  <div>
+                  <div className="space-y-3">
                     {isEditing ? (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Input
                           value={editForm.username}
                           onChange={e =>
@@ -366,7 +516,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                               username: e.target.value
                             }))
                           }
-                          className="text-xl font-semibold"
+                          className="h-12 text-2xl font-bold"
                         />
                         <Select
                           value={editForm.role}
@@ -374,7 +524,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                             setEditForm(prev => ({ ...prev, role: value }))
                           }
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-40">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -385,37 +535,37 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                       </div>
                     ) : (
                       <>
-                        <h2 className="text-xl font-semibold">
+                        <h2 className="text-2xl font-bold text-gray-900">
                           {user.username}
                         </h2>
-                        <p className="text-muted-foreground">
+                        <p className="text-lg text-gray-600">
                           {user.role === "manager"
                             ? "Manager Account"
                             : "Staff Account"}
                         </p>
                       </>
                     )}
-                    <div className="mt-1 flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge
                         variant={
                           user.role === "manager" ? "default" : "secondary"
                         }
-                        className="transition-all hover:scale-105"
+                        className="px-3 py-1 text-sm font-medium"
                       >
-                        {user.role}
+                        {user.role.toUpperCase()}
                       </Badge>
                       <Badge
                         variant={user.isActive ? "default" : "destructive"}
-                        className="transition-all hover:scale-105"
+                        className="px-3 py-1 text-sm font-medium"
                       >
                         {user.isActive ? "Active" : "Inactive"}
                       </Badge>
                       {user.clerkUserId?.startsWith("temp_") && (
                         <Badge
                           variant="outline"
-                          className="border-orange-200 text-orange-600"
+                          className="border-orange-300 bg-orange-50 px-3 py-1 text-orange-700"
                         >
-                          Pending
+                          Pending Activation
                         </Badge>
                       )}
                     </div>
@@ -423,9 +573,8 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                 </div>
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={handleEditToggle}
-                  className="transition-all hover:scale-105"
+                  className="h-10 px-4 transition-all hover:scale-105"
                 >
                   <Edit className="mr-2 h-4 w-4" />
                   {isEditing ? "Cancel" : "Edit"}
@@ -433,7 +582,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
               </div>
 
               {isEditing && (
-                <div className="flex gap-2">
+                <div className="flex gap-3 rounded-lg bg-gray-50 p-4">
                   <Button
                     onClick={handleSaveChanges}
                     disabled={updating}
@@ -442,36 +591,36 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                     <Save className="mr-2 h-4 w-4" />
                     Save Changes
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleEditToggle}
-                    className="transition-all hover:scale-105"
-                  >
+                  <Button variant="outline" onClick={handleEditToggle}>
                     Cancel
                   </Button>
                 </div>
               )}
 
-              <Separator />
+              <Separator className="my-6" />
 
-              {/* User Details */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="flex items-center gap-3">
-                  <Calendar className="text-muted-foreground h-4 w-4" />
+              {/* User Details Grid */}
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium">Created</p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="font-medium text-gray-900">Created</p>
+                    <p className="text-sm text-gray-600">
                       {user.createdAt.toLocaleDateString()} ({daysSinceCreated}{" "}
                       days ago)
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <UserCheck className="text-muted-foreground h-4 w-4" />
+                <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                    <UserCheck className="h-5 w-5 text-green-600" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium">Account Status</p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="font-medium text-gray-900">Account Status</p>
+                    <p className="text-sm text-gray-600">
                       {user.clerkUserId?.startsWith("temp_")
                         ? "Invitation Sent"
                         : "Verified"}
@@ -479,21 +628,25 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Shield className="text-muted-foreground h-4 w-4" />
+                <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
+                    <Shield className="h-5 w-5 text-purple-600" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium">Role</p>
-                    <p className="text-muted-foreground text-sm capitalize">
+                    <p className="font-medium text-gray-900">Role</p>
+                    <p className="text-sm text-gray-600 capitalize">
                       {user.role}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Activity className="text-muted-foreground h-4 w-4" />
+                <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
+                    <Activity className="h-5 w-5 text-orange-600" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium">Status</p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="font-medium text-gray-900">Status</p>
+                    <p className="text-sm text-gray-600">
                       {user.isActive ? "Active" : "Inactive"}
                     </p>
                   </div>
@@ -503,89 +656,81 @@ export default function UserEditPage({ params }: UserEditPageProps) {
           </AnimatedCard>
         </div>
 
-        {/* Actions Panel */}
-        <div ref={actionsRef} className="space-y-6">
-          <AnimatedCard title="Quick Actions" hoverEffect={true}>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Activity className="text-muted-foreground h-4 w-4" />
-                  <Label htmlFor="status">Active Status</Label>
+        {/* Sidebar - Actions */}
+        <div ref={actionsRef}>
+          <AnimatedCard>
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4">
+              <h3 className="font-semibold text-gray-900">Quick Actions</h3>
+            </div>
+            <div className="space-y-4 p-6">
+              {/* Status Indicator */}
+              <div
+                className={`rounded-lg p-4 text-center ${user.isActive ? "border border-green-200 bg-green-50" : "border border-red-200 bg-red-50"}`}
+              >
+                <div
+                  className={`mx-auto mb-2 flex h-5 w-12 items-center justify-center rounded-full ${user.isActive ? "bg-green-100" : "bg-red-100"}`}
+                >
+                  {user.isActive ? (
+                    <UserCheck className="h-6 w-6 text-green-600" />
+                  ) : (
+                    <AlertCircle className="h-6 w-6 text-red-600" />
+                  )}
+                </div>
+                <p
+                  className={`font-medium ${user.isActive ? "text-green-600" : "text-red-600"}`}
+                >
+                  {user.isActive ? "Active User" : "Inactive User"}
+                </p>
+                <p className="mt-1 text-sm text-gray-600">
+                  {user.isActive ? "Full system access" : "No system access"}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg bg-blue-50 p-4">
+                <div className="flex items-center gap-3">
+                  <Activity className="h-4 w-5 text-blue-600" />
+                  <Label htmlFor="status" className="font-medium">
+                    Active Status
+                  </Label>
                 </div>
                 <Switch
                   id="status"
                   checked={user.isActive}
                   onCheckedChange={handleStatusToggle}
                   disabled={updating}
-                  className="transition-all hover:scale-105"
                 />
               </div>
 
-              <Separator />
-
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full justify-start transition-all hover:scale-[1.02]"
+                  className="h-10 w-full justify-start transition-all hover:scale-[1.02]"
                   disabled
                 >
-                  <Settings className="mr-2 h-4 w-4" />
+                  <Settings className="mr-3 h-4 w-4" />
                   Edit Permissions
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="w-full justify-start transition-all hover:scale-[1.02]"
+                  className="h-10 w-full justify-start transition-all hover:scale-[1.02]"
                   disabled
                 >
-                  <Mail className="mr-2 h-4 w-4" />
+                  <Mail className="mr-3 h-4 w-4" />
                   Send Notification
                 </Button>
+
+                <Button
+                  variant="outline"
+                  asChild
+                  className="h-10 w-full transition-all hover:scale-[1.02]"
+                >
+                  <Link href="/dashboard/users">
+                    <ArrowLeft className="mr-3 h-4 w-4" />
+                    Back to Users
+                  </Link>
+                </Button>
               </div>
-
-              <Separator />
-
-              <Button
-                variant="outline"
-                asChild
-                className="w-full transition-all hover:scale-[1.02]"
-              >
-                <Link href="/dashboard/users">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Users
-                </Link>
-              </Button>
-            </div>
-          </AnimatedCard>
-
-          {/* Status Card */}
-          <AnimatedCard hoverEffect={true}>
-            <div className="text-center">
-              {user.isActive ? (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                    <UserCheck className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-green-600">Active User</p>
-                    <p className="text-muted-foreground text-sm">
-                      Full system access
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                    <AlertCircle className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-red-600">Inactive User</p>
-                    <p className="text-muted-foreground text-sm">
-                      No system access
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           </AnimatedCard>
         </div>

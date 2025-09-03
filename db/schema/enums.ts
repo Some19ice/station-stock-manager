@@ -10,4 +10,8 @@ export const productType = pgEnum("product_type", ["pms", "lubricant"])
 export const syncStatus = pgEnum("sync_status", ["pending", "synced", "failed"])
 
 // Stock movement type enum for tracking inventory changes
-export const movementType = pgEnum("movement_type", ["sale", "adjustment", "delivery"])
+export const movementType = pgEnum("movement_type", [
+  "sale",
+  "adjustment",
+  "delivery"
+])

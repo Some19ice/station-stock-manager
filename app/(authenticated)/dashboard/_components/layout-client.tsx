@@ -36,7 +36,7 @@ export default function DashboardClientLayout({
 
   useEffect(() => {
     setIsClient(true)
-    
+
     // Read sidebar state from cookie after client mount
     const getCookieValue = (name: string) => {
       const value = `; ${document.cookie}`
@@ -51,7 +51,7 @@ export default function DashboardClientLayout({
 
   const getBreadcrumbs = () => {
     if (!isClient) return []
-    
+
     const paths = pathname.split("/").filter(Boolean)
     const breadcrumbs = []
 

@@ -25,7 +25,8 @@ export function SiteBanner() {
             <div className="relative flex items-center justify-center py-3">
               <div className="flex items-center gap-3">
                 <div className="inline-flex items-center text-sm font-semibold">
-                  <span className="mr-1">🎉</span> New: Multi-station dashboard now available!
+                  <span className="mr-1">🎉</span> New: Multi-station dashboard
+                  now available!
                 </div>
               </div>
               <button

@@ -84,8 +84,8 @@ export function CustomCursor({
         height: size
       }}
     >
-      <div className="w-full h-full rounded-full border border-foreground/40 bg-foreground/10 backdrop-blur-sm" />
-      <div className="absolute top-1/2 left-1/2 w-1 h-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground" />
+      <div className="border-foreground/40 bg-foreground/10 h-full w-full rounded-full border backdrop-blur-sm" />
+      <div className="bg-foreground absolute top-1/2 left-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full" />
     </div>
   )
 }

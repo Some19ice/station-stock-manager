@@ -21,7 +21,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Station Stock Manager",
-  description: "A SaaS inventory management platform helping independent filling station owners worldwide maintain live, accurate stock levels through simple, affordable real-time tracking with offline capabilities on any device."
+  description:
+    "A SaaS inventory management platform helping independent filling station owners worldwide maintain live, accurate stock levels through simple, affordable real-time tracking with offline capabilities on any device."
 }
 
 export default function RootLayout({

@@ -35,7 +35,8 @@ export default function SignUpPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Get access to comprehensive fuel inventory management and sales tracking for your station.
+              Get access to comprehensive fuel inventory management and sales
+              tracking for your station.
             </motion.p>
           </div>
 
@@ -84,7 +85,7 @@ export default function SignUpPage() {
                     delay: 0.4 + i * 0.1
                   }}
                 >
-                  <feature.icon className="text-blue-600 mb-2 h-8 w-8" />
+                  <feature.icon className="mb-2 h-8 w-8 text-blue-600" />
                 </motion.div>
                 <p className="text-sm font-semibold">{feature.title}</p>
                 <p className="text-muted-foreground text-xs">{feature.desc}</p>
@@ -113,7 +114,9 @@ export default function SignUpPage() {
             >
               <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
             </motion.div>
-            <p className="text-sm font-medium">Contact your station manager for account setup</p>
+            <p className="text-sm font-medium">
+              Contact your station manager for account setup
+            </p>
           </motion.div>
         </motion.div>
 
@@ -139,7 +142,7 @@ export default function SignUpPage() {
               >
                 <Link
                   href="/login"
-                  className="text-blue-600 font-medium hover:underline"
+                  className="font-medium text-blue-600 hover:underline"
                 >
                   Sign in here
                 </Link>

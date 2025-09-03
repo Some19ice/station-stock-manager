@@ -32,11 +32,5 @@ export function CursorWrapper({
     return null
   }
 
-  return (
-    <CustomCursor
-      size={size}
-      className={className}
-      disabled={disabled}
-    />
-  )
+  return <CustomCursor size={size} className={className} disabled={disabled} />
 }

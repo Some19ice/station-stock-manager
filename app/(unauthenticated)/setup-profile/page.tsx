@@ -7,7 +7,7 @@ import { users } from "@/db/schema"
 import { like, eq } from "drizzle-orm"
 
 const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY!,
+  secretKey: process.env.CLERK_SECRET_KEY!
 })
 
 export default async function SetupProfilePage() {

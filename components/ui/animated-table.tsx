@@ -15,7 +15,7 @@ export function AnimatedTable({ children, className }: AnimatedTableProps) {
     if (!tableRef.current) return
 
     const rows = tableRef.current.querySelectorAll("tr")
-    
+
     gsap.fromTo(
       rows,
       { opacity: 0, x: -20 },

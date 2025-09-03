@@ -4,7 +4,13 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog"
 import { Plus, Minus } from "lucide-react"
 
 interface Product {
@@ -24,7 +30,12 @@ interface QuantityInputProps {
   onConfirm: (quantity: number) => void
 }
 
-export function QuantityInput({ product, isOpen, onClose, onConfirm }: QuantityInputProps) {
+export function QuantityInput({
+  product,
+  isOpen,
+  onClose,
+  onConfirm
+}: QuantityInputProps) {
   const [quantity, setQuantity] = useState(1)
   const maxStock = parseFloat(product.currentStock)
   const unitPrice = parseFloat(product.unitPrice)
@@ -53,9 +64,8 @@ export function QuantityInput({ product, isOpen, onClose, onConfirm }: QuantityI
   }
 
   // Quick quantity buttons for common amounts
-  const quickQuantities = product.type === "pms" 
-    ? [5, 10, 20, 30, 50] 
-    : [1, 2, 5, 10]
+  const quickQuantities =
+    product.type === "pms" ? [5, 10, 20, 30, 50] : [1, 2, 5, 10]
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -63,21 +73,22 @@ export function QuantityInput({ product, isOpen, onClose, onConfirm }: QuantityI
         <DialogHeader>
           <DialogTitle>Add to Cart</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div>
             <h3 className="font-medium">{product.name}</h3>
             {product.brand && (
-              <p className="text-sm text-muted-foreground">{product.brand}</p>
+              <p className="text-muted-foreground text-sm">{product.brand}</p>
             )}
-            <p className="text-sm text-muted-foreground">
-              Available: {maxStock} {product.unit} • ₦{unitPrice.toFixed(2)}/{product.unit}
+            <p className="text-muted-foreground text-sm">
+              Available: {maxStock} {product.unit} • ₦{unitPrice.toFixed(2)}/
+              {product.unit}
             </p>
           </div>
 
           <div className="space-y-3">
             <Label htmlFor="quantity">Quantity ({product.unit})</Label>
-            
+
             {/* Manual quantity input */}
             <div className="flex items-center gap-2">
               <Button
@@ -89,18 +100,20 @@ export function QuantityInput({ product, isOpen, onClose, onConfirm }: QuantityI
               >
                 <Minus className="h-4 w-4" />
               </Button>
-              
+
               <Input
                 id="quantity"
                 type="number"
                 value={quantity}
-                onChange={(e) => handleQuantityChange(parseFloat(e.target.value) || 0)}
+                onChange={e =>
+                  handleQuantityChange(parseFloat(e.target.value) || 0)
+                }
                 className="text-center"
                 min="0"
                 max={maxStock}
                 step={product.type === "pms" ? "0.1" : "1"}
               />
-              
+
               <Button
                 type="button"
                 variant="outline"
@@ -114,18 +127,24 @@ export function QuantityInput({ product, isOpen, onClose, onConfirm }: QuantityI
 
             {/* Quick quantity buttons */}
             <div>
-              <Label className="text-sm text-muted-foreground">Quick select:</Label>
-              <div className="flex flex-wrap gap-2 mt-1">
+              <Label className="text-muted-foreground text-sm">
+                Quick select:
+              </Label>
+              <div className="mt-1 flex flex-wrap gap-2">
                 {quickQuantities
                   .filter(qty => qty <= maxStock)
-                  .map((qty) => (
+                  .map(qty => (
                     <Button
                       key={qty}
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => setQuantity(qty)}
-                      className={quantity === qty ? "bg-primary text-primary-foreground" : ""}
+                      className={
+                        quantity === qty
+                          ? "bg-primary text-primary-foreground"
+                          : ""
+                      }
                     >
                       {qty}
                     </Button>
@@ -134,12 +153,14 @@ export function QuantityInput({ product, isOpen, onClose, onConfirm }: QuantityI
             </div>
 
             {/* Total price display */}
-            <div className="bg-muted p-3 rounded-lg">
-              <div className="flex justify-between items-center">
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Total Price:</span>
-                <span className="font-semibold text-lg">₦{totalPrice.toFixed(2)}</span>
+                <span className="text-lg font-semibold">
+                  ₦{totalPrice.toFixed(2)}
+                </span>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-muted-foreground mt-1 text-xs">
                 {quantity} {product.unit} × ₦{unitPrice.toFixed(2)}
               </div>
             </div>
@@ -150,7 +171,7 @@ export function QuantityInput({ product, isOpen, onClose, onConfirm }: QuantityI
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirm}
             disabled={quantity <= 0 || quantity > maxStock}
           >

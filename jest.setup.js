@@ -209,3 +209,15 @@ Object.defineProperty(window, "scrollTo", {
   value: jest.fn(),
   writable: true
 })
+
+global.Request = jest.fn(input => ({
+    input,
+    headers: {
+        get: jest.fn(header => {
+            if (header === 'x-forwarded-for') {
+                return '127.0.0.1';
+            }
+            return null;
+        }),
+    },
+}));

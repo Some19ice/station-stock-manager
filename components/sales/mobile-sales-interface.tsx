@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from "@/components/ui/sheet"
 import { Fuel, Wrench, ShoppingCart, Plus, Minus } from "lucide-react"
 
 interface Product {
@@ -24,7 +30,9 @@ interface CartItem {
 }
 
 export function MobileSalesInterface() {
-  const [selectedType, setSelectedType] = useState<"pms" | "lubricant" | null>(null)
+  const [selectedType, setSelectedType] = useState<"pms" | "lubricant" | null>(
+    null
+  )
   const [cart, setCart] = useState<CartItem[]>([])
 
   // Mock products
@@ -38,7 +46,7 @@ export function MobileSalesInterface() {
       unit: "liters"
     },
     {
-      id: "2", 
+      id: "2",
       name: "Engine Oil 5W-30",
       type: "lubricant",
       unitPrice: "1200.00",
@@ -47,7 +55,7 @@ export function MobileSalesInterface() {
     }
   ]
 
-  const filteredProducts = selectedType 
+  const filteredProducts = selectedType
     ? products.filter(p => p.type === selectedType)
     : []
 
@@ -61,14 +69,18 @@ export function MobileSalesInterface() {
     if (existingIndex >= 0) {
       const newCart = [...cart]
       newCart[existingIndex].quantity += quantity
-      newCart[existingIndex].totalPrice = newCart[existingIndex].quantity * unitPrice
+      newCart[existingIndex].totalPrice =
+        newCart[existingIndex].quantity * unitPrice
       setCart(newCart)
     } else {
-      setCart([...cart, {
-        product,
-        quantity,
-        totalPrice: quantity * unitPrice
-      }])
+      setCart([
+        ...cart,
+        {
+          product,
+          quantity,
+          totalPrice: quantity * unitPrice
+        }
+      ])
     }
   }
 
@@ -78,27 +90,31 @@ export function MobileSalesInterface() {
       return
     }
 
-    setCart(cart.map(item => {
-      if (item.product.id === productId) {
-        return {
-          ...item,
-          quantity: newQuantity,
-          totalPrice: newQuantity * parseFloat(item.product.unitPrice)
+    setCart(
+      cart.map(item => {
+        if (item.product.id === productId) {
+          return {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: newQuantity * parseFloat(item.product.unitPrice)
+          }
         }
-      }
-      return item
-    }))
+        return item
+      })
+    )
   }
 
   if (!selectedType) {
     return (
-      <div className="p-4 space-y-4">
-        <h2 className="text-xl font-bold text-center mb-6">Select Product Type</h2>
-        
+      <div className="space-y-4 p-4">
+        <h2 className="mb-6 text-center text-xl font-bold">
+          Select Product Type
+        </h2>
+
         <div className="space-y-3">
           <Button
             variant="outline"
-            className="w-full h-20 flex flex-col gap-2"
+            className="flex h-20 w-full flex-col gap-2"
             onClick={() => setSelectedType("pms")}
           >
             <Fuel className="h-8 w-8 text-blue-600" />
@@ -107,7 +123,7 @@ export function MobileSalesInterface() {
 
           <Button
             variant="outline"
-            className="w-full h-20 flex flex-col gap-2"
+            className="flex h-20 w-full flex-col gap-2"
             onClick={() => setSelectedType("lubricant")}
           >
             <Wrench className="h-8 w-8 text-orange-600" />
@@ -119,20 +135,20 @@ export function MobileSalesInterface() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4 p-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => setSelectedType(null)}>
           ← Back
         </Button>
-        
+
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" className="relative">
-              <ShoppingCart className="h-4 w-4 mr-2" />
+              <ShoppingCart className="mr-2 h-4 w-4" />
               Cart
               {cartItemCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
                   {cartItemCount}
                 </Badge>
               )}
@@ -144,12 +160,17 @@ export function MobileSalesInterface() {
             </SheetHeader>
             <div className="mt-6 space-y-4">
               {cart.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Cart is empty</p>
+                <p className="text-muted-foreground py-8 text-center">
+                  Cart is empty
+                </p>
               ) : (
                 <>
                   {cart.map(item => (
-                    <div key={item.product.id} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
+                    <div
+                      key={item.product.id}
+                      className="rounded-lg border p-3"
+                    >
+                      <div className="mb-2 flex items-start justify-between">
                         <h4 className="font-medium">{item.product.name}</h4>
                         <Button
                           variant="ghost"
@@ -160,13 +181,15 @@ export function MobileSalesInterface() {
                           ×
                         </Button>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            onClick={() =>
+                              updateQuantity(item.product.id, item.quantity - 1)
+                            }
                             className="h-8 w-8 p-0"
                           >
                             <Minus className="h-3 w-3" />
@@ -174,27 +197,38 @@ export function MobileSalesInterface() {
                           <Input
                             type="number"
                             value={item.quantity}
-                            onChange={(e) => updateQuantity(item.product.id, parseFloat(e.target.value) || 0)}
-                            className="w-16 h-8 text-center"
+                            onChange={e =>
+                              updateQuantity(
+                                item.product.id,
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className="h-8 w-16 text-center"
                           />
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            onClick={() =>
+                              updateQuantity(item.product.id, item.quantity + 1)
+                            }
                             className="h-8 w-8 p-0"
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
-                        <span className="font-medium">₦{item.totalPrice.toFixed(2)}</span>
+                        <span className="font-medium">
+                          ₦{item.totalPrice.toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   ))}
-                  
+
                   <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="mb-4 flex items-center justify-between">
                       <span className="text-lg font-semibold">Total:</span>
-                      <span className="text-lg font-bold">₦{cartTotal.toFixed(2)}</span>
+                      <span className="text-lg font-bold">
+                        ₦{cartTotal.toFixed(2)}
+                      </span>
                     </div>
                     <Button className="w-full" size="lg">
                       Complete Sale
@@ -212,20 +246,22 @@ export function MobileSalesInterface() {
         {filteredProducts.map(product => {
           const price = parseFloat(product.unitPrice)
           const stock = parseFloat(product.currentStock)
-          
+
           return (
             <Card key={product.id}>
               <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-3">
+                <div className="mb-3 flex items-start justify-between">
                   <div>
                     <h3 className="font-medium">{product.name}</h3>
-                    <p className="text-lg font-bold">₦{price.toFixed(2)}/{product.unit}</p>
+                    <p className="text-lg font-bold">
+                      ₦{price.toFixed(2)}/{product.unit}
+                    </p>
                   </div>
                   <Badge variant={stock <= 10 ? "destructive" : "secondary"}>
                     {stock} {product.unit}
                   </Badge>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     size="sm"

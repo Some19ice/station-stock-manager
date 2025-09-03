@@ -32,7 +32,8 @@ export function StaffPerformanceTracker() {
 
   if (!performance) return null
 
-  const targetProgress = (performance.currentSales / performance.dailyTarget) * 100
+  const targetProgress =
+    (performance.currentSales / performance.dailyTarget) * 100
 
   return (
     <Card>
@@ -44,38 +45,43 @@ export function StaffPerformanceTracker() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <div className="flex justify-between mb-2">
+          <div className="mb-2 flex justify-between">
             <span className="text-sm">Daily Target Progress</span>
             <span className="text-sm font-medium">
-              ₦{performance.currentSales.toLocaleString()} / ₦{performance.dailyTarget.toLocaleString()}
+              ₦{performance.currentSales.toLocaleString()} / ₦
+              {performance.dailyTarget.toLocaleString()}
             </span>
           </div>
           <Progress value={targetProgress} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-xs">
             {targetProgress.toFixed(1)}% of daily target achieved
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
+            <div className="mb-1 flex items-center justify-center gap-1">
               <TrendingUp className="h-4 w-4 text-green-500" />
-              <span className="text-sm text-muted-foreground">Weekly Avg</span>
+              <span className="text-muted-foreground text-sm">Weekly Avg</span>
             </div>
-            <p className="font-semibold">₦{performance.weeklyAverage.toLocaleString()}</p>
+            <p className="font-semibold">
+              ₦{performance.weeklyAverage.toLocaleString()}
+            </p>
           </div>
           <div className="text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
+            <div className="mb-1 flex items-center justify-center gap-1">
               <Target className="h-4 w-4 text-blue-500" />
-              <span className="text-sm text-muted-foreground">Rank</span>
+              <span className="text-muted-foreground text-sm">Rank</span>
             </div>
-            <p className="font-semibold">#{performance.monthlyRank} of {performance.totalStaff}</p>
+            <p className="font-semibold">
+              #{performance.monthlyRank} of {performance.totalStaff}
+            </p>
           </div>
         </div>
 
         {performance.achievements.length > 0 && (
           <div>
-            <p className="text-sm font-medium mb-2">Achievements</p>
+            <p className="mb-2 text-sm font-medium">Achievements</p>
             <div className="flex flex-wrap gap-1">
               {performance.achievements.map((achievement, index) => (
                 <Badge key={index} variant="secondary" className="text-xs">

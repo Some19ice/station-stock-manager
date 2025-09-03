@@ -5,7 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { MessageSquare, Star, ThumbsUp, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 
@@ -20,7 +26,9 @@ interface CustomerFeedback {
 export function CustomerInteractionTracker() {
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([])
   const [newFeedback, setNewFeedback] = useState("")
-  const [feedbackType, setFeedbackType] = useState<"complaint" | "compliment" | "suggestion">("compliment")
+  const [feedbackType, setFeedbackType] = useState<
+    "complaint" | "compliment" | "suggestion"
+  >("compliment")
 
   useEffect(() => {
     // Mock data
@@ -33,7 +41,7 @@ export function CustomerInteractionTracker() {
         resolved: true
       },
       {
-        id: "2", 
+        id: "2",
         type: "complaint",
         message: "Customer complained about pump speed",
         timestamp: new Date(Date.now() - 1000 * 60 * 120),
@@ -60,19 +68,27 @@ export function CustomerInteractionTracker() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "complaint": return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case "compliment": return <ThumbsUp className="h-4 w-4 text-green-500" />
-      case "suggestion": return <Star className="h-4 w-4 text-blue-500" />
-      default: return <MessageSquare className="h-4 w-4" />
+      case "complaint":
+        return <AlertTriangle className="h-4 w-4 text-red-500" />
+      case "compliment":
+        return <ThumbsUp className="h-4 w-4 text-green-500" />
+      case "suggestion":
+        return <Star className="h-4 w-4 text-blue-500" />
+      default:
+        return <MessageSquare className="h-4 w-4" />
     }
   }
 
   const getVariant = (type: string) => {
     switch (type) {
-      case "complaint": return "destructive" as const
-      case "compliment": return "default" as const
-      case "suggestion": return "secondary" as const
-      default: return "outline" as const
+      case "complaint":
+        return "destructive" as const
+      case "compliment":
+        return "default" as const
+      case "suggestion":
+        return "secondary" as const
+      default:
+        return "outline" as const
     }
   }
 
@@ -86,7 +102,14 @@ export function CustomerInteractionTracker() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
-          <Select value={feedbackType} onValueChange={(value: string) => setFeedbackType(value as "complaint" | "compliment" | "suggestion")}>
+          <Select
+            value={feedbackType}
+            onValueChange={(value: string) =>
+              setFeedbackType(
+                value as "complaint" | "compliment" | "suggestion"
+              )
+            }
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -100,7 +123,7 @@ export function CustomerInteractionTracker() {
           <Textarea
             placeholder="Record customer feedback..."
             value={newFeedback}
-            onChange={(e) => setNewFeedback(e.target.value)}
+            onChange={e => setNewFeedback(e.target.value)}
             rows={2}
           />
 
@@ -109,17 +132,20 @@ export function CustomerInteractionTracker() {
           </Button>
         </div>
 
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {feedbacks.map((feedback) => (
-            <div key={feedback.id} className="p-2 border rounded-lg">
-              <div className="flex items-center justify-between mb-1">
+        <div className="max-h-48 space-y-2 overflow-y-auto">
+          {feedbacks.map(feedback => (
+            <div key={feedback.id} className="rounded-lg border p-2">
+              <div className="mb-1 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {getIcon(feedback.type)}
-                  <Badge variant={getVariant(feedback.type)} className="text-xs">
+                  <Badge
+                    variant={getVariant(feedback.type)}
+                    className="text-xs"
+                  >
                     {feedback.type}
                   </Badge>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   {feedback.timestamp.toLocaleTimeString()}
                 </span>
               </div>
@@ -129,7 +155,7 @@ export function CustomerInteractionTracker() {
         </div>
 
         {feedbacks.length === 0 && (
-          <p className="text-center text-muted-foreground text-sm py-4">
+          <p className="text-muted-foreground py-4 text-center text-sm">
             No customer interactions recorded today
           </p>
         )}

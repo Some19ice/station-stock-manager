@@ -184,9 +184,7 @@ export function DemoSection({ className = "" }: DemoSectionProps) {
         <div className="relative z-10 mx-auto max-w-7xl">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              <span className="text-primary">
-                Interactive Demo
-              </span>
+              <span className="text-primary">Interactive Demo</span>
             </h2>
             <p className="text-foreground/75 mt-6 text-lg leading-relaxed sm:text-xl">
               Experience the power of real-time gas station management.
@@ -282,9 +280,7 @@ export function DemoSection({ className = "" }: DemoSectionProps) {
               <div className="bg-card rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <Fuel className="h-5 w-5 text-blue-500" />
-                  <span className="text-foreground/60 text-sm">
-                    Fuel Sales
-                  </span>
+                  <span className="text-foreground/60 text-sm">Fuel Sales</span>
                 </div>
                 <div className="metric-number mt-2 text-2xl font-bold">
                   $41,000
@@ -293,9 +289,7 @@ export function DemoSection({ className = "" }: DemoSectionProps) {
               <div className="bg-card rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-purple-500" />
-                  <span className="text-foreground/60 text-sm">
-                    Products
-                  </span>
+                  <span className="text-foreground/60 text-sm">Products</span>
                 </div>
                 <div className="metric-number mt-2 text-2xl font-bold">
                   $11,000
@@ -338,9 +332,7 @@ export function DemoSection({ className = "" }: DemoSectionProps) {
                 </div>
                 <div className="mt-2">
                   <div className="text-2xl font-bold">8,500 gal</div>
-                  <div className="text-foreground/60 text-sm">
-                    85% capacity
-                  </div>
+                  <div className="text-foreground/60 text-sm">85% capacity</div>
                 </div>
               </div>
               <div className="bg-card rounded-lg p-4">
@@ -350,9 +342,7 @@ export function DemoSection({ className = "" }: DemoSectionProps) {
                 </div>
                 <div className="mt-2">
                   <div className="text-2xl font-bold">3,200 gal</div>
-                  <div className="text-foreground/60 text-sm">
-                    32% capacity
-                  </div>
+                  <div className="text-foreground/60 text-sm">32% capacity</div>
                 </div>
               </div>
               <div className="bg-card rounded-lg p-4">
@@ -362,9 +352,7 @@ export function DemoSection({ className = "" }: DemoSectionProps) {
                 </div>
                 <div className="mt-2">
                   <div className="text-2xl font-bold">6,800 gal</div>
-                  <div className="text-foreground/60 text-sm">
-                    68% capacity
-                  </div>
+                  <div className="text-foreground/60 text-sm">68% capacity</div>
                 </div>
               </div>
               <div className="bg-card rounded-lg p-4">
@@ -441,9 +429,7 @@ export function DemoSection({ className = "" }: DemoSectionProps) {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <span className="text-primary">
-              Interactive Demo
-            </span>
+            <span className="text-primary">Interactive Demo</span>
           </motion.h2>
           <motion.p
             className="text-foreground/75 mt-6 text-lg leading-relaxed sm:text-xl"

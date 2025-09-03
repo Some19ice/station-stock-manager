@@ -133,9 +133,7 @@ function AnimatedTransactionItem({
           )}
         </div>
 
-        {!isLast && (
-          <div className="h-full w-px bg-border" />
-        )}
+        {!isLast && <div className="bg-border h-full w-px" />}
       </div>
 
       {/* Transaction Card */}
@@ -498,7 +496,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
 
       <div ref={timelineRef} className="relative">
         {/* Timeline Background */}
-        <div className="absolute top-8 bottom-0 left-4 w-px bg-border opacity-30" />
+        <div className="bg-border absolute top-8 bottom-0 left-4 w-px opacity-30" />
 
         <div className="space-y-6">
           {timeGroups.map((group, groupIndex) => (

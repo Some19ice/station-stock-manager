@@ -39,7 +39,7 @@ export function StaffPerformanceTab() {
   useEffect(() => {
     if (performanceData.length > 0 && reportRef.current && !isLoading) {
       const tl = gsap.timeline()
-      
+
       tl.fromTo(
         reportRef.current,
         { opacity: 0, y: 20 },

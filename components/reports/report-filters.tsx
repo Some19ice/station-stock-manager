@@ -5,7 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Filter, X } from "lucide-react"
 
@@ -24,11 +30,17 @@ export interface ReportFilters {
   maxAmount?: number
 }
 
-export function ReportFilters({ onFiltersChange, availableStaff, availableProducts }: ReportFiltersProps) {
+export function ReportFilters({
+  onFiltersChange,
+  availableStaff,
+  availableProducts
+}: ReportFiltersProps) {
   const [filters, setFilters] = useState<ReportFilters>({
-    dateRange: { 
-      start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      end: new Date().toISOString().split('T')[0]
+    dateRange: {
+      start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
+      end: new Date().toISOString().split("T")[0]
     },
     staffIds: [],
     productTypes: [],
@@ -46,7 +58,9 @@ export function ReportFilters({ onFiltersChange, availableStaff, availableProduc
   }
 
   const removeProductType = (type: string) => {
-    updateFilters({ productTypes: filters.productTypes.filter(t => t !== type) })
+    updateFilters({
+      productTypes: filters.productTypes.filter(t => t !== type)
+    })
   }
 
   const clearAllFilters = () => {
@@ -71,16 +85,18 @@ export function ReportFilters({ onFiltersChange, availableStaff, availableProduc
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="start-date">Start Date</Label>
             <Input
               id="start-date"
               type="date"
               value={filters.dateRange.start}
-              onChange={(e) => updateFilters({ 
-                dateRange: { ...filters.dateRange, start: e.target.value }
-              })}
+              onChange={e =>
+                updateFilters({
+                  dateRange: { ...filters.dateRange, start: e.target.value }
+                })
+              }
             />
           </div>
           <div>
@@ -89,21 +105,25 @@ export function ReportFilters({ onFiltersChange, availableStaff, availableProduc
               id="end-date"
               type="date"
               value={filters.dateRange.end}
-              onChange={(e) => updateFilters({ 
-                dateRange: { ...filters.dateRange, end: e.target.value }
-              })}
+              onChange={e =>
+                updateFilters({
+                  dateRange: { ...filters.dateRange, end: e.target.value }
+                })
+              }
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <Label>Staff Members</Label>
-            <Select onValueChange={(value) => {
-              if (!filters.staffIds.includes(value)) {
-                updateFilters({ staffIds: [...filters.staffIds, value] })
-              }
-            }}>
+            <Select
+              onValueChange={value => {
+                if (!filters.staffIds.includes(value)) {
+                  updateFilters({ staffIds: [...filters.staffIds, value] })
+                }
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select staff..." />
               </SelectTrigger>
@@ -119,11 +139,15 @@ export function ReportFilters({ onFiltersChange, availableStaff, availableProduc
 
           <div>
             <Label>Product Types</Label>
-            <Select onValueChange={(value) => {
-              if (!filters.productTypes.includes(value)) {
-                updateFilters({ productTypes: [...filters.productTypes, value] })
-              }
-            }}>
+            <Select
+              onValueChange={value => {
+                if (!filters.productTypes.includes(value)) {
+                  updateFilters({
+                    productTypes: [...filters.productTypes, value]
+                  })
+                }
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select product type..." />
               </SelectTrigger>
@@ -136,17 +160,21 @@ export function ReportFilters({ onFiltersChange, availableStaff, availableProduc
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="min-amount">Min Amount ($)</Label>
             <Input
               id="min-amount"
               type="number"
               placeholder="0.00"
-              value={filters.minAmount || ''}
-              onChange={(e) => updateFilters({ 
-                minAmount: e.target.value ? parseFloat(e.target.value) : undefined 
-              })}
+              value={filters.minAmount || ""}
+              onChange={e =>
+                updateFilters({
+                  minAmount: e.target.value
+                    ? parseFloat(e.target.value)
+                    : undefined
+                })
+              }
             />
           </div>
           <div>
@@ -155,10 +183,14 @@ export function ReportFilters({ onFiltersChange, availableStaff, availableProduc
               id="max-amount"
               type="number"
               placeholder="1000.00"
-              value={filters.maxAmount || ''}
-              onChange={(e) => updateFilters({ 
-                maxAmount: e.target.value ? parseFloat(e.target.value) : undefined 
-              })}
+              value={filters.maxAmount || ""}
+              onChange={e =>
+                updateFilters({
+                  maxAmount: e.target.value
+                    ? parseFloat(e.target.value)
+                    : undefined
+                })
+              }
             />
           </div>
         </div>
@@ -170,16 +202,30 @@ export function ReportFilters({ onFiltersChange, availableStaff, availableProduc
               {filters.staffIds.map(staffId => {
                 const staff = availableStaff.find(s => s.id === staffId)
                 return (
-                  <Badge key={staffId} variant="secondary" className="flex items-center gap-1">
+                  <Badge
+                    key={staffId}
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
                     {staff?.name}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => removeStaff(staffId)} />
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removeStaff(staffId)}
+                    />
                   </Badge>
                 )
               })}
               {filters.productTypes.map(type => (
-                <Badge key={type} variant="secondary" className="flex items-center gap-1">
+                <Badge
+                  key={type}
+                  variant="secondary"
+                  className="flex items-center gap-1"
+                >
                   {type}
-                  <X className="h-3 w-3 cursor-pointer" onClick={() => removeProductType(type)} />
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => removeProductType(type)}
+                  />
                 </Badge>
               ))}
             </div>

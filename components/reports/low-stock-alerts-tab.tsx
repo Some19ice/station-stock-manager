@@ -32,7 +32,7 @@ export function LowStockAlertsTab() {
 
   const fetchAlerts = useCallback(async () => {
     if (userLoading) return
-    
+
     if (!user?.stationId) {
       toast.error("Station information not found")
       return

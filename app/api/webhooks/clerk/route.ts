@@ -10,7 +10,10 @@ const webhookSecret = process.env.CLERK_WEBHOOK_SECRET
 export async function POST(req: NextRequest) {
   if (!webhookSecret) {
     console.error("Missing CLERK_WEBHOOK_SECRET")
-    return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Webhook secret not configured" },
+      { status: 500 }
+    )
   }
 
   const headerPayload = await headers()
@@ -32,7 +35,7 @@ export async function POST(req: NextRequest) {
     evt = wh.verify(body, {
       "svix-id": svixId,
       "svix-timestamp": svixTimestamp,
-      "svix-signature": svixSignature,
+      "svix-signature": svixSignature
     })
   } catch (err) {
     console.error("Error verifying webhook:", err)
@@ -44,24 +47,29 @@ export async function POST(req: NextRequest) {
   // Handle user creation - link existing database records
   if (type === "user.created") {
     try {
-      const emailAddresses = data.email_addresses as Array<{ email_address: string }> | undefined
+      const emailAddresses = data.email_addresses as
+        | Array<{ email_address: string }>
+        | undefined
       const email = emailAddresses?.[0]?.email_address
       console.log(`Processing user.created webhook for email: ${email}`)
-      
+
       if (email) {
         const clerkUserId = data.id as string
-        
+
         // Find user record by email pattern in temp clerk ID
         const existingUser = await db.query.users.findFirst({
           where: like(users.clerkUserId, `%${email}`)
         })
 
         if (existingUser) {
-          console.log(`Found existing user record for ${email}, username: ${existingUser.username}`)
-          
+          console.log(
+            `Found existing user record for ${email}, username: ${existingUser.username}`
+          )
+
           // Update the user record with the real Clerk ID
-          await db.update(users)
-            .set({ 
+          await db
+            .update(users)
+            .set({
               clerkUserId: clerkUserId,
               updatedAt: new Date()
             })
@@ -71,8 +79,9 @@ export async function POST(req: NextRequest) {
 
           // Update Clerk user profile with username from database
           try {
-            const { updateClerkUserProfile, updateClerkUserMetadata } = await import("@/lib/clerk-admin")
-            
+            const { updateClerkUserProfile, updateClerkUserMetadata } =
+              await import("@/lib/clerk-admin")
+
             // Set username in Clerk profile
             const profileResult = await updateClerkUserProfile(clerkUserId, {
               username: existingUser.username,
@@ -80,9 +89,13 @@ export async function POST(req: NextRequest) {
             })
 
             if (profileResult.success) {
-              console.log(`Successfully updated Clerk username to: ${existingUser.username}`)
+              console.log(
+                `Successfully updated Clerk username to: ${existingUser.username}`
+              )
             } else {
-              console.error(`Failed to update Clerk username: ${profileResult.error}`)
+              console.error(
+                `Failed to update Clerk username: ${profileResult.error}`
+              )
             }
 
             // Set role and other metadata
@@ -94,9 +107,10 @@ export async function POST(req: NextRequest) {
             if (metadataResult.success) {
               console.log(`Successfully updated Clerk metadata for ${email}`)
             } else {
-              console.error(`Failed to update Clerk metadata: ${metadataResult.error}`)
+              console.error(
+                `Failed to update Clerk metadata: ${metadataResult.error}`
+              )
             }
-
           } catch (error) {
             console.error("Error updating Clerk user profile:", error)
           }

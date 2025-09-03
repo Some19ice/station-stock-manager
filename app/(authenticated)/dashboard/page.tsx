@@ -115,7 +115,7 @@ function MetricsLoading() {
           <EnhancedCardContent className="p-6">
             <div className="mb-4 flex items-center justify-between">
               <AnimatedSkeleton className="h-4 w-20" />
-              <div className="h-8 w-8 animate-pulse rounded-full bg-primary/20" />
+              <div className="bg-primary/20 h-8 w-8 animate-pulse rounded-full" />
             </div>
             <AnimatedSkeleton className="mb-3 h-10 w-24" />
             <div className="flex items-center justify-between">
@@ -154,14 +154,14 @@ function AlertsLoading() {
     <div ref={alertsRef} className="mb-6">
       <div className="mb-4 flex items-center gap-3">
         <AnimatedSkeleton className="h-6 w-40" />
-        <div className="h-6 w-16 animate-pulse rounded-full bg-destructive/20" />
+        <div className="bg-destructive/20 h-6 w-16 animate-pulse rounded-full" />
       </div>
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <EnhancedCard key={i} variant="alert" className="loading-item">
             <EnhancedCardContent className="p-4">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 animate-pulse rounded-full bg-destructive/20" />
+                <div className="bg-destructive/20 h-10 w-10 animate-pulse rounded-full" />
                 <div className="flex-1 space-y-2">
                   <AnimatedSkeleton className="h-4 w-32" />
                   <AnimatedSkeleton className="h-3 w-24" />
@@ -181,12 +181,12 @@ function ActivityLoading() {
     <div className="space-y-4">
       <div className="mb-4 flex items-center gap-3">
         <AnimatedSkeleton className="h-6 w-32" />
-        <div className="h-6 w-12 animate-pulse rounded-full bg-chart-2/20" />
+        <div className="bg-chart-2/20 h-6 w-12 animate-pulse rounded-full" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <EnhancedCard key={i} className="p-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 animate-pulse rounded-full bg-chart-1/20" />
+            <div className="bg-chart-1/20 h-8 w-8 animate-pulse rounded-full" />
             <div className="flex-1 space-y-2">
               <AnimatedSkeleton className="h-4 w-48" />
               <AnimatedSkeleton className="h-3 w-24" />
@@ -340,7 +340,7 @@ export default function EnhancedDashboardPage() {
               <Sparkles className="text-primary h-8 w-8" />
             </motion.div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-foreground text-3xl font-bold">
                 Dashboard Overview
               </h1>
               <div className="mt-1 flex items-center gap-2">

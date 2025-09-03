@@ -3,7 +3,14 @@
 import { forwardRef, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { gsap } from "gsap"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "./card"
 import { cn } from "@/lib/utils"
 
 interface EnhancedCardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -15,7 +22,19 @@ interface EnhancedCardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
-  ({ className, variant = "default", hover = true, glow = false, magnetic = false, delay = 0, children, ...props }, ref) => {
+  (
+    {
+      className,
+      variant = "default",
+      hover = true,
+      glow = false,
+      magnetic = false,
+      delay = 0,
+      children,
+      ...props
+    },
+    ref
+  ) => {
     const cardRef = useRef<HTMLDivElement>(null)
     const glowRef = useRef<HTMLDivElement>(null)
 
@@ -25,18 +44,18 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
       // Entrance animation
       gsap.fromTo(
         cardRef.current,
-        { 
-          opacity: 0, 
-          y: 20, 
+        {
+          opacity: 0,
+          y: 20,
           scale: 0.95,
           rotationX: 5
         },
-        { 
-          opacity: 1, 
-          y: 0, 
+        {
+          opacity: 1,
+          y: 0,
           scale: 1,
           rotationX: 0,
-          duration: 0.6, 
+          duration: 0.6,
           delay: delay * 0.1,
           ease: "power2.out"
         }
@@ -92,7 +111,7 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
     return (
       <motion.div
         ref={ref}
-        className="relative group"
+        className="group relative"
         whileHover={hover ? { scale: 1.02 } : undefined}
         transition={{ duration: 0.2 }}
       >
@@ -100,7 +119,7 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
         {glow && (
           <div
             ref={glowRef}
-            className="absolute -inset-0.5 bg-primary/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            className="bg-primary/20 absolute -inset-0.5 rounded-lg opacity-0 blur transition-opacity duration-300 group-hover:opacity-100"
           />
         )}
 
@@ -108,9 +127,9 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
           ref={cardRef}
           className={cn(
             "relative transition-all duration-300",
-            "backdrop-blur-sm supports-[backdrop-filter]:bg-background/60",
+            "supports-[backdrop-filter]:bg-background/60 backdrop-blur-sm",
             variants[variant],
-            hover && "hover:shadow-xl hover:border-border/80",
+            hover && "hover:border-border/80 hover:shadow-xl",
             glow && "group-hover:shadow-2xl",
             className
           )}
@@ -129,11 +148,7 @@ const EnhancedCardHeader = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <CardHeader
-    ref={ref}
-    className={cn("pb-3", className)}
-    {...props}
-  />
+  <CardHeader ref={ref} className={cn("pb-3", className)} {...props} />
 ))
 EnhancedCardHeader.displayName = "EnhancedCardHeader"
 
@@ -144,7 +159,7 @@ const EnhancedCardTitle = forwardRef<
   <CardTitle
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight text-foreground",
+      "text-foreground text-lg leading-none font-semibold tracking-tight",
       className
     )}
     {...props}
@@ -158,7 +173,7 @@ const EnhancedCardDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <CardDescription
     ref={ref}
-    className={cn("text-sm text-muted-foreground/80", className)}
+    className={cn("text-muted-foreground/80 text-sm", className)}
     {...props}
   />
 ))
@@ -176,7 +191,11 @@ const EnhancedCardFooter = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <CardFooter ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
+  <CardFooter
+    ref={ref}
+    className={cn("flex items-center p-6 pt-0", className)}
+    {...props}
+  />
 ))
 EnhancedCardFooter.displayName = "EnhancedCardFooter"
 
@@ -186,5 +205,5 @@ export {
   EnhancedCardFooter,
   EnhancedCardTitle,
   EnhancedCardDescription,
-  EnhancedCardContent,
+  EnhancedCardContent
 }

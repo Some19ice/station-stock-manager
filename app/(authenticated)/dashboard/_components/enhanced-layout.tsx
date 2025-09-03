@@ -45,7 +45,7 @@ export default function EnhancedDashboardLayout({
 
   useEffect(() => {
     setIsClient(true)
-    
+
     // Read sidebar state from cookie after client mount
     const getCookieValue = (name: string) => {
       const value = `; ${document.cookie}`
@@ -86,7 +86,7 @@ export default function EnhancedDashboardLayout({
 
   const getBreadcrumbs = () => {
     if (!isClient) return []
-    
+
     const paths = pathname.split("/").filter(Boolean)
     const breadcrumbs = []
 
@@ -107,20 +107,16 @@ export default function EnhancedDashboardLayout({
   return (
     <>
       {/* Enhanced cursor for desktop */}
-      <CursorWrapper
-        size={20}
-        className="hidden lg:block"
-        disabled={false}
-      />
+      <CursorWrapper size={20} className="hidden lg:block" disabled={false} />
 
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar userData={userData} />
         <SidebarInset className="relative">
           {/* Animated background */}
-          <AnimatedBackground 
-            variant="subtle" 
+          <AnimatedBackground
+            variant="subtle"
             particleCount={30}
-            className="fixed inset-0 pointer-events-none"
+            className="pointer-events-none fixed inset-0"
           />
 
           {/* Enhanced header with glassmorphism */}
@@ -137,22 +133,22 @@ export default function EnhancedDashboardLayout({
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             {/* Subtle overlay */}
-            <div className="absolute inset-0 bg-accent/5 opacity-0 transition-opacity duration-500 hover:opacity-100" />
-            
+            <div className="bg-accent/5 absolute inset-0 opacity-0 transition-opacity duration-500 hover:opacity-100" />
+
             <div className="relative flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
               <div className="flex items-center gap-2 px-4">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <SidebarTrigger className="-ml-1 hover:bg-accent/50 transition-colors" />
+                  <SidebarTrigger className="hover:bg-accent/50 -ml-1 transition-colors" />
                 </motion.div>
-                
+
                 <Separator
                   orientation="vertical"
                   className="mr-2 data-[orientation=vertical]:h-4"
                 />
-                
+
                 {isClient && breadcrumbs.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
@@ -169,14 +165,16 @@ export default function EnhancedDashboardLayout({
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4 + index * 0.1 }}
                           >
-                            {index > 0 && <BreadcrumbSeparator className="mx-2" />}
+                            {index > 0 && (
+                              <BreadcrumbSeparator className="mx-2" />
+                            )}
                             <BreadcrumbItem>
                               {crumb.current ? (
-                                <BreadcrumbPage className="font-medium text-foreground">
+                                <BreadcrumbPage className="text-foreground font-medium">
                                   {crumb.name}
                                 </BreadcrumbPage>
                               ) : (
-                                <BreadcrumbLink 
+                                <BreadcrumbLink
                                   href={crumb.href}
                                   className="hover:text-primary transition-colors"
                                 >
@@ -195,9 +193,9 @@ export default function EnhancedDashboardLayout({
           </motion.header>
 
           {/* Enhanced content area */}
-          <motion.div 
+          <motion.div
             ref={contentRef}
-            className="flex flex-1 flex-col gap-4 p-4 relative"
+            className="relative flex flex-1 flex-col gap-4 p-4"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}

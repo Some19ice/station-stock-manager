@@ -3,10 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Fuel, 
-  AlertTriangle, 
-  Clock, 
+import {
+  Fuel,
+  AlertTriangle,
+  Clock,
   Calculator,
   FileText,
   Users
@@ -40,7 +40,9 @@ export function StaffQuickActions() {
       title: "Price Calculator",
       description: "Quick fuel calculations",
       icon: <Calculator className="h-4 w-4" />,
-      action: () => {/* Open calculator modal */},
+      action: () => {
+        /* Open calculator modal */
+      },
       variant: "secondary"
     },
     {
@@ -57,7 +59,9 @@ export function StaffQuickActions() {
       title: "Break Timer",
       description: "Track break duration",
       icon: <Clock className="h-4 w-4" />,
-      action: () => {/* Start break timer */},
+      action: () => {
+        /* Start break timer */
+      },
       variant: "secondary"
     },
     {
@@ -87,28 +91,32 @@ export function StaffQuickActions() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-3">
-          {quickActions.map((action) => (
+          {quickActions.map(action => (
             <Button
               key={action.id}
               variant="outline"
-              className="h-auto p-3 flex flex-col items-start gap-2"
+              className="flex h-auto flex-col items-start gap-2 p-3"
               onClick={action.action}
             >
-              <div className="flex items-center justify-between w-full">
+              <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-2">
                   {action.icon}
-                  <span className="font-medium text-sm">{action.title}</span>
+                  <span className="text-sm font-medium">{action.title}</span>
                 </div>
                 {action.badge && (
-                  <Badge 
-                    variant={action.variant === "destructive" ? "destructive" : "secondary"} 
+                  <Badge
+                    variant={
+                      action.variant === "destructive"
+                        ? "destructive"
+                        : "secondary"
+                    }
                     className="text-xs"
                   >
                     {action.badge}
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground text-left">
+              <p className="text-muted-foreground text-left text-xs">
                 {action.description}
               </p>
             </Button>

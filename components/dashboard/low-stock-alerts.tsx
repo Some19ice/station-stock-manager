@@ -203,10 +203,8 @@ export const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ alerts }) => {
               className={cn(
                 "group relative cursor-pointer overflow-hidden transition-all duration-300",
                 "transform-gpu hover:-translate-y-1 hover:shadow-lg",
-                isCritical &&
-                  "border-destructive/30 bg-destructive/5",
-                isWarning &&
-                  "border-chart-4/30 bg-chart-4/5",
+                isCritical && "border-destructive/30 bg-destructive/5",
+                isWarning && "border-chart-4/30 bg-chart-4/5",
                 hoveredAlert === alert.id && "z-10 scale-[1.02]"
               )}
               onMouseEnter={() => setHoveredAlert(alert.id)}

@@ -3,7 +3,9 @@ import { stations } from "./stations"
 
 export const suppliers = pgTable("suppliers", {
   id: uuid("id").defaultRandom().primaryKey(),
-  stationId: uuid("station_id").references(() => stations.id).notNull(),
+  stationId: uuid("station_id")
+    .references(() => stations.id)
+    .notNull(),
   name: text("name").notNull(),
   contactPerson: text("contact_person"),
   phone: text("phone"),

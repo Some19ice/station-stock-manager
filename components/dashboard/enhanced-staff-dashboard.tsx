@@ -22,7 +22,10 @@ interface EnhancedStaffDashboardProps {
   }
 }
 
-export function EnhancedStaffDashboard({ user, station }: EnhancedStaffDashboardProps) {
+export function EnhancedStaffDashboard({
+  user,
+  station
+}: EnhancedStaffDashboardProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -61,7 +64,7 @@ export function EnhancedStaffDashboard({ user, station }: EnhancedStaffDashboard
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="space-y-6">
               <FrequentlySoldProducts />
             </div>
@@ -72,19 +75,19 @@ export function EnhancedStaffDashboard({ user, station }: EnhancedStaffDashboard
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <StaffPerformanceTracker />
             <ShiftHandover />
           </div>
         </TabsContent>
 
         <TabsContent value="interactions" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <CustomerInteractionTracker />
             <div className="space-y-4">
               {/* Additional interaction features can go here */}
-              <div className="text-center text-muted-foreground p-8">
-                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <div className="text-muted-foreground p-8 text-center">
+                <MessageSquare className="mx-auto mb-4 h-12 w-12 opacity-50" />
                 <p>Additional interaction features coming soon</p>
               </div>
             </div>

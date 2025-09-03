@@ -5,7 +5,13 @@ import { createStationUser, getCurrentUserProfile } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { toast } from "sonner"
 
 interface UserFormProps {
@@ -55,7 +61,8 @@ export function UserForm({ onSuccess, onCancel }: UserFormProps) {
         onSuccess()
       } else {
         toast.error("Failed to create user", {
-          description: result.error || "An error occurred while creating the user"
+          description:
+            result.error || "An error occurred while creating the user"
         })
       }
     } catch (error) {
@@ -77,7 +84,9 @@ export function UserForm({ onSuccess, onCancel }: UserFormProps) {
         <Input
           id="username"
           value={formData.username}
-          onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+          onChange={e =>
+            setFormData(prev => ({ ...prev, username: e.target.value }))
+          }
           placeholder="Enter username"
           required
           minLength={3}
@@ -91,11 +100,13 @@ export function UserForm({ onSuccess, onCancel }: UserFormProps) {
           id="email"
           type="email"
           value={formData.email}
-          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+          onChange={e =>
+            setFormData(prev => ({ ...prev, email: e.target.value }))
+          }
           placeholder="user@example.com"
           required
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           User will receive an invitation email with login instructions
         </p>
       </div>
@@ -104,7 +115,7 @@ export function UserForm({ onSuccess, onCancel }: UserFormProps) {
         <Label htmlFor="role">Role</Label>
         <Select
           value={formData.role}
-          onValueChange={(value: "staff" | "manager") => 
+          onValueChange={(value: "staff" | "manager") =>
             setFormData(prev => ({ ...prev, role: value }))
           }
         >
@@ -119,7 +130,11 @@ export function UserForm({ onSuccess, onCancel }: UserFormProps) {
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" disabled={loading || !formData.username || !formData.email} className="flex-1">
+        <Button
+          type="submit"
+          disabled={loading || !formData.username || !formData.email}
+          className="flex-1"
+        >
           {loading ? "Creating..." : "Create User & Send Invitation"}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>

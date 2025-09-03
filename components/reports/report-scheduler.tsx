@@ -5,7 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Mail, Calendar, Plus, Trash2 } from "lucide-react"
@@ -14,37 +20,39 @@ import { toast } from "sonner"
 interface ScheduledReport {
   id: string
   name: string
-  type: 'daily' | 'weekly' | 'monthly'
+  type: "daily" | "weekly" | "monthly"
   frequency: string
   recipients: string[]
-  format: 'pdf' | 'csv' | 'excel'
+  format: "pdf" | "csv" | "excel"
   enabled: boolean
   nextRun: Date
 }
 
 export function ReportScheduler() {
-  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[]>([])
+  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[]>(
+    []
+  )
   const [isCreating, setIsCreating] = useState(false)
   const [newReport, setNewReport] = useState({
-    name: '',
-    type: 'daily' as const,
-    frequency: 'daily',
-    recipients: [''],
-    format: 'pdf' as const,
+    name: "",
+    type: "daily" as const,
+    frequency: "daily",
+    recipients: [""],
+    format: "pdf" as const,
     enabled: true
   })
 
   const addRecipient = () => {
     setNewReport(prev => ({
       ...prev,
-      recipients: [...prev.recipients, '']
+      recipients: [...prev.recipients, ""]
     }))
   }
 
   const updateRecipient = (index: number, email: string) => {
     setNewReport(prev => ({
       ...prev,
-      recipients: prev.recipients.map((r, i) => i === index ? email : r)
+      recipients: prev.recipients.map((r, i) => (i === index ? email : r))
     }))
   }
 
@@ -56,7 +64,7 @@ export function ReportScheduler() {
   }
 
   const createScheduledReport = () => {
-    if (!newReport.name || newReport.recipients.some(r => !r.includes('@'))) {
+    if (!newReport.name || newReport.recipients.some(r => !r.includes("@"))) {
       toast.error("Please fill all required fields with valid emails")
       return
     }
@@ -70,11 +78,11 @@ export function ReportScheduler() {
 
     setScheduledReports(prev => [...prev, report])
     setNewReport({
-      name: '',
-      type: 'daily',
-      frequency: 'daily',
-      recipients: [''],
-      format: 'pdf',
+      name: "",
+      type: "daily",
+      frequency: "daily",
+      recipients: [""],
+      format: "pdf",
       enabled: true
     })
     setIsCreating(false)
@@ -82,8 +90,8 @@ export function ReportScheduler() {
   }
 
   const toggleReport = (id: string) => {
-    setScheduledReports(prev => 
-      prev.map(report => 
+    setScheduledReports(prev =>
+      prev.map(report =>
         report.id === id ? { ...report, enabled: !report.enabled } : report
       )
     )
@@ -106,7 +114,10 @@ export function ReportScheduler() {
         <CardContent>
           <div className="space-y-4">
             {scheduledReports.map(report => (
-              <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div
+                key={report.id}
+                className="flex items-center justify-between rounded-lg border p-4"
+              >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium">{report.name}</h4>
@@ -114,10 +125,11 @@ export function ReportScheduler() {
                       {report.enabled ? "Active" : "Disabled"}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {report.type} • {report.format.toUpperCase()} • {report.recipients.length} recipient(s)
+                  <p className="text-muted-foreground text-sm">
+                    {report.type} • {report.format.toUpperCase()} •{" "}
+                    {report.recipients.length} recipient(s)
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Next run: {report.nextRun.toLocaleDateString()}
                   </p>
                 </div>
@@ -138,7 +150,7 @@ export function ReportScheduler() {
             ))}
 
             {scheduledReports.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">
+              <p className="text-muted-foreground py-8 text-center">
                 No scheduled reports yet. Create one to get started.
               </p>
             )}
@@ -146,10 +158,10 @@ export function ReportScheduler() {
 
           <Button
             onClick={() => setIsCreating(true)}
-            className="w-full mt-4"
+            className="mt-4 w-full"
             variant="outline"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Schedule New Report
           </Button>
         </CardContent>
@@ -166,17 +178,22 @@ export function ReportScheduler() {
               <Input
                 id="report-name"
                 value={newReport.name}
-                onChange={(e) => setNewReport(prev => ({ ...prev, name: e.target.value }))}
+                onChange={e =>
+                  setNewReport(prev => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="e.g., Daily Sales Summary"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <Label>Report Type</Label>
-                <Select value={newReport.type} onValueChange={(value: string) => 
-                  setNewReport(prev => ({ ...prev, type: value as "daily" }))
-                }>
+                <Select
+                  value={newReport.type}
+                  onValueChange={(value: string) =>
+                    setNewReport(prev => ({ ...prev, type: value as "daily" }))
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -190,9 +207,12 @@ export function ReportScheduler() {
 
               <div>
                 <Label>Frequency</Label>
-                <Select value={newReport.frequency} onValueChange={(value) => 
-                  setNewReport(prev => ({ ...prev, frequency: value }))
-                }>
+                <Select
+                  value={newReport.frequency}
+                  onValueChange={value =>
+                    setNewReport(prev => ({ ...prev, frequency: value }))
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -206,9 +226,12 @@ export function ReportScheduler() {
 
               <div>
                 <Label>Format</Label>
-                <Select value={newReport.format} onValueChange={(value: string) => 
-                  setNewReport(prev => ({ ...prev, format: value as "pdf" }))
-                }>
+                <Select
+                  value={newReport.format}
+                  onValueChange={(value: string) =>
+                    setNewReport(prev => ({ ...prev, format: value as "pdf" }))
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -229,7 +252,7 @@ export function ReportScheduler() {
                     <Input
                       type="email"
                       value={recipient}
-                      onChange={(e) => updateRecipient(index, e.target.value)}
+                      onChange={e => updateRecipient(index, e.target.value)}
                       placeholder="email@example.com"
                     />
                     {newReport.recipients.length > 1 && (
@@ -244,16 +267,14 @@ export function ReportScheduler() {
                   </div>
                 ))}
                 <Button variant="outline" size="sm" onClick={addRecipient}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Add Recipient
                 </Button>
               </div>
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={createScheduledReport}>
-                Create Schedule
-              </Button>
+              <Button onClick={createScheduledReport}>Create Schedule</Button>
               <Button variant="outline" onClick={() => setIsCreating(false)}>
                 Cancel
               </Button>

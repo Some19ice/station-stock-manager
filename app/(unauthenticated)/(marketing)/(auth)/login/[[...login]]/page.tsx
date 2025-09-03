@@ -27,7 +27,7 @@ export default function LoginPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <span className="bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs font-medium">
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
                 Welcome back!
               </span>
             </motion.div>
@@ -182,7 +182,7 @@ export default function LoginPage() {
               >
                 <Link
                   href="/signup"
-                  className="text-blue-600 font-medium transition-colors hover:underline"
+                  className="font-medium text-blue-600 transition-colors hover:underline"
                 >
                   Contact your manager
                   <ArrowRight className="ml-1 inline h-3 w-3" />

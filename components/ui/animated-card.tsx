@@ -2,7 +2,13 @@
 
 import { useRef, useEffect, ReactNode } from "react"
 import { gsap } from "gsap"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 interface AnimatedCardProps {
@@ -14,10 +20,10 @@ interface AnimatedCardProps {
   glowEffect?: boolean
 }
 
-export function AnimatedCard({ 
-  title, 
-  description, 
-  children, 
+export function AnimatedCard({
+  title,
+  description,
+  children,
   className,
   hoverEffect = true,
   glowEffect = false
@@ -38,7 +44,7 @@ export function AnimatedCard({
         duration: 0.3,
         ease: "power2.out"
       })
-      
+
       if (glow && glowEffect) {
         gsap.to(glow, {
           opacity: 0.6,
@@ -56,7 +62,7 @@ export function AnimatedCard({
         duration: 0.3,
         ease: "power2.out"
       })
-      
+
       if (glow && glowEffect) {
         gsap.to(glow, {
           opacity: 0,
@@ -81,7 +87,7 @@ export function AnimatedCard({
       {glowEffect && (
         <div
           ref={glowRef}
-          className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-0"
+          className="absolute -inset-1 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 blur"
         />
       )}
       <Card ref={cardRef} className={cn("relative", className)}>
@@ -91,9 +97,7 @@ export function AnimatedCard({
             {description && <CardDescription>{description}</CardDescription>}
           </CardHeader>
         )}
-        <CardContent>
-          {children}
-        </CardContent>
+        <CardContent>{children}</CardContent>
       </Card>
     </div>
   )

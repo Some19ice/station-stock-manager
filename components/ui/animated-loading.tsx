@@ -11,7 +11,10 @@ interface AnimatedSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const AnimatedSkeleton = forwardRef<HTMLDivElement, AnimatedSkeletonProps>(
-  ({ className, variant = "default", animation = "shimmer", ...props }, ref) => {
+  (
+    { className, variant = "default", animation = "shimmer", ...props },
+    ref
+  ) => {
     const skeletonRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -64,7 +67,7 @@ const AnimatedSkeleton = forwardRef<HTMLDivElement, AnimatedSkeletonProps>(
         {...props}
       >
         {animation === "shimmer" && (
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
         )}
       </div>
     )
@@ -73,7 +76,8 @@ const AnimatedSkeleton = forwardRef<HTMLDivElement, AnimatedSkeletonProps>(
 
 AnimatedSkeleton.displayName = "AnimatedSkeleton"
 
-interface AnimatedLoadingGridProps extends React.HTMLAttributes<HTMLDivElement> {
+interface AnimatedLoadingGridProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   rows?: number
   cols?: number
   gap?: number
@@ -81,8 +85,22 @@ interface AnimatedLoadingGridProps extends React.HTMLAttributes<HTMLDivElement> 
   stagger?: boolean
 }
 
-const AnimatedLoadingGrid = forwardRef<HTMLDivElement, AnimatedLoadingGridProps>(
-  ({ className, rows = 3, cols = 1, gap = 4, itemHeight = "h-20", stagger = true, ...props }, ref) => {
+const AnimatedLoadingGrid = forwardRef<
+  HTMLDivElement,
+  AnimatedLoadingGridProps
+>(
+  (
+    {
+      className,
+      rows = 3,
+      cols = 1,
+      gap = 4,
+      itemHeight = "h-20",
+      stagger = true,
+      ...props
+    },
+    ref
+  ) => {
     const gridRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -108,50 +126,33 @@ const AnimatedLoadingGrid = forwardRef<HTMLDivElement, AnimatedLoadingGridProps>
     return (
       <div
         ref={ref || gridRef}
-        className={cn(
-          "grid",
-          `grid-cols-${cols}`,
-          `gap-${gap}`,
-          className
-        )}
+        className={cn("grid", `grid-cols-${cols}`, `gap-${gap}`, className)}
         {...props}
       >
         {Array.from({ length: totalItems }).map((_, index) => (
           <motion.div
             key={index}
-            className={cn(
-              "rounded-lg border bg-card",
-              itemHeight
-            )}
+            className={cn("bg-card rounded-lg border", itemHeight)}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ 
+            transition={{
               delay: stagger ? index * 0.1 : 0,
               duration: 0.5
             }}
           >
-            <div className="p-4 space-y-3">
+            <div className="space-y-3 p-4">
               <div className="flex items-center space-x-3">
-                <AnimatedSkeleton 
-                  variant="circular" 
+                <AnimatedSkeleton
+                  variant="circular"
                   className="h-10 w-10"
                   animation="pulse"
                 />
-                <div className="space-y-2 flex-1">
-                  <AnimatedSkeleton 
-                    className="h-4 w-3/4"
-                    animation="shimmer"
-                  />
-                  <AnimatedSkeleton 
-                    className="h-3 w-1/2"
-                    animation="shimmer"
-                  />
+                <div className="flex-1 space-y-2">
+                  <AnimatedSkeleton className="h-4 w-3/4" animation="shimmer" />
+                  <AnimatedSkeleton className="h-3 w-1/2" animation="shimmer" />
                 </div>
               </div>
-              <AnimatedSkeleton 
-                className="h-8 w-full"
-                animation="wave"
-              />
+              <AnimatedSkeleton className="h-8 w-full" animation="wave" />
             </div>
           </motion.div>
         ))}

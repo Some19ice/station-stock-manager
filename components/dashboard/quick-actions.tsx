@@ -524,10 +524,10 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     <TooltipProvider>
       <div
         ref={containerRef}
-        className="relative overflow-hidden rounded-xl border border-border/50 bg-card/80 p-6 shadow-lg backdrop-blur-sm"
+        className="border-border/50 bg-card/80 relative overflow-hidden rounded-xl border p-6 shadow-lg backdrop-blur-sm"
       >
         {/* Ambient background effects */}
-        <div className="absolute inset-0 bg-accent/5 opacity-50" />
+        <div className="bg-accent/5 absolute inset-0 opacity-50" />
         <div className="absolute top-0 left-1/4 h-32 w-32 animate-pulse rounded-full bg-blue-300/20 blur-xl filter" />
         <div
           className="absolute right-1/4 bottom-0 h-24 w-24 animate-pulse rounded-full bg-purple-300/20 blur-xl filter"
@@ -784,7 +784,7 @@ function EnhancedLoadingState() {
   return (
     <div
       ref={loadingRef}
-      className="rounded-xl border border-border/30 bg-card/50 p-6 shadow-sm"
+      className="border-border/30 bg-card/50 rounded-xl border p-6 shadow-sm"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -808,7 +808,7 @@ function EnhancedLoadingState() {
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 animate-pulse rounded-xl bg-primary/20" />
+                <div className="bg-primary/20 h-12 w-12 animate-pulse rounded-xl" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-3 w-32" />
@@ -1003,7 +1003,7 @@ const EnhancedActionCard: React.FC<{
         <div className="absolute top-0 right-0 left-0 h-1 bg-gray-200/50">
           <div
             ref={progressRef}
-            className="h-full bg-primary shadow-sm"
+            className="bg-primary h-full shadow-sm"
             style={{ width: "0%" }}
           />
         </div>
@@ -1021,7 +1021,7 @@ const EnhancedActionCard: React.FC<{
       {/* Ambient glow effect */}
       <div
         className={cn(
-          "absolute inset-0 bg-accent/10 opacity-0 transition-opacity duration-300",
+          "bg-accent/10 absolute inset-0 opacity-0 transition-opacity duration-300",
           (localHover || isHovered) && "opacity-100"
         )}
       />
@@ -1348,22 +1348,19 @@ const EnhancedAlertCard: React.FC<{
 
   const variantStyles = {
     warning: {
-      container:
-        "border-chart-4/30 bg-chart-4/5 shadow-chart-4/20",
+      container: "border-chart-4/30 bg-chart-4/5 shadow-chart-4/20",
       icon: "bg-amber-100 text-amber-600",
       title: "text-amber-900",
       description: "text-amber-700"
     },
     info: {
-      container:
-        "border-chart-2/30 bg-chart-2/5 shadow-chart-2/20",
+      container: "border-chart-2/30 bg-chart-2/5 shadow-chart-2/20",
       icon: "bg-blue-100 text-blue-600",
       title: "text-blue-900",
       description: "text-blue-700"
     },
     success: {
-      container:
-        "border-chart-1/30 bg-chart-1/5 shadow-chart-1/20",
+      container: "border-chart-1/30 bg-chart-1/5 shadow-chart-1/20",
       icon: "bg-green-100 text-green-600",
       title: "text-green-900",
       description: "text-green-700"

@@ -8,7 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 
 interface Widget {
@@ -69,7 +69,7 @@ export function CustomizableDashboard({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent, widgetId: string) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
       onWidgetToggle(widgetId)
     }
@@ -84,7 +84,11 @@ export function CustomizableDashboard({
             variant={isCustomizing ? "default" : "outline"}
             size="sm"
             onClick={() => setIsCustomizing(!isCustomizing)}
-            aria-label={isCustomizing ? "Exit customization mode" : "Enter customization mode"}
+            aria-label={
+              isCustomizing
+                ? "Exit customization mode"
+                : "Enter customization mode"
+            }
           >
             <Settings className="mr-1 h-4 w-4" />
             {isCustomizing ? "Done" : "Customize"}
@@ -93,8 +97,8 @@ export function CustomizableDashboard({
           {isCustomizing && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   aria-label="Toggle widget visibility"
                 >
@@ -107,7 +111,7 @@ export function CustomizableDashboard({
                   <DropdownMenuItem
                     key={widget.id}
                     onClick={() => onWidgetToggle(widget.id)}
-                    onKeyDown={(e) => handleKeyDown(e, widget.id)}
+                    onKeyDown={e => handleKeyDown(e, widget.id)}
                     className="flex items-center gap-2"
                     role="menuitemcheckbox"
                     aria-checked={widget.visible}

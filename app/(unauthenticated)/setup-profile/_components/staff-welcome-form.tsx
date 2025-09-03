@@ -6,7 +6,13 @@ import { useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { toast } from "sonner"
 import { setupStaffProfile } from "../_actions/setup-staff-profile"
 
@@ -21,17 +27,19 @@ export function StaffWelcomeForm() {
     const fetchPendingUser = async () => {
       if (user?.primaryEmailAddress?.emailAddress) {
         try {
-          const response = await fetch('/api/pending-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress })
+          const response = await fetch("/api/pending-user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: user.primaryEmailAddress.emailAddress
+            })
           })
           const data = await response.json()
           if (data.username) {
             setPendingUsername(data.username)
           }
         } catch (error) {
-          console.error('Failed to fetch pending user:', error)
+          console.error("Failed to fetch pending user:", error)
         }
       }
     }
@@ -40,7 +48,7 @@ export function StaffWelcomeForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!user?.id) {
       toast.error("Authentication error. Please try again.")
       return
@@ -72,7 +80,8 @@ export function StaffWelcomeForm() {
       <CardHeader>
         <CardTitle>Welcome to the Team!</CardTitle>
         <CardDescription>
-          Your account is ready to be activated. Click below to complete the setup.
+          Your account is ready to be activated. Click below to complete the
+          setup.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -101,18 +110,10 @@ export function StaffWelcomeForm() {
 
           <div className="space-y-2">
             <Label>Role</Label>
-            <Input
-              value="Sales Staff"
-              disabled
-              className="bg-gray-50"
-            />
+            <Input value="Sales Staff" disabled className="bg-gray-50" />
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading}
-          >
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Setting up..." : "Complete Setup"}
           </Button>
         </form>

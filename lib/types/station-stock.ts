@@ -28,7 +28,7 @@ export interface User {
   stationId: string
   clerkUserId: string
   username: string
-  role: 'staff' | 'manager'
+  role: "staff" | "manager"
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -39,13 +39,13 @@ export interface Product {
   stationId: string
   name: string
   brand?: string
-  type: 'pms' | 'lubricant'
+  type: "pms" | "lubricant"
   viscosity?: string
   containerSize?: string
   currentStock: number
   unitPrice: number
   minThreshold: number
-  unit: 'litres' | 'units'
+  unit: "litres" | "units"
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -57,7 +57,7 @@ export interface Transaction {
   userId: string
   totalAmount: number
   transactionDate: Date
-  syncStatus: 'pending' | 'synced' | 'failed'
+  syncStatus: "pending" | "synced" | "failed"
   items?: TransactionItem[]
   createdAt: Date
 }
@@ -75,7 +75,7 @@ export interface TransactionItem {
 export interface StockMovement {
   id: string
   productId: string
-  movementType: 'sale' | 'adjustment' | 'delivery'
+  movementType: "sale" | "adjustment" | "delivery"
   quantity: number
   previousStock: number
   newStock: number
@@ -142,20 +142,20 @@ export interface CreateUserData {
   stationId: string
   clerkUserId: string
   username: string
-  role: 'staff' | 'manager'
+  role: "staff" | "manager"
 }
 
 export interface CreateProductData {
   stationId: string
   name: string
   brand?: string
-  type: 'pms' | 'lubricant'
+  type: "pms" | "lubricant"
   viscosity?: string
   containerSize?: string
   currentStock: number
   unitPrice: number
   minThreshold: number
-  unit: 'litres' | 'units'
+  unit: "litres" | "units"
 }
 
 export interface UpdateProductData {
@@ -189,7 +189,7 @@ export interface SalesFilters {
   userId?: string
   startDate?: Date
   endDate?: Date
-  productType?: 'pms' | 'lubricant'
+  productType?: "pms" | "lubricant"
 }
 
 export interface DateRange {
@@ -250,6 +250,6 @@ export interface DailyReport {
 export interface StockUpdateData {
   productId: string
   quantity: number
-  movementType: 'sale' | 'adjustment' | 'delivery'
+  movementType: "sale" | "adjustment" | "delivery"
   reference?: string
 }

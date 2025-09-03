@@ -3,7 +3,9 @@ import { customers } from "./customers"
 
 export const stations = pgTable("stations", {
   id: uuid("id").defaultRandom().primaryKey(),
-  customerId: uuid("customer_id").references(() => customers.id).notNull(),
+  customerId: uuid("customer_id")
+    .references(() => customers.id)
+    .notNull(),
   name: text("name").notNull(),
   address: text("address"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

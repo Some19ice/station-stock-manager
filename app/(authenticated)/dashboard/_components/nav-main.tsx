@@ -142,7 +142,7 @@ export function NavMain({
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
                             {subItem.onClick ? (
-                              <button 
+                              <button
                                 onClick={subItem.onClick}
                                 className="w-full text-left"
                               >

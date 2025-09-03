@@ -28,7 +28,8 @@ export function ScrollIndicator({
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight
       const scrollPercent = (scrollTop / docHeight) * 100
 
       setScrollProgress(scrollPercent)
@@ -53,7 +54,7 @@ export function ScrollIndicator({
         <motion.div
           ref={progressRef}
           className={cn(
-            "fixed top-0 left-0 right-0 z-50 h-1 bg-gradient-to-r from-primary via-secondary to-accent",
+            "from-primary via-secondary to-accent fixed top-0 right-0 left-0 z-50 h-1 bg-gradient-to-r",
             className
           )}
           style={{
@@ -71,7 +72,7 @@ export function ScrollIndicator({
         <AnimatePresence>
           {showBackToTopButton && (
             <motion.div
-              className="fixed bottom-6 right-6 z-40"
+              className="fixed right-6 bottom-6 z-40"
               initial={{ opacity: 0, scale: 0.8, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -82,7 +83,7 @@ export function ScrollIndicator({
                 size="icon"
                 className={cn(
                   "h-12 w-12 rounded-full shadow-lg backdrop-blur-sm",
-                  "bg-background/80 border border-border/50",
+                  "bg-background/80 border-border/50 border",
                   "hover:bg-accent/80 hover:scale-110",
                   "transition-all duration-300",
                   showButton ? "block" : "hidden"
@@ -97,7 +98,7 @@ export function ScrollIndicator({
 
       {/* Fade overlay */}
       {showFade && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-32 bg-gradient-to-t from-background/80 to-transparent" />
+        <div className="from-background/80 pointer-events-none fixed inset-x-0 bottom-0 z-30 h-32 bg-gradient-to-t to-transparent" />
       )}
     </>
   )

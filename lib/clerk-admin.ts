@@ -7,7 +7,7 @@ if (!process.env.CLERK_SECRET_KEY) {
 
 // Create Clerk client instance
 const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY,
+  secretKey: process.env.CLERK_SECRET_KEY
 })
 
 export interface CreateUserParams {
@@ -37,7 +37,7 @@ export async function createClerkUser(params: CreateUserParams) {
       firstName: params.firstName || params.username,
       lastName: params.lastName || "",
       skipPasswordRequirement: true, // Allow passwordless creation for invitations
-      skipPasswordChecks: true,
+      skipPasswordChecks: true
     })
 
     return {
@@ -49,7 +49,8 @@ export async function createClerkUser(params: CreateUserParams) {
     console.error("Failed to create Clerk user:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to create user account"
+      error:
+        error instanceof Error ? error.message : "Failed to create user account"
     }
   }
 }
@@ -61,7 +62,8 @@ export async function sendUserInvitation(params: InviteUserParams) {
   try {
     const invitation = await clerkClient.invitations.createInvitation({
       emailAddress: params.email,
-      redirectUrl: params.redirectUrl || `${process.env.NEXT_PUBLIC_APP_URL}/signup`,
+      redirectUrl:
+        params.redirectUrl || `${process.env.NEXT_PUBLIC_APP_URL}/signup`,
       notify: true,
       publicMetadata: {
         ...(params.username && { username: params.username }),
@@ -78,7 +80,8 @@ export async function sendUserInvitation(params: InviteUserParams) {
     console.error("Failed to send invitation:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to send invitation"
+      error:
+        error instanceof Error ? error.message : "Failed to send invitation"
     }
   }
 }
@@ -109,7 +112,10 @@ export async function findClerkUserByEmail(email: string) {
 /**
  * Update user metadata
  */
-export async function updateClerkUserMetadata(userId: string, metadata: Record<string, unknown>) {
+export async function updateClerkUserMetadata(
+  userId: string,
+  metadata: Record<string, unknown>
+) {
   try {
     const user = await clerkClient.users.updateUserMetadata(userId, {
       publicMetadata: metadata
@@ -123,7 +129,10 @@ export async function updateClerkUserMetadata(userId: string, metadata: Record<s
     console.error("Failed to update user metadata:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update user metadata"
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to update user metadata"
     }
   }
 }
@@ -131,11 +140,14 @@ export async function updateClerkUserMetadata(userId: string, metadata: Record<s
 /**
  * Update Clerk user profile (username, name, etc.)
  */
-export async function updateClerkUserProfile(userId: string, profile: {
-  username?: string
-  firstName?: string
-  lastName?: string
-}) {
+export async function updateClerkUserProfile(
+  userId: string,
+  profile: {
+    username?: string
+    firstName?: string
+    lastName?: string
+  }
+) {
   try {
     const user = await clerkClient.users.updateUser(userId, {
       ...(profile.username && { username: profile.username }),
@@ -151,7 +163,8 @@ export async function updateClerkUserProfile(userId: string, profile: {
     console.error("Failed to update user profile:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update user profile"
+      error:
+        error instanceof Error ? error.message : "Failed to update user profile"
     }
   }
 }

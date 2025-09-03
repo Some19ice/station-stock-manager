@@ -58,29 +58,35 @@ export const productsRelations = relations(products, ({ one, many }) => ({
 }))
 
 // Transaction relations
-export const transactionsRelations = relations(transactions, ({ one, many }) => ({
-  station: one(stations, {
-    fields: [transactions.stationId],
-    references: [stations.id]
-  }),
-  user: one(users, {
-    fields: [transactions.userId],
-    references: [users.id]
-  }),
-  items: many(transactionItems)
-}))
+export const transactionsRelations = relations(
+  transactions,
+  ({ one, many }) => ({
+    station: one(stations, {
+      fields: [transactions.stationId],
+      references: [stations.id]
+    }),
+    user: one(users, {
+      fields: [transactions.userId],
+      references: [users.id]
+    }),
+    items: many(transactionItems)
+  })
+)
 
 // Transaction Item relations
-export const transactionItemsRelations = relations(transactionItems, ({ one }) => ({
-  transaction: one(transactions, {
-    fields: [transactionItems.transactionId],
-    references: [transactions.id]
-  }),
-  product: one(products, {
-    fields: [transactionItems.productId],
-    references: [products.id]
+export const transactionItemsRelations = relations(
+  transactionItems,
+  ({ one }) => ({
+    transaction: one(transactions, {
+      fields: [transactionItems.transactionId],
+      references: [transactions.id]
+    }),
+    product: one(products, {
+      fields: [transactionItems.productId],
+      references: [products.id]
+    })
   })
-}))
+)
 
 // Stock Movement relations
 export const stockMovementsRelations = relations(stockMovements, ({ one }) => ({

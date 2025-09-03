@@ -1,6 +1,12 @@
 export const dynamic = "force-dynamic"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
@@ -16,7 +22,7 @@ export default function StaffSummaryPage() {
           </Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Daily Summary</h1>
-        <p className="text-gray-600 mt-2">
+        <p className="mt-2 text-gray-600">
           Personal sales summary will be implemented in task 6
         </p>
       </div>
@@ -29,10 +35,8 @@ export default function StaffSummaryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600">
-            Your daily summary will include:
-          </p>
-          <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600">
+          <p className="text-gray-600">Your daily summary will include:</p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-gray-600">
             <li>Total sales value for today</li>
             <li>Number of transactions completed</li>
             <li>Top products sold</li>
