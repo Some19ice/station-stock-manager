@@ -31,17 +31,13 @@ import {
 import { useDashboardCache } from "@/hooks/use-dashboard-cache"
 import { useRealtimeUpdates } from "@/hooks/use-realtime-updates"
 import { WidgetWrapper } from "@/components/dashboard/widget-wrapper"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   AnimatedPage,
   AnimatedGrid,
   AnimatedText,
   AnimatedLoader
 } from "@/components/ui/animated-page"
-import {
-  AnimatedSkeleton,
-  AnimatedLoadingGrid
-} from "@/components/ui/animated-loading"
+import { LoadingScreen } from "@/components/ui/loading-screen"
 import {
   EnhancedCard,
   EnhancedCardContent
@@ -84,120 +80,33 @@ interface Widget {
 }
 
 // Enhanced loading components with better animations
-function MetricsLoading() {
-  const loadingRef = useRef<HTMLDivElement>(null)
+const MetricsLoading = () => (
+  <div className="animate-pulse space-y-4">
+    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+    <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+  </div>
+)
 
-  useEffect(() => {
-    if (loadingRef.current) {
-      const cards = loadingRef.current.children
-      gsap.fromTo(
-        cards,
-        { opacity: 0, y: 20, scale: 0.95 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: "power3.out"
-        }
-      )
-    }
-  }, [])
+const AlertsLoading = () => (
+  <div className="animate-pulse space-y-3">
+    <div className="h-4 bg-gray-200 rounded"></div>
+    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+  </div>
+)
 
-  return (
-    <div
-      ref={loadingRef}
-      className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4"
-    >
-      {Array.from({ length: 4 }).map((_, i) => (
-        <EnhancedCard key={i} variant="metric" className="overflow-hidden">
-          <EnhancedCardContent className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <AnimatedSkeleton className="h-4 w-20" />
-              <div className="bg-primary/20 h-8 w-8 animate-pulse rounded-full" />
-            </div>
-            <AnimatedSkeleton className="mb-3 h-10 w-24" />
-            <div className="flex items-center justify-between">
-              <AnimatedSkeleton className="h-6 w-16 rounded-full" />
-              <AnimatedSkeleton className="h-5 w-12 rounded" />
-            </div>
-          </EnhancedCardContent>
-        </EnhancedCard>
-      ))}
-    </div>
-  )
-}
-
-function AlertsLoading() {
-  const alertsRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (alertsRef.current) {
-      const items = alertsRef.current.querySelectorAll(".loading-item")
-      gsap.fromTo(
-        items,
-        { opacity: 0, x: -30, scale: 0.9 },
-        {
-          opacity: 1,
-          x: 0,
-          scale: 1,
-          duration: 0.7,
-          stagger: 0.15,
-          ease: "back.out(1.2)"
-        }
-      )
-    }
-  }, [])
-
-  return (
-    <div ref={alertsRef} className="mb-6">
-      <div className="mb-4 flex items-center gap-3">
-        <AnimatedSkeleton className="h-6 w-40" />
-        <div className="bg-destructive/20 h-6 w-16 animate-pulse rounded-full" />
+const ActivityLoading = () => (
+  <div className="animate-pulse space-y-3">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="flex space-x-3">
+        <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        </div>
       </div>
-      <div className="space-y-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <EnhancedCard key={i} variant="alert" className="loading-item">
-            <EnhancedCardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <div className="bg-destructive/20 h-10 w-10 animate-pulse rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <AnimatedSkeleton className="h-4 w-32" />
-                  <AnimatedSkeleton className="h-3 w-24" />
-                </div>
-                <AnimatedSkeleton className="h-8 w-16 rounded" />
-              </div>
-            </EnhancedCardContent>
-          </EnhancedCard>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function ActivityLoading() {
-  return (
-    <div className="space-y-4">
-      <div className="mb-4 flex items-center gap-3">
-        <AnimatedSkeleton className="h-6 w-32" />
-        <div className="bg-chart-2/20 h-6 w-12 animate-pulse rounded-full" />
-      </div>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <EnhancedCard key={i} className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-chart-1/20 h-8 w-8 animate-pulse rounded-full" />
-            <div className="flex-1 space-y-2">
-              <AnimatedSkeleton className="h-4 w-48" />
-              <AnimatedSkeleton className="h-3 w-24" />
-            </div>
-            <AnimatedSkeleton className="h-6 w-16 rounded" />
-          </div>
-        </EnhancedCard>
-      ))}
-    </div>
-  )
-}
+    ))}
+  </div>
+)
 
 export default function EnhancedDashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
@@ -276,37 +185,10 @@ export default function EnhancedDashboardPage() {
 
   if (loading) {
     return (
-      <AnimatedPage>
-        <div className="space-y-8">
-          {/* Enhanced loading header */}
-          <motion.div
-            className="flex items-center justify-between"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="flex items-center gap-4">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              >
-                <Sparkles className="text-primary h-8 w-8" />
-              </motion.div>
-              <div>
-                <AnimatedSkeleton className="mb-2 h-8 w-48" />
-                <AnimatedSkeleton className="h-4 w-32" />
-              </div>
-            </div>
-            <AnimatedSkeleton className="h-10 w-24 rounded" />
-          </motion.div>
-
-          <MetricsLoading />
-          <div className="grid gap-6 lg:grid-cols-2">
-            <AlertsLoading />
-            <ActivityLoading />
-          </div>
-        </div>
-      </AnimatedPage>
+      <LoadingScreen 
+        title="Dashboard Overview"
+        subtitle="Loading your station data..."
+      />
     )
   }
 

@@ -49,7 +49,7 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
-import { SimpleLoading } from "@/components/ui/simple-loading"
+import { LoadingScreen } from "@/components/ui/loading-screen"
 
 interface UserData {
   id: string
@@ -184,9 +184,11 @@ export default function UsersManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <SimpleLoading message="Loading User Management" />
-      </div>
+      <LoadingScreen 
+        title="User Management"
+        subtitle="Loading staff accounts and permissions..."
+        variant="users"
+      />
     )
   }
 

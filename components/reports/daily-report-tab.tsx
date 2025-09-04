@@ -19,7 +19,7 @@ import { toast } from "sonner"
 import { Loader2, Download, Printer } from "lucide-react"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
-import { SimpleLoading } from "@/components/ui/simple-loading"
+import { LoadingScreen } from "@/components/ui/loading-screen"
 
 export function DailyReportTab() {
   const { user } = useStationAuth()
@@ -225,13 +225,15 @@ export function DailyReportTab() {
       </div>
 
       {isLoading && (
-        <AnimatedCard className="text-center">
-          <SimpleLoading message="Generating Daily Report" />
-        </AnimatedCard>
+        <LoadingScreen 
+          title="Generating Daily Report"
+          subtitle="Processing sales data and analytics..."
+          variant="minimal"
+        />
       )}
 
       {reportData && !isLoading && (
-        <div className="space-y-6 print:space-y-4">
+        <div ref={reportRef} className="space-y-6 print:space-y-4">
           <div className="flex items-center justify-between print:hidden">
             <h3 className="text-lg font-semibold">
               Daily Report - {new Date(selectedDate).toLocaleDateString()}

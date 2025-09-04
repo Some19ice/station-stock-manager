@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -23,12 +23,25 @@ import {
   RefreshCw,
   ShoppingCart
 } from "lucide-react"
+import { LoadingScreen } from "@/components/ui/loading-screen"
+import { gsap } from "gsap"
+import { AnimatedCard } from "@/components/ui/animated-card"
 
 export function LowStockAlertsTab() {
   const { user, isLoading: userLoading } = useStationAuth()
   const [alerts, setAlerts] = useState<LowStockAlert[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+
+  // Load saved alerts data after hydration
+  useEffect(() => {
+    const saved = localStorage.getItem("lowStockAlertsData")
+    if (saved) {
+      const parsedData = JSON.parse(saved)
+      setAlerts(parsedData.alerts || [])
+      setLastUpdated(parsedData.lastUpdated ? new Date(parsedData.lastUpdated) : null)
+    }
+  }, [])
 
   const fetchAlerts = useCallback(async () => {
     if (userLoading) return
@@ -45,6 +58,10 @@ export function LowStockAlertsTab() {
       if (result.isSuccess && result.data) {
         setAlerts(result.data)
         setLastUpdated(new Date())
+        localStorage.setItem("lowStockAlertsData", JSON.stringify({
+          alerts: result.data,
+          lastUpdated: new Date()
+        }))
         if (result.data.length > 0) {
           toast.success(`Found ${result.data.length} low stock alert(s)`)
         }
@@ -64,6 +81,94 @@ export function LowStockAlertsTab() {
       fetchAlerts()
     }
   }, [fetchAlerts, userLoading, user?.stationId])
+
+  // AnimatedCard components handle their own animations
+  // No need for parent container animation
+
+  // Animated alert card component
+  const AnimatedAlertCard = ({ 
+    alert, 
+    index 
+  }: { 
+    alert: LowStockAlert
+    index: number 
+  }) => {
+    const itemRef = useRef<HTMLDivElement>(null)
+    const stockStatus = getStockStatus(alert.currentStock, alert.minThreshold)
+
+    useEffect(() => {
+      if (!itemRef.current) return
+
+      gsap.fromTo(
+        itemRef.current,
+        { opacity: 0, y: 20, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.5,
+          delay: index * 0.1,
+          ease: "power2.out"
+        }
+      )
+    }, [index])
+
+    return (
+      <div
+        ref={itemRef}
+        className="rounded-lg border p-4 transition-shadow hover:shadow-md"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h4 className="font-semibold">{alert.productName}</h4>
+            <div className="mt-1 flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {alert.type.toUpperCase()}
+              </Badge>
+              {alert.brand !== "N/A" && (
+                <Badge variant="secondary" className="text-xs">
+                  {alert.brand}
+                </Badge>
+              )}
+            </div>
+          </div>
+          <Badge className={`${stockStatus.color} text-white`}>
+            {stockStatus.text}
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+          <div>
+            <p className="text-muted-foreground">Current Stock</p>
+            <p className="font-medium">
+              {parseFloat(alert.currentStock).toLocaleString()} {alert.unit}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Min Threshold</p>
+            <p className="font-medium">
+              {parseFloat(alert.minThreshold).toLocaleString()} {alert.unit}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Shortage</p>
+            <p className="font-medium text-red-600">
+              {(
+                parseFloat(alert.minThreshold) - parseFloat(alert.currentStock)
+              ).toLocaleString()}{" "}
+              {alert.unit}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Last Updated</p>
+            <p className="font-medium">
+              {new Date(alert.lastUpdated).toLocaleDateString()}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const handlePrint = () => {
     window.print()
@@ -203,12 +308,11 @@ export function LowStockAlertsTab() {
       </div>
 
       {isLoading && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground">Loading stock alerts...</p>
-          </CardContent>
-        </Card>
+        <LoadingScreen 
+          title="Loading Stock Alerts"
+          subtitle="Checking inventory levels..."
+          variant="minimal"
+        />
       )}
 
       {!isLoading && alerts.length === 0 && (
@@ -237,49 +341,36 @@ export function LowStockAlertsTab() {
       )}
 
       {/* Alerts List */}
-      {alerts.length > 0 && (
+      {alerts.length > 0 && !isLoading && (
         <div className="space-y-6 print:space-y-4">
           {criticalAlerts.length > 0 && (
-            <Card className="border-red-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-red-600">
-                  <AlertTriangle className="h-5 w-5" />
-                  Critical - Out of Stock
-                </CardTitle>
-                <CardDescription>
-                  These products require immediate restocking
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            <AnimatedCard 
+              title="🚨 Critical - Out of Stock"
+              description="These products require immediate restocking"
+              hoverEffect={true}
+              className="border-red-200"
+            >
                 <div className="space-y-3">
-                  {criticalAlerts.map(alert => (
-                    <AlertCard key={alert.productId} alert={alert} />
+                  {criticalAlerts.map((alert, index) => (
+                    <AnimatedAlertCard key={alert.productId} alert={alert} index={index} />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+            </AnimatedCard>
           )}
 
           {lowStockAlerts.length > 0 && (
-            <Card className="border-yellow-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-yellow-600">
-                  <Package className="h-5 w-5" />
-                  Low Stock Warnings
-                </CardTitle>
-                <CardDescription>
-                  These products are below minimum threshold and should be
-                  restocked soon
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            <AnimatedCard
+              title="⚠️ Low Stock Warnings"
+              description="These products are below minimum threshold and should be restocked soon"
+              hoverEffect={true}
+              className="border-yellow-200"
+            >
                 <div className="space-y-3">
-                  {lowStockAlerts.map(alert => (
-                    <AlertCard key={alert.productId} alert={alert} />
+                  {lowStockAlerts.map((alert, index) => (
+                    <AnimatedAlertCard key={alert.productId} alert={alert} index={index} />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+            </AnimatedCard>
           )}
         </div>
       )}

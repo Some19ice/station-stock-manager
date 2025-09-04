@@ -14,14 +14,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint:fix` - Run ESLint with auto-fix
 - `npm run types` - Run TypeScript type checking
 - `npm run format:write` - Format code with Prettier
+- `npm run format:check` - Check code formatting with Prettier
 - `npm run clean` - Run both lint:fix and format:write
+- `npm run analyze` - Build with bundle analysis
 
 ### Database
-- `npx drizzle-kit push` - Push schema changes to database
+- `npm run db:local` - Start local Supabase instance
 - `npx drizzle-kit generate` - Generate migration files
 - `npx drizzle-kit migrate` - Run migrations
-- `npx bun db/seed` - Seed database
-- `npx supabase start` - Start local Supabase instance
+- `npx drizzle-kit push` - Push schema changes directly to database
+- `npm run db:seed` - Seed database with initial data
 
 ### Testing
 - `npm run test` - Run all tests (unit + e2e)
@@ -33,31 +35,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-This is a Next.js 15 SaaS template using the App Router with clear separation between authenticated and unauthenticated routes.
+This is a **Station Stock Manager** - a comprehensive fuel inventory management system designed for gas stations. Built with Next.js 15 using the App Router with role-based authentication and dashboards.
+
+### Project Purpose
+A fuel inventory management application that provides:
+- Real-time inventory tracking for fuel and products
+- Role-based dashboards for sales staff and managers
+- Sales transaction recording and management
+- Stock movement monitoring and low stock alerts
+- Multi-station support with comprehensive reporting
+- Staff management and user access control
 
 ### Route Structure
 - `/app/(unauthenticated)` - Public routes
-  - `(marketing)` - Landing pages, pricing, features
-  - `(auth)` - Login and signup flows
+  - `(marketing)` - Landing pages and marketing content
+  - `setup-profile` - Initial user profile setup
+  - `confirmation` - Account confirmation flows
+  - `unauthorized` - Access denied pages
 - `/app/(authenticated)` - Protected routes requiring Clerk auth
-  - `dashboard` - Main application with account, billing, support sections
-- `/app/api` - API routes including Stripe webhook handler
+  - `dashboard` - Manager dashboard with analytics, inventory, reports, user management
+  - `staff` - Sales staff interface for transactions and daily summaries
+- `/app/api` - API routes for server-side operations
 
-### Key Patterns
-- **Server Actions** in `/actions` for data mutations (customers, Stripe operations)
+### Key Features & Patterns
+- **Role-Based Access**: Separate interfaces for sales staff and managers
+- **Server Actions** in `/actions` for data mutations (sales, inventory, reports, user management)
 - **Database Schema** in `/db/schema` using Drizzle ORM with PostgreSQL
-- **UI Components** in `/components/ui` from Shadcn UI library
-- **Authentication** handled by Clerk middleware with protected route groups
-- **Payments** integrated via Stripe with webhook handling
+  - Stations, products (fuel types, accessories), users, transactions
+  - Stock movements, suppliers, customers, transaction items
+- **UI Components** from Shadcn UI library with custom animations (Framer Motion, GSAP)
+- **Authentication** handled by Clerk middleware with role-based route protection
+- **Real-time Features** for inventory tracking and sales monitoring
 
 ### Data Flow
-1. Authentication state managed by Clerk (`@clerk/nextjs`)
-2. Customer data stored in PostgreSQL via Drizzle ORM
-3. Stripe integration for subscription management
-4. Server actions handle all data mutations with proper auth checks
+1. Authentication and role-based access managed by Clerk (`@clerk/nextjs`)
+2. Station and inventory data stored in PostgreSQL via Drizzle ORM
+3. Sales transactions recorded with real-time stock updates
+4. Server actions handle all data mutations with proper auth and role checks
+5. Dashboard analytics computed from transaction and inventory data
+
+### User Roles
+- **Sales Staff**: Record sales, view daily summaries, access quick sale interface
+- **Manager**: Full dashboard access, inventory management, reports, staff management
 
 ### Environment Variables Required
+- `DATABASE_URL` - PostgreSQL database connection string
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key
 - `CLERK_SECRET_KEY` - Clerk secret key
-- `STRIPE_SECRET_KEY` - Stripe secret key
-- Database connection handled by Supabase CLI
+- `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login` - Clerk sign in URL
+- `NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup` - Clerk sign up URL
+
+### Testing Setup
+- **Unit Tests**: Jest with React Testing Library for components and utilities
+- **E2E Tests**: Playwright for full application workflow testing
+- **Coverage**: Configured for app/, lib/, db/, actions/, components/, hooks/ directories

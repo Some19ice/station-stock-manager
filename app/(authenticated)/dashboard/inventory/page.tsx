@@ -32,7 +32,7 @@ import {
   List
 } from "lucide-react"
 import { gsap } from "gsap"
-import { SimpleLoading } from "@/components/ui/simple-loading"
+import { LoadingScreen } from "@/components/ui/loading-screen"
 import { InventoryItem } from "@/lib/types/station-stock"
 
 type DialogMode =
@@ -151,9 +151,11 @@ export default function InventoryPage() {
 
   if (!station) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <SimpleLoading message="Loading Inventory Management" />
-      </div>
+      <LoadingScreen 
+        title="Inventory Management"
+        subtitle="Loading stock levels and product data..."
+        variant="inventory"
+      />
     )
   }
 

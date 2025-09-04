@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -24,6 +24,9 @@ import {
   TrendingUp,
   BarChart3
 } from "lucide-react"
+import { LoadingScreen } from "@/components/ui/loading-screen"
+import { gsap } from "gsap"
+import { AnimatedCard } from "@/components/ui/animated-card"
 
 interface WeeklyReportData {
   dailyBreakdown: Array<{
@@ -56,8 +59,10 @@ interface MonthlyReportData {
 }
 
 export function WeeklyMonthlyTab() {
-  const { user } = useStationAuth()
+  const { user, isLoading: userLoading } = useStationAuth()
   const [activeTab, setActiveTab] = useState("weekly")
+  const weeklyReportRef = useRef<HTMLDivElement>(null)
+  const monthlyReportRef = useRef<HTMLDivElement>(null)
 
   // Weekly report state
   const [weeklyStartDate, setWeeklyStartDate] = useState(
@@ -81,9 +86,88 @@ export function WeeklyMonthlyTab() {
   const [monthlyData, setMonthlyData] = useState<MonthlyReportData | null>(null)
   const [monthlyLoading, setMonthlyLoading] = useState(false)
 
+  // Load saved report data after hydration
+  useEffect(() => {
+    const savedWeekly = localStorage.getItem("weeklyReportData")
+    if (savedWeekly) {
+      setWeeklyData(JSON.parse(savedWeekly))
+    }
+    const savedMonthly = localStorage.getItem("monthlyReportData")
+    if (savedMonthly) {
+      setMonthlyData(JSON.parse(savedMonthly))
+    }
+  }, [])
+
+  // Animate weekly report when it appears
+  useEffect(() => {
+    if (weeklyData && weeklyReportRef.current && !weeklyLoading) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        if (weeklyReportRef.current) {
+          const tl = gsap.timeline()
+          
+          tl.fromTo(
+            weeklyReportRef.current,
+            { opacity: 0, y: 20 },
+            { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+          ).fromTo(
+            weeklyReportRef.current.children,
+            { opacity: 0, y: 30 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.1,
+              ease: "power2.out"
+            },
+            "-=0.3"
+          )
+        }
+      }, 50)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [weeklyData, weeklyLoading])
+
+  // Animate monthly report when it appears
+  useEffect(() => {
+    if (monthlyData && monthlyReportRef.current && !monthlyLoading) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        if (monthlyReportRef.current) {
+          const tl = gsap.timeline()
+          
+          tl.fromTo(
+            monthlyReportRef.current,
+            { opacity: 0, y: 20 },
+            { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+          ).fromTo(
+            monthlyReportRef.current.children,
+            { opacity: 0, y: 30 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.1,
+              ease: "power2.out"
+            },
+            "-=0.3"
+          )
+        }
+      }, 50)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [monthlyData, monthlyLoading])
+
   const handleGenerateWeeklyReport = async () => {
+    if (userLoading) {
+      toast.error("Please wait, loading user information...")
+      return
+    }
+    
     if (!user?.stationId) {
-      toast.error("Station information not found")
+      toast.error("Station information not found. Please refresh the page.")
       return
     }
 
@@ -114,6 +198,7 @@ export function WeeklyMonthlyTab() {
           }
         }
         setWeeklyData(transformedData)
+        localStorage.setItem("weeklyReportData", JSON.stringify(transformedData))
         toast.success("Weekly report generated successfully")
       } else {
         toast.error(result.error || "Failed to generate weekly report")
@@ -126,8 +211,13 @@ export function WeeklyMonthlyTab() {
   }
 
   const handleGenerateMonthlyReport = async () => {
+    if (userLoading) {
+      toast.error("Please wait, loading user information...")
+      return
+    }
+    
     if (!user?.stationId) {
-      toast.error("Station information not found")
+      toast.error("Station information not found. Please refresh the page.")
       return
     }
 
@@ -163,6 +253,7 @@ export function WeeklyMonthlyTab() {
           }))
         }
         setMonthlyData(transformedData)
+        localStorage.setItem("monthlyReportData", JSON.stringify(transformedData))
         toast.success("Monthly report generated successfully")
       } else {
         toast.error(result.error || "Failed to generate monthly report")
@@ -221,6 +312,192 @@ export function WeeklyMonthlyTab() {
     window.URL.revokeObjectURL(url)
   }
 
+  // Animated day item component for Daily Breakdown
+  const AnimatedDayItem = ({
+    day,
+    index
+  }: {
+    day: any
+    index: number
+  }) => {
+    const itemRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      if (!itemRef.current) return
+
+      gsap.fromTo(
+        itemRef.current,
+        { opacity: 0, y: 20, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.5,
+          delay: index * 0.1,
+          ease: "power2.out"
+        }
+      )
+    }, [index])
+
+    return (
+      <div
+        ref={itemRef}
+        className="flex items-center justify-between rounded-lg border p-3 transition-shadow hover:shadow-md"
+      >
+        <div>
+          <p className="font-medium">
+            {new Date(day.date).toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric"
+            })}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {day.transactionCount} transactions
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-green-600">
+            {formatCurrency(day.totalSales)}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {day.transactionCount > 0
+              ? formatCurrency(
+                  (
+                    parseFloat(day.totalSales) /
+                    day.transactionCount
+                  ).toFixed(2)
+                )
+              : "₦0"}{" "}
+            avg
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Animated week item component for Weekly Breakdown
+  const AnimatedWeekItem = ({
+    week,
+    index
+  }: {
+    week: any
+    index: number
+  }) => {
+    const itemRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      if (!itemRef.current) return
+
+      gsap.fromTo(
+        itemRef.current,
+        { opacity: 0, y: 20, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.5,
+          delay: index * 0.1,
+          ease: "power2.out"
+        }
+      )
+    }, [index])
+
+    return (
+      <div
+        ref={itemRef}
+        className="flex items-center justify-between rounded-lg border p-3 transition-shadow hover:shadow-md"
+      >
+        <div>
+          <p className="font-medium">Week {week.week}</p>
+          <p className="text-muted-foreground text-sm">
+            {week.transactionCount} transactions
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-green-600">
+            {formatCurrency(week.totalSales)}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {week.transactionCount > 0
+              ? formatCurrency(
+                  (
+                    parseFloat(week.totalSales) /
+                    week.transactionCount
+                  ).toFixed(2)
+                )
+              : "₦0"}{" "}
+            avg
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Animated product item component for Product Performance
+  const AnimatedProductItem = ({
+    product,
+    index
+  }: {
+    product: any
+    index: number
+  }) => {
+    const itemRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      if (!itemRef.current) return
+
+      gsap.fromTo(
+        itemRef.current,
+        { opacity: 0, y: 20, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.5,
+          delay: index * 0.1,
+          ease: "power2.out"
+        }
+      )
+    }, [index])
+
+    return (
+      <div
+        ref={itemRef}
+        className="flex items-center justify-between rounded-lg border p-3 transition-shadow hover:shadow-md"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100">
+            <span className="text-xs font-semibold text-blue-600">
+              {index + 1}
+            </span>
+          </div>
+          <div>
+            <p className="font-medium">
+              {product.productName}
+            </p>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {product.type.toUpperCase()}
+              </Badge>
+              <span className="text-muted-foreground text-sm">
+                {parseFloat(
+                  product.totalQuantity
+                ).toLocaleString()}{" "}
+                units
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-green-600">
+            {formatCurrency(product.totalRevenue)}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -256,7 +533,7 @@ export function WeeklyMonthlyTab() {
               <div className="flex items-end">
                 <Button
                   onClick={handleGenerateWeeklyReport}
-                  disabled={weeklyLoading}
+                  disabled={weeklyLoading || userLoading}
                   className="w-full"
                 >
                   {weeklyLoading ? (
@@ -274,9 +551,18 @@ export function WeeklyMonthlyTab() {
               </div>
             </div>
 
+            {/* Weekly Loading State */}
+            {weeklyLoading && (
+              <LoadingScreen 
+                title="Generating Weekly Report"
+                subtitle="Processing weekly sales data..."
+                variant="minimal"
+              />
+            )}
+
             {/* Weekly Report Display */}
-            {weeklyData && (
-              <div className="space-y-6 print:space-y-4">
+            {weeklyData && !weeklyLoading && (
+              <div ref={weeklyReportRef} className="space-y-6 print:space-y-4">
                 <div className="flex items-center justify-between print:hidden">
                   <h3 className="text-lg font-semibold">
                     Weekly Report (
@@ -301,97 +587,59 @@ export function WeeklyMonthlyTab() {
 
                 {/* Weekly Summary */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                        <p className="text-muted-foreground text-sm">
-                          Total Sales
-                        </p>
-                      </div>
-                      <p className="text-2xl font-bold text-green-600">
-                        {formatCurrency(weeklyData.weekTotals.totalSales)}
+                  <AnimatedCard hoverEffect={true} className="p-4">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      <p className="text-muted-foreground text-sm">
+                        Total Sales
                       </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4 text-blue-600" />
-                        <p className="text-muted-foreground text-sm">
-                          Total Transactions
-                        </p>
-                      </div>
-                      <p className="text-2xl font-bold">
-                        {weeklyData.weekTotals.totalTransactions}
+                    </div>
+                    <p className="text-2xl font-bold text-green-600">
+                      {formatCurrency(weeklyData.weekTotals.totalSales)}
+                    </p>
+                  </AnimatedCard>
+                  <AnimatedCard hoverEffect={true} className="p-4">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-blue-600" />
+                      <p className="text-muted-foreground text-sm">
+                        Total Transactions
                       </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-purple-600" />
-                        <p className="text-muted-foreground text-sm">
-                          Daily Average
-                        </p>
-                      </div>
-                      <p className="text-2xl font-bold">
-                        {formatCurrency(
-                          (
-                            parseFloat(weeklyData.weekTotals.totalSales) /
-                            weeklyData.dailyBreakdown.length
-                          ).toFixed(2)
-                        )}
+                    </div>
+                    <p className="text-2xl font-bold">
+                      {weeklyData.weekTotals.totalTransactions}
+                    </p>
+                  </AnimatedCard>
+                  <AnimatedCard hoverEffect={true} className="p-4">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-purple-600" />
+                      <p className="text-muted-foreground text-sm">
+                        Daily Average
                       </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <p className="text-2xl font-bold">
+                      {formatCurrency(
+                        (
+                          parseFloat(weeklyData.weekTotals.totalSales) /
+                          weeklyData.dailyBreakdown.length
+                        ).toFixed(2)
+                      )}
+                    </p>
+                  </AnimatedCard>
                 </div>
 
                 {/* Daily Breakdown */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Daily Breakdown</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <AnimatedCard title="Daily Breakdown" hoverEffect={true}>
                     <div className="space-y-3">
                       {weeklyData.dailyBreakdown.map((day, index) => (
-                        <div
+                        <AnimatedDayItem
                           key={index}
-                          className="flex items-center justify-between rounded-lg border p-3"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              {new Date(day.date).toLocaleDateString("en-US", {
-                                weekday: "long",
-                                month: "short",
-                                day: "numeric"
-                              })}
-                            </p>
-                            <p className="text-muted-foreground text-sm">
-                              {day.transactionCount} transactions
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-green-600">
-                              {formatCurrency(day.totalSales)}
-                            </p>
-                            <p className="text-muted-foreground text-sm">
-                              {day.transactionCount > 0
-                                ? formatCurrency(
-                                    (
-                                      parseFloat(day.totalSales) /
-                                      day.transactionCount
-                                    ).toFixed(2)
-                                  )
-                                : "₦0"}{" "}
-                              avg
-                            </p>
-                          </div>
-                        </div>
+                          day={day}
+                          index={index}
+                        />
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  
+                </AnimatedCard>
               </div>
             )}
           </div>
@@ -424,7 +672,7 @@ export function WeeklyMonthlyTab() {
               <div className="flex items-end">
                 <Button
                   onClick={handleGenerateMonthlyReport}
-                  disabled={monthlyLoading}
+                  disabled={monthlyLoading || userLoading}
                   className="w-full"
                 >
                   {monthlyLoading ? (
@@ -442,9 +690,18 @@ export function WeeklyMonthlyTab() {
               </div>
             </div>
 
+            {/* Monthly Loading State */}
+            {monthlyLoading && (
+              <LoadingScreen 
+                title="Generating Monthly Report"
+                subtitle="Processing monthly sales data and analytics..."
+                variant="minimal"
+              />
+            )}
+
             {/* Monthly Report Display */}
-            {monthlyData && (
-              <div className="space-y-6 print:space-y-4">
+            {monthlyData && !monthlyLoading && (
+              <div ref={monthlyReportRef} className="space-y-6 print:space-y-4">
                 <div className="flex items-center justify-between print:hidden">
                   <h3 className="text-lg font-semibold">
                     Monthly Report (
@@ -469,8 +726,8 @@ export function WeeklyMonthlyTab() {
 
                 {/* Monthly Summary */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <Card>
-                    <CardContent className="p-4">
+                  <AnimatedCard hoverEffect={true}>
+                    
                       <div className="flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-green-600" />
                         <p className="text-muted-foreground text-sm">
@@ -480,10 +737,10 @@ export function WeeklyMonthlyTab() {
                       <p className="text-2xl font-bold text-green-600">
                         {formatCurrency(monthlyData.monthTotals.totalSales)}
                       </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
+                    
+                  </AnimatedCard>
+                  <AnimatedCard hoverEffect={true}>
+                    
                       <div className="flex items-center gap-2">
                         <BarChart3 className="h-4 w-4 text-blue-600" />
                         <p className="text-muted-foreground text-sm">
@@ -493,10 +750,10 @@ export function WeeklyMonthlyTab() {
                       <p className="text-2xl font-bold">
                         {monthlyData.monthTotals.totalTransactions}
                       </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
+                    
+                  </AnimatedCard>
+                  <AnimatedCard hoverEffect={true}>
+                    
                       <div className="flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-purple-600" />
                         <p className="text-muted-foreground text-sm">
@@ -511,100 +768,44 @@ export function WeeklyMonthlyTab() {
                           ).toFixed(2)
                         )}
                       </p>
-                    </CardContent>
-                  </Card>
+                    
+                  </AnimatedCard>
                 </div>
 
                 {/* Weekly Breakdown */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Weekly Breakdown</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <AnimatedCard title="Weekly Breakdown" hoverEffect={true}>
                     <div className="space-y-3">
                       {monthlyData.weeklyBreakdown.map((week, index) => (
-                        <div
+                        <AnimatedWeekItem
                           key={index}
-                          className="flex items-center justify-between rounded-lg border p-3"
-                        >
-                          <div>
-                            <p className="font-medium">Week {week.week}</p>
-                            <p className="text-muted-foreground text-sm">
-                              {week.transactionCount} transactions
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-green-600">
-                              {formatCurrency(week.totalSales)}
-                            </p>
-                            <p className="text-muted-foreground text-sm">
-                              {week.transactionCount > 0
-                                ? formatCurrency(
-                                    (
-                                      parseFloat(week.totalSales) /
-                                      week.transactionCount
-                                    ).toFixed(2)
-                                  )
-                                : "₦0"}{" "}
-                              avg
-                            </p>
-                          </div>
-                        </div>
+                          week={week}
+                          index={index}
+                        />
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  
+                </AnimatedCard>
 
                 {/* Product Performance */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Product Performance</CardTitle>
-                    <CardDescription>
-                      Top performing products for the month
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                <AnimatedCard 
+                  title="Product Performance" 
+                  description="Top performing products for the month"
+                  hoverEffect={true}
+                >
+                  
                     <div className="space-y-3">
                       {monthlyData.productPerformance
                         .slice(0, 10)
                         .map((product, index) => (
-                          <div
+                          <AnimatedProductItem
                             key={index}
-                            className="flex items-center justify-between rounded-lg border p-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100">
-                                <span className="text-xs font-semibold text-blue-600">
-                                  {index + 1}
-                                </span>
-                              </div>
-                              <div>
-                                <p className="font-medium">
-                                  {product.productName}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    {product.type.toUpperCase()}
-                                  </Badge>
-                                  <span className="text-muted-foreground text-sm">
-                                    {parseFloat(
-                                      product.totalQuantity
-                                    ).toLocaleString()}{" "}
-                                    units
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-green-600">
-                                {formatCurrency(product.totalRevenue)}
-                              </p>
-                            </div>
-                          </div>
+                            product={product}
+                            index={index}
+                          />
                         ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  
+                </AnimatedCard>
               </div>
             )}
           </div>

@@ -21,7 +21,7 @@ import { toast } from "sonner"
 import { Loader2, Download, Printer, TrendingUp, Users } from "lucide-react"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
-import { SimpleLoading } from "@/components/ui/simple-loading"
+import { LoadingScreen } from "@/components/ui/loading-screen"
 
 export function StaffPerformanceTab() {
   const { user } = useStationAuth()
@@ -34,6 +34,14 @@ export function StaffPerformanceTab() {
   >([])
   const [isLoading, setIsLoading] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
+
+  // Load saved report data after hydration
+  useEffect(() => {
+    const saved = localStorage.getItem("staffPerformanceData")
+    if (saved) {
+      setPerformanceData(JSON.parse(saved))
+    }
+  }, [])
 
   // Animate performance data when it appears
   useEffect(() => {
@@ -80,6 +88,7 @@ export function StaffPerformanceTab() {
 
       if (result.isSuccess && result.data) {
         setPerformanceData(result.data)
+        localStorage.setItem("staffPerformanceData", JSON.stringify(result.data))
         toast.success("Staff performance report generated successfully")
       } else {
         toast.error(result.error || "Failed to generate report")
@@ -179,9 +188,11 @@ export function StaffPerformanceTab() {
       </div>
 
       {isLoading && (
-        <AnimatedCard className="text-center">
-          <SimpleLoading message="Generating Staff Performance Report" />
-        </AnimatedCard>
+        <LoadingScreen 
+          title="Generating Staff Performance Report"
+          subtitle="Analyzing staff sales data and metrics..."
+          variant="minimal"
+        />
       )}
 
       {performanceData.length > 0 && !isLoading && (
