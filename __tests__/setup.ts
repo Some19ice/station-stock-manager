@@ -53,7 +53,7 @@ jest.mock('react', () => ({
 // Suppress React warnings in tests
 const originalError = console.error
 beforeEach(() => {
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     if (
       typeof args[0] === 'string' &&
       args[0].includes('Warning: ReactDOM.render is no longer supported')
