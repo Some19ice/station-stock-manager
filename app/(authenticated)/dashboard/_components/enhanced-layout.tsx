@@ -57,9 +57,12 @@ export default function EnhancedDashboardLayout({
     const savedState = getCookieValue("sidebar_state")
     setDefaultOpen(savedState === null ? true : savedState === "true")
 
+    // Create timeline for proper cleanup
+    const tl = gsap.timeline()
+
     // Header entrance animation
     if (headerRef.current) {
-      gsap.fromTo(
+      tl.fromTo(
         headerRef.current,
         { y: -20, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8, ease: "power2.out", delay: 0.1 }
@@ -68,10 +71,11 @@ export default function EnhancedDashboardLayout({
 
     // Content entrance animation
     if (contentRef.current) {
-      gsap.fromTo(
+      tl.fromTo(
         contentRef.current,
         { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: "power2.out", delay: 0.2 }
+        { y: 0, opacity: 1, duration: 0.8, ease: "power2.out", delay: 0.2 },
+        "-=0.6"
       )
     }
 
@@ -81,7 +85,11 @@ export default function EnhancedDashboardLayout({
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      tl.kill() // Cleanup GSAP timeline
+    }
   }, [])
 
   const getBreadcrumbs = () => {
