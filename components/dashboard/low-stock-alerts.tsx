@@ -1,3 +1,4 @@
+import React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,7 +20,7 @@ interface LowStockAlertsProps {
   alerts: LowStockAlert[]
 }
 
-export const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ alerts }) => {
+export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockAlerts({ alerts }) {
   const [hoveredAlert, setHoveredAlert] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
@@ -453,4 +454,4 @@ export const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ alerts }) => {
       )}
     </div>
   )
-}
+})

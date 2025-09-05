@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic"
 
+import React from "react"
 import { validateUserRole, getCurrentUserProfile } from "@/actions/auth"
 import {
   getDashboardMetrics,
@@ -69,21 +70,23 @@ interface Widget {
 }
 
 // Enhanced loading components with better animations
-const MetricsLoading = () => (
+const MetricsLoading = React.memo(() => (
   <div className="animate-pulse space-y-4">
     <div className="h-4 w-3/4 rounded bg-gray-200"></div>
     <div className="h-8 w-1/2 rounded bg-gray-200"></div>
   </div>
-)
+))
+MetricsLoading.displayName = 'MetricsLoading'
 
-const AlertsLoading = () => (
+const AlertsLoading = React.memo(() => (
   <div className="animate-pulse space-y-3">
     <div className="h-4 rounded bg-gray-200"></div>
     <div className="h-4 w-5/6 rounded bg-gray-200"></div>
   </div>
-)
+))
+AlertsLoading.displayName = 'AlertsLoading'
 
-const ActivityLoading = () => (
+const ActivityLoading = React.memo(() => (
   <div className="animate-pulse space-y-3">
     {[...Array(3)].map((_, i) => (
       <div key={i} className="flex space-x-3">
@@ -95,7 +98,8 @@ const ActivityLoading = () => (
       </div>
     ))}
   </div>
-)
+))
+ActivityLoading.displayName = 'ActivityLoading'
 
 export default function EnhancedDashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
@@ -105,8 +109,10 @@ export default function EnhancedDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [isDataLoading, setIsDataLoading] = useState(false)
   const pageRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const mountedRef = useRef(true)
 
   // Enhanced cache and real-time updates
   const { invalidate: clearCache } = useDashboardCache(
@@ -125,58 +131,83 @@ export default function EnhancedDashboardPage() {
   )
   
   loadDashboardDataRef.current = async (useCache = true, signal?: AbortSignal) => {
+    // Prevent multiple simultaneous requests
+    if (isDataLoading && !refreshing) return
+    
     try {
-      if (signal?.aborted) return
+      if (signal?.aborted || !mountedRef.current) return
 
+      setIsDataLoading(true)
       setError(null)
 
-      // Load user profile
+      // Load user profile first - critical for authorization
       const profileResult = await getCurrentUserProfile()
-      if (signal?.aborted) return
+      if (signal?.aborted || !mountedRef.current) return
 
       if (!profileResult.isSuccess) {
         throw new Error("Failed to load user profile")
       }
-      if (profileResult.data && !signal?.aborted) {
+      
+      // Only update state if request wasn't cancelled and component is mounted
+      if (profileResult.data && !signal?.aborted && mountedRef.current) {
         setUserProfile(profileResult.data)
       }
 
-      // Load dashboard data in parallel
-      const [metricsResult, alertsResult, activitiesResult] =
-        await Promise.all([
-          getDashboardMetrics(),
-          getLowStockAlerts(),
-          getRecentTransactions()
-        ])
+      // Load dashboard data in parallel with individual error handling
+      const dataPromises = [
+        getDashboardMetrics().catch(err => ({ isSuccess: false, error: err.message })),
+        getLowStockAlerts().catch(err => ({ isSuccess: false, error: err.message })),
+        getRecentTransactions().catch(err => ({ isSuccess: false, error: err.message }))
+      ]
 
-      if (signal?.aborted) return
+      const [metricsResult, alertsResult, activitiesResult] = await Promise.all(dataPromises)
+      
+      // Check for cancellation after all requests complete
+      if (signal?.aborted || !mountedRef.current) return
 
+      // Update state atomically to prevent partial updates
+      const updates: (() => void)[] = []
+      
       if (metricsResult.isSuccess && metricsResult.data) {
-        setMetrics(metricsResult.data)
+        updates.push(() => setMetrics(metricsResult.data))
       }
 
       if (alertsResult.isSuccess && alertsResult.data) {
-        setAlerts(alertsResult.data)
+        updates.push(() => setAlerts(alertsResult.data))
       }
 
       if (activitiesResult.isSuccess && activitiesResult.data) {
-        setActivities(activitiesResult.data)
+        updates.push(() => setActivities(activitiesResult.data))
       }
+
+      // Apply all updates if not cancelled and component is mounted
+      if (!signal?.aborted && mountedRef.current) {
+        updates.forEach(update => update())
+      }
+
     } catch (err) {
-      if (signal?.aborted) return
+      if (signal?.aborted || !mountedRef.current) return
       setError(
         err instanceof Error ? err.message : "Failed to load dashboard"
       )
     } finally {
-      if (!signal?.aborted) {
+      if (!signal?.aborted && mountedRef.current) {
         setLoading(false)
         setRefreshing(false)
+        setIsDataLoading(false)
       }
     }
   }
 
   const loadDashboardData = useCallback((useCache = true, signal?: AbortSignal) => {
     return loadDashboardDataRef.current?.(useCache, signal) || Promise.resolve()
+  }, [])
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
   }, [])
 
   useEffect(() => {
@@ -196,17 +227,20 @@ export default function EnhancedDashboardPage() {
   }, [loadDashboardData])
 
   useEffect(() => {
-    // Page entrance animation
-    if (pageRef.current) {
+    // Page entrance animation - only run once when component mounts
+    if (pageRef.current && !loading) {
       gsap.fromTo(
         pageRef.current,
         { opacity: 0, y: 30 },
         { opacity: 1, y: 0, duration: 1, ease: "power2.out" }
       )
     }
-  }, [])
+  }, [loading]) // Only depend on loading state
 
   const handleRefresh = async () => {
+    // Prevent multiple refresh requests
+    if (isDataLoading) return
+    
     setRefreshing(true)
     clearCache()
     

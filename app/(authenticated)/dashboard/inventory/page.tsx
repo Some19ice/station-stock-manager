@@ -91,17 +91,22 @@ export default function InventoryPage() {
           { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" },
           "-=0.2"
         )
+      
+      return () => tl.kill()
     }
   }, [isLoading])
 
   // Animate tab content changes
   useEffect(() => {
     if (!isLoading && contentRef.current) {
-      gsap.fromTo(
+      const tl = gsap.timeline()
+      tl.fromTo(
         contentRef.current,
         { opacity: 0, x: 20 },
         { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }
       )
+      
+      return () => tl.kill()
     }
   }, [activeTab, isLoading])
 

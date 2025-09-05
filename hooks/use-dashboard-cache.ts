@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 
 interface CacheEntry<T> {
   data: T
@@ -72,59 +72,98 @@ export const useDashboardCache = <T>(
   const [error, setError] = useState<Error | null>(null)
   const [isValidating, setIsValidating] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
+  
+  // Use refs to avoid stale closures
+  const fetcherRef = useRef(fetcher)
+  const optionsRef = useRef(options)
+  const mountedRef = useRef(true)
+  
+  // Update refs when props change
+  fetcherRef.current = fetcher
+  optionsRef.current = options
 
-  const fetchData = async (showLoading = true, attempt = 0) => {
+  const fetchData = useCallback(async (showLoading = true, attempt = 0) => {
+    if (!mountedRef.current) return
+    
     try {
       if (showLoading) setIsLoading(true)
       setIsValidating(true)
       setError(null)
       
-      const result = await fetcher()
+      const result = await fetcherRef.current()
+      
+      if (!mountedRef.current) return
+      
       dashboardCache.set(key, result, ttl)
       setData(result)
       setRetryCount(0)
     } catch (err) {
+      if (!mountedRef.current) return
+      
       const error = err instanceof Error ? err : new Error('Unknown error')
       
       if (attempt < maxRetries) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000)
         setTimeout(() => {
-          setRetryCount(attempt + 1)
-          fetchData(false, attempt + 1)
+          if (mountedRef.current) {
+            setRetryCount(attempt + 1)
+            fetchData(false, attempt + 1)
+          }
         }, delay)
       } else {
         setError(error)
       }
     } finally {
-      setIsLoading(false)
-      setIsValidating(false)
+      if (mountedRef.current) {
+        setIsLoading(false)
+        setIsValidating(false)
+      }
     }
-  }
+  }, [key, ttl, maxRetries])
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     setRetryCount(0)
     fetchData(false)
-  }
+  }, [fetchData])
 
+  const invalidate = useCallback(() => {
+    dashboardCache.invalidate(key)
+    setData(null)
+  }, [key])
+
+  // Initial data fetch
   useEffect(() => {
     if (!data) {
       fetchData()
     }
+  }, [data, fetchData])
 
-    if (refreshInterval > 0) {
-      const interval = setInterval(() => {
-        if (dashboardCache.isStale(key)) {
-          if (staleWhileRevalidate && data) {
-            fetchData(false)
-          } else {
-            fetchData()
-          }
+  // Interval-based refresh
+  useEffect(() => {
+    if (refreshInterval <= 0) return
+
+    const interval = setInterval(() => {
+      if (!mountedRef.current) return
+      
+      if (dashboardCache.isStale(key)) {
+        if (staleWhileRevalidate && data) {
+          fetchData(false)
+        } else {
+          fetchData()
         }
-      }, refreshInterval)
+      }
+    }, refreshInterval)
 
-      return () => clearInterval(interval)
+    return () => clearInterval(interval)
+  }, [key, refreshInterval, staleWhileRevalidate, data, fetchData])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
     }
-  }, [key, refreshInterval, staleWhileRevalidate])
+  }, [])
 
   const memoizedData = useMemo(() => data, [data])
 
@@ -135,10 +174,7 @@ export const useDashboardCache = <T>(
     isValidating,
     retryCount,
     refresh,
-    invalidate: () => {
-      dashboardCache.invalidate(key)
-      setData(null)
-    }
+    invalidate
   }
 }
 

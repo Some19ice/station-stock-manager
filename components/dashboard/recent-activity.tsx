@@ -1,3 +1,4 @@
+import React from "react"
 import {
   Clock,
   ShoppingCart,
@@ -292,9 +293,9 @@ function TimeGroupHeader({
   )
 }
 
-export const RecentActivity: React.FC<RecentActivityProps> = ({
+export const RecentActivity = React.memo<RecentActivityProps>(function RecentActivity({
   transactions
-}) => {
+}) {
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const emptyStateRef = useRef<HTMLDivElement>(null)
@@ -381,44 +382,53 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
 
   // Header animation
   useEffect(() => {
-    if (headerRef.current) {
-      gsap.fromTo(
-        headerRef.current,
-        { opacity: 0, y: -20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
-      )
-    }
+    if (!headerRef.current) return
+    
+    const tl = gsap.timeline()
+    tl.fromTo(
+      headerRef.current,
+      { opacity: 0, y: -20 },
+      { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+    )
+    
+    return () => tl.kill()
   }, [])
 
   // Empty state animation
   useEffect(() => {
-    if (emptyStateRef.current && transactions.length === 0) {
-      const elements = emptyStateRef.current.children
-      gsap.fromTo(
-        elements,
-        { opacity: 0, y: 20, scale: 0.9 },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.8,
-          stagger: 0.2,
-          ease: "power3.out",
-          delay: 0.3
-        }
-      )
-    }
+    if (!emptyStateRef.current || transactions.length > 0) return
+    
+    const elements = emptyStateRef.current.children
+    const tl = gsap.timeline()
+    tl.fromTo(
+      elements,
+      { opacity: 0, y: 20, scale: 0.9 },
+      {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.8,
+        stagger: 0.2,
+        ease: "power3.out",
+        delay: 0.3
+      }
+    )
+    
+    return () => tl.kill()
   }, [transactions.length])
 
   // Timeline container animation
   useEffect(() => {
-    if (timelineRef.current && transactions.length > 0) {
-      gsap.fromTo(
-        timelineRef.current,
-        { opacity: 0, scale: 0.95 },
-        { opacity: 1, scale: 1, duration: 0.8, ease: "power2.out", delay: 0.2 }
-      )
-    }
+    if (!timelineRef.current || transactions.length === 0) return
+    
+    const tl = gsap.timeline()
+    tl.fromTo(
+      timelineRef.current,
+      { opacity: 0, scale: 0.95 },
+      { opacity: 1, scale: 1, duration: 0.8, ease: "power2.out", delay: 0.2 }
+    )
+    
+    return () => tl.kill()
   }, [transactions.length])
 
   const timeGroups = groupTransactionsByTime(transactions)
@@ -542,4 +552,4 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
       </div>
     </Card>
   )
-}
+})

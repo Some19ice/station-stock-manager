@@ -1,3 +1,4 @@
+import React from "react"
 import {
   EnhancedCard,
   EnhancedCardContent,
@@ -19,7 +20,7 @@ import {
   Sparkles
 } from "lucide-react"
 import { DashboardMetrics } from "@/actions/dashboard"
-import { useEffect, useRef, memo } from "react"
+import { useEffect, useRef } from "react"
 import { gsap } from "gsap"
 import { cn } from "@/lib/utils"
 
@@ -29,7 +30,7 @@ interface EnhancedMetricsCardsProps {
   isRefreshing?: boolean
 }
 
-const AnimatedNumber = memo(function AnimatedNumber({
+const AnimatedNumber = React.memo(function AnimatedNumber({
   value,
   className,
   delay = 0,
@@ -134,7 +135,7 @@ const AnimatedNumber = memo(function AnimatedNumber({
   )
 })
 
-const TrendIndicator = memo(function TrendIndicator({
+const TrendIndicator = React.memo(function TrendIndicator({
   trend,
   value,
   className
@@ -203,7 +204,7 @@ const TrendIndicator = memo(function TrendIndicator({
   )
 })
 
-export const EnhancedMetricsCards = memo(function EnhancedMetricsCards({
+export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
   metrics,
   onRetry,
   isRefreshing = false
@@ -334,7 +335,7 @@ export const EnhancedMetricsCards = memo(function EnhancedMetricsCards({
   )
 })
 
-const MetricCard = memo(function MetricCard({
+const MetricCard = React.memo(function MetricCard({
   metric,
   Icon,
   index
