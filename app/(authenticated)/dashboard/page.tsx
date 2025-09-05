@@ -117,6 +117,7 @@ export default function EnhancedDashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const pageRef = useRef<HTMLDivElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Enhanced cache and real-time updates
   const { invalidate: clearCache } = useDashboardCache(
@@ -129,67 +130,77 @@ export default function EnhancedDashboardPage() {
   )
   const { isOnline: isConnected } = useRealtimeUpdates({ enabled: true })
 
-  // Stable reference for loadDashboardData to prevent infinite re-renders
-  const loadDashboardData = useCallback(
-    async (useCache = true, signal?: AbortSignal) => {
-      try {
-        if (signal?.aborted) return
+  // Stable reference for loadDashboardData using useRef to prevent infinite re-renders
+  const loadDashboardDataRef = useRef<(useCache?: boolean, signal?: AbortSignal) => Promise<void>>()
+  
+  loadDashboardDataRef.current = async (useCache = true, signal?: AbortSignal) => {
+    try {
+      if (signal?.aborted) return
 
-        setError(null)
+      setError(null)
 
-        // Load user profile
-        const profileResult = await getCurrentUserProfile()
-        if (signal?.aborted) return
+      // Load user profile
+      const profileResult = await getCurrentUserProfile()
+      if (signal?.aborted) return
 
-        if (!profileResult.isSuccess) {
-          throw new Error("Failed to load user profile")
-        }
-        if (profileResult.data && !signal?.aborted) {
-          setUserProfile(profileResult.data)
-        }
-
-        // Load dashboard data in parallel
-        const [metricsResult, alertsResult, activitiesResult] =
-          await Promise.all([
-            getDashboardMetrics(),
-            getLowStockAlerts(),
-            getRecentTransactions()
-          ])
-
-        if (signal?.aborted) return
-
-        if (metricsResult.isSuccess && metricsResult.data) {
-          setMetrics(metricsResult.data)
-        }
-
-        if (alertsResult.isSuccess && alertsResult.data) {
-          setAlerts(alertsResult.data)
-        }
-
-        if (activitiesResult.isSuccess && activitiesResult.data) {
-          setActivities(activitiesResult.data)
-        }
-      } catch (err) {
-        if (signal?.aborted) return
-        setError(
-          err instanceof Error ? err.message : "Failed to load dashboard"
-        )
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false)
-          setRefreshing(false)
-        }
+      if (!profileResult.isSuccess) {
+        throw new Error("Failed to load user profile")
       }
-    },
-    []
-  )
+      if (profileResult.data && !signal?.aborted) {
+        setUserProfile(profileResult.data)
+      }
+
+      // Load dashboard data in parallel
+      const [metricsResult, alertsResult, activitiesResult] =
+        await Promise.all([
+          getDashboardMetrics(),
+          getLowStockAlerts(),
+          getRecentTransactions()
+        ])
+
+      if (signal?.aborted) return
+
+      if (metricsResult.isSuccess && metricsResult.data) {
+        setMetrics(metricsResult.data)
+      }
+
+      if (alertsResult.isSuccess && alertsResult.data) {
+        setAlerts(alertsResult.data)
+      }
+
+      if (activitiesResult.isSuccess && activitiesResult.data) {
+        setActivities(activitiesResult.data)
+      }
+    } catch (err) {
+      if (signal?.aborted) return
+      setError(
+        err instanceof Error ? err.message : "Failed to load dashboard"
+      )
+    } finally {
+      if (!signal?.aborted) {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    }
+  }
+
+  const loadDashboardData = useCallback((useCache = true, signal?: AbortSignal) => {
+    return loadDashboardDataRef.current?.(useCache, signal) || Promise.resolve()
+  }, [])
 
   useEffect(() => {
-    const abortController = new AbortController()
-    loadDashboardData(true, abortController.signal)
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    
+    abortControllerRef.current = new AbortController()
+    loadDashboardData(true, abortControllerRef.current.signal)
 
     return () => {
-      abortController.abort()
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
   }, [loadDashboardData])
 
@@ -207,8 +218,14 @@ export default function EnhancedDashboardPage() {
   const handleRefresh = async () => {
     setRefreshing(true)
     clearCache()
-    const abortController = new AbortController()
-    await loadDashboardData(false, abortController.signal)
+    
+    // Cancel existing request and create new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+    
+    await loadDashboardData(false, abortControllerRef.current.signal)
   }
 
   if (loading) {
