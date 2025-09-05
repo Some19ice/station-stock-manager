@@ -1,3 +1,4 @@
+import React from "react"
 import {
   Clock,
   ShoppingCart,
@@ -292,9 +293,9 @@ function TimeGroupHeader({
   )
 }
 
-export const RecentActivity: React.FC<RecentActivityProps> = ({
+export const RecentActivity = React.memo<RecentActivityProps>(function RecentActivity({
   transactions
-}) => {
+}) {
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const emptyStateRef = useRef<HTMLDivElement>(null)
@@ -542,4 +543,4 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
       </div>
     </Card>
   )
-}
+})
