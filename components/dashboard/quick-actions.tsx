@@ -138,14 +138,13 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   const [draggedAction, setDraggedAction] = useState<string | null>(null)
   const [hoveredAction, setHoveredAction] = useState<string | null>(null)
   const [animationComplete, setAnimationComplete] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const actionsGridRef = useRef<HTMLDivElement>(null)
   const alertsRef = useRef<HTMLDivElement>(null)
 
   // Enhanced entrance animations
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!headerRef.current) return
 
     const tl = gsap.timeline({
       onComplete: () => setAnimationComplete(true)
@@ -232,9 +231,23 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
   // Load custom settings from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("quickActionsSettings")
-    if (saved) {
-      setCustomActionSettings(JSON.parse(saved))
+    try {
+      const saved = localStorage.getItem("quickActionsSettings")
+      if (saved) {
+        const parsedSettings = JSON.parse(saved)
+        setCustomActionSettings(parsedSettings)
+      }
+    } catch (error) {
+      console.error("Failed to load quick actions settings:", error)
+      // Clear corrupted data
+      try {
+        localStorage.removeItem("quickActionsSettings")
+      } catch (removeError) {
+        console.error(
+          "Failed to remove corrupted quick actions settings:",
+          removeError
+        )
+      }
     }
   }, [])
 
@@ -242,8 +255,14 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   const saveCustomSettings = (
     settings: Record<string, { visible: boolean; order: number }>
   ) => {
-    localStorage.setItem("quickActionsSettings", JSON.stringify(settings))
-    setCustomActionSettings(settings)
+    try {
+      localStorage.setItem("quickActionsSettings", JSON.stringify(settings))
+      setCustomActionSettings(settings)
+    } catch (error) {
+      console.error("Failed to save quick actions settings:", error)
+      // Still update state even if localStorage fails
+      setCustomActionSettings(settings)
+    }
   }
 
   // Toggle action visibility
@@ -522,10 +541,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
   return (
     <TooltipProvider>
-      <div
-        ref={containerRef}
-        className="border-border/50 bg-card/80 relative overflow-hidden rounded-xl border p-6 shadow-lg backdrop-blur-sm"
-      >
+      <Card className="flex h-[500px] flex-col">
         {/* Ambient background effects */}
         <div className="bg-accent/5 absolute inset-0 opacity-50" />
         <div className="absolute top-0 left-1/4 h-32 w-32 animate-pulse rounded-full bg-blue-300/20 blur-xl filter" />
@@ -534,7 +550,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           style={{ animationDelay: "1s" }}
         />
 
-        <div className="relative z-10 space-y-6">
+        <div className="relative z-10 flex-shrink-0 border-b p-4">
           <div
             ref={headerRef}
             className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -685,10 +701,12 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
               </Dialog>
             </div>
           </div>
+        </div>
 
+        <div className="flex-1 space-y-4 p-4">
           <div
             ref={actionsGridRef}
-            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"
           >
             {sortedActions.map((action, index) => (
               <EnhancedActionCard
@@ -705,7 +723,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           </div>
 
           {/* Enhanced contextual alerts */}
-          <div ref={alertsRef} className="space-y-3">
+          <div ref={alertsRef} className="space-y-2">
             {lowStockCount > 0 && (
               <EnhancedAlertCard
                 icon={AlertTriangle}
@@ -751,7 +769,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </TooltipProvider>
   )
 }

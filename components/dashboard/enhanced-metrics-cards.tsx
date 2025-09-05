@@ -52,8 +52,12 @@ function AnimatedNumber({
     const numericValue = parseFloat(value.replace(/[^0-9.-]+/g, ""))
     if (isNaN(numericValue)) return
 
+    // Create timeline for proper cleanup
+    const tl = gsap.timeline()
+    const obj = { value: 0 }
+
     // Enhanced entrance animation
-    gsap.fromTo(
+    tl.fromTo(
       containerRef.current,
       { scale: 0.8, opacity: 0, rotationY: 15 },
       {
@@ -67,35 +71,45 @@ function AnimatedNumber({
     )
 
     // Smooth number counting animation
-    const obj = { value: 0 }
-    gsap.to(obj, {
-      value: numericValue,
-      duration: 2.5 + delay * 0.1,
-      delay: delay * 0.15,
-      ease: "power2.out",
-      onUpdate: () => {
-        if (numberRef.current) {
-          const formatted = value.includes("₦")
-            ? new Intl.NumberFormat("en-NG", {
-                style: "currency",
-                currency: "NGN",
-                minimumFractionDigits: 0
-              }).format(obj.value)
-            : Math.round(obj.value).toLocaleString()
-          numberRef.current.textContent = formatted
+    tl.to(
+      obj,
+      {
+        value: numericValue,
+        duration: 2.5 + delay * 0.1,
+        delay: delay * 0.15,
+        ease: "power2.out",
+        onUpdate: () => {
+          if (numberRef.current) {
+            const formatted = value.includes("₦")
+              ? new Intl.NumberFormat("en-NG", {
+                  style: "currency",
+                  currency: "NGN",
+                  minimumFractionDigits: 0
+                }).format(obj.value)
+              : Math.round(obj.value).toLocaleString()
+            numberRef.current.textContent = formatted
+          }
+        },
+        onComplete: () => {
+          // Subtle completion pulse
+          if (containerRef.current) {
+            gsap.to(containerRef.current, {
+              scale: 1.05,
+              duration: 0.2,
+              yoyo: true,
+              repeat: 1,
+              ease: "power2.inOut"
+            })
+          }
         }
       },
-      onComplete: () => {
-        // Subtle completion pulse
-        gsap.to(containerRef.current, {
-          scale: 1.05,
-          duration: 0.2,
-          yoyo: true,
-          repeat: 1,
-          ease: "power2.inOut"
-        })
-      }
-    })
+      0
+    )
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      tl.kill()
+    }
   }, [value, delay])
 
   return (

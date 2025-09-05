@@ -61,12 +61,19 @@ export function NavMain({
   useEffect(() => {
     setIsClient(true)
     // Load saved state from localStorage after client mount
-    const saved = localStorage.getItem("sidebar-open-items")
-    if (saved) {
+    try {
+      const saved = localStorage.getItem("sidebar-open-items")
+      if (saved) {
+        const parsedState = JSON.parse(saved)
+        setOpenItems(parsedState)
+      }
+    } catch (error) {
+      console.error("Failed to load sidebar state:", error)
+      // Clear corrupted data
       try {
-        setOpenItems(JSON.parse(saved))
-      } catch (error) {
-        console.error("Failed to parse sidebar state:", error)
+        localStorage.removeItem("sidebar-open-items")
+      } catch (removeError) {
+        console.error("Failed to remove corrupted sidebar state:", removeError)
       }
     }
   }, [])
@@ -76,7 +83,11 @@ export function NavMain({
     const newState = { ...openItems, [itemTitle]: isOpen }
     setOpenItems(newState)
     if (isClient) {
-      localStorage.setItem("sidebar-open-items", JSON.stringify(newState))
+      try {
+        localStorage.setItem("sidebar-open-items", JSON.stringify(newState))
+      } catch (error) {
+        console.error("Failed to save sidebar state:", error)
+      }
     }
   }
 

@@ -295,7 +295,6 @@ function TimeGroupHeader({
 export const RecentActivity: React.FC<RecentActivityProps> = ({
   transactions
 }) => {
-  const [showAll, setShowAll] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const emptyStateRef = useRef<HTMLDivElement>(null)
@@ -332,7 +331,12 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
     transactions: RecentTransaction[]
   ): TimeGroup[] => {
     const now = new Date()
-    const groups: { [key: string]: RecentTransaction[] } = {}
+    const groups: { [key: string]: RecentTransaction[] } = {
+      "Last Hour": [],
+      "Today": [],
+      "Yesterday": [],
+      "Earlier": []
+    }
 
     transactions.forEach(transaction => {
       const date = new Date(transaction.transactionDate)
@@ -351,9 +355,6 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
         period = "Earlier"
       }
 
-      if (!groups[period]) {
-        groups[period] = []
-      }
       groups[period].push(transaction)
     })
 
@@ -366,7 +367,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
     }
 
     return periodOrder
-      .filter(period => groups[period])
+      .filter(period => groups[period].length > 0)
       .map(period => ({
         period,
         transactions: groups[period],
@@ -420,21 +421,39 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
     }
   }, [transactions.length])
 
-  if (transactions.length === 0) {
-    return (
-      <div className="mb-8">
-        <div ref={headerRef} className="mb-4 flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Recent Activity
-          </h3>
-          <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-            Empty
-          </Badge>
-        </div>
+  const timeGroups = groupTransactionsByTime(transactions)
+  const totalAmount = transactions.reduce(
+    (sum, t) => sum + parseFloat(t.totalAmount),
+    0
+  )
 
-        <Card className="border-dashed border-gray-300 bg-gray-50/50">
-          <CardContent className="p-8">
-            <div ref={emptyStateRef} className="text-center">
+  return (
+    <Card className="h-[500px] flex flex-col">
+      <div ref={headerRef} className="flex-shrink-0 p-4 border-b">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Recent Activity
+            </h3>
+            <Badge variant="secondary" className="animate-pulse">
+              {transactions.length} Transaction
+              {transactions.length !== 1 ? "s" : ""}
+            </Badge>
+          </div>
+
+          <div className="text-right">
+            <div className="text-sm font-medium text-gray-900">
+              ₦{totalAmount.toLocaleString()}
+            </div>
+            <div className="text-xs text-gray-500">Total Value</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {transactions.length === 0 ? (
+          <div ref={emptyStateRef} className="h-full flex items-center justify-center">
+            <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                 <Activity className="h-8 w-8 text-gray-400" />
               </div>
@@ -449,99 +468,78 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
                 Start Recording Sales
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const timeGroups = groupTransactionsByTime(transactions)
-  const displayLimit = showAll ? transactions.length : 8
-  const totalAmount = transactions.reduce(
-    (sum, t) => sum + parseFloat(t.totalAmount),
-    0
-  )
-
-  return (
-    <div className="mb-8">
-      <div ref={headerRef} className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Recent Activity
-          </h3>
-          <Badge variant="secondary" className="animate-pulse">
-            {transactions.length} Transaction
-            {transactions.length !== 1 ? "s" : ""}
-          </Badge>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <div className="text-sm font-medium text-gray-900">
-              ₦{totalAmount.toLocaleString()}
-            </div>
-            <div className="text-xs text-gray-500">Total Value</div>
           </div>
+        ) : (
+          <div ref={timelineRef} className="relative">
+            {/* Timeline Background */}
+            <div className="bg-border absolute top-8 bottom-0 left-4 w-px opacity-30" />
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAll(!showAll)}
-            className="transition-all hover:scale-105"
-          >
-            {showAll ? "Show Less" : `Show All (${transactions.length})`}
-          </Button>
-        </div>
-      </div>
+            <div className="space-y-6">
+              {timeGroups.map((group, groupIndex) => (
+                <div key={group.period}>
+                  <TimeGroupHeader group={group} index={groupIndex} />
 
-      <div ref={timelineRef} className="relative">
-        {/* Timeline Background */}
-        <div className="bg-border absolute top-8 bottom-0 left-4 w-px opacity-30" />
+                  <div className="space-y-1">
+                    {group.transactions.length > 0 ? (
+                      group.transactions.map((transaction, index) => {
+                        const globalIndex = transactions.findIndex(
+                          t => t.id === transaction.id
+                        )
+                        const isLast =
+                          groupIndex === timeGroups.length - 1 &&
+                          index === group.transactions.length - 1
 
-        <div className="space-y-6">
-          {timeGroups.map((group, groupIndex) => (
-            <div key={group.period}>
-              <TimeGroupHeader group={group} index={groupIndex} />
+                        return (
+                          <AnimatedTransactionItem
+                            key={transaction.id}
+                            transaction={transaction}
+                            index={globalIndex}
+                            formatCurrency={formatCurrency}
+                            formatTimeAgo={formatTimeAgo}
+                            isLast={isLast}
+                          />
+                        )
+                      })
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        <p className="text-sm">No {group.period.toLowerCase()} transactions</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
 
-              <div className="space-y-1">
-                {group.transactions
-                  .slice(
-                    0,
-                    showAll
-                      ? undefined
-                      : Math.ceil(displayLimit / timeGroups.length)
-                  )
-                  .map((transaction, index) => {
-                    const globalIndex = transactions.findIndex(
-                      t => t.id === transaction.id
-                    )
-                    const isLast =
-                      groupIndex === timeGroups.length - 1 &&
-                      index === group.transactions.length - 1
+              {/* Always show Earlier section */}
+              {!timeGroups.some(group => group.period === "Earlier") && (
+                <div>
+                  <TimeGroupHeader 
+                    group={{
+                      period: "Earlier",
+                      transactions: [],
+                      totalAmount: 0,
+                      color: "bg-gray-100 text-gray-600"
+                    }} 
+                    index={timeGroups.length} 
+                  />
+                  <div className="space-y-1">
+                    <div className="text-center py-4 text-gray-500">
+                      <p className="text-sm">No earlier transactions</p>
+                      <p className="text-xs mt-1">Transactions older than 2 days will appear here</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
-                    return (
-                      <AnimatedTransactionItem
-                        key={transaction.id}
-                        transaction={transaction}
-                        index={globalIndex}
-                        formatCurrency={formatCurrency}
-                        formatTimeAgo={formatTimeAgo}
-                        isLast={isLast}
-                      />
-                    )
-                  })}
+            {/* Timeline end indicator */}
+            <div className="flex justify-center pt-4">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-blue-100 shadow-sm">
+                <BadgeIcon className="h-3 w-3 text-blue-600" />
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Timeline end indicator */}
-        <div className="flex justify-center pt-4">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-blue-100 shadow-sm">
-            <BadgeIcon className="h-3 w-3 text-blue-600" />
           </div>
-        </div>
+        )}
       </div>
-    </div>
+    </Card>
   )
 }

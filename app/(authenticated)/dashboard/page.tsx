@@ -82,15 +82,15 @@ interface Widget {
 // Enhanced loading components with better animations
 const MetricsLoading = () => (
   <div className="animate-pulse space-y-4">
-    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-    <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+    <div className="h-4 w-3/4 rounded bg-gray-200"></div>
+    <div className="h-8 w-1/2 rounded bg-gray-200"></div>
   </div>
 )
 
 const AlertsLoading = () => (
   <div className="animate-pulse space-y-3">
-    <div className="h-4 bg-gray-200 rounded"></div>
-    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+    <div className="h-4 rounded bg-gray-200"></div>
+    <div className="h-4 w-5/6 rounded bg-gray-200"></div>
   </div>
 )
 
@@ -98,10 +98,10 @@ const ActivityLoading = () => (
   <div className="animate-pulse space-y-3">
     {[...Array(3)].map((_, i) => (
       <div key={i} className="flex space-x-3">
-        <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+        <div className="h-10 w-10 rounded-full bg-gray-200"></div>
         <div className="flex-1 space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 w-3/4 rounded bg-gray-200"></div>
+          <div className="h-3 w-1/2 rounded bg-gray-200"></div>
         </div>
       </div>
     ))}
@@ -121,49 +121,76 @@ export default function EnhancedDashboardPage() {
   // Enhanced cache and real-time updates
   const { invalidate: clearCache } = useDashboardCache(
     "dashboard",
-    async () => null
+    async (): Promise<null> => {
+      // Placeholder fetcher function for cache invalidation only
+      return null
+    },
+    { refreshInterval: 0 } // Disable auto-refresh since we manage it manually
   )
   const { isOnline: isConnected } = useRealtimeUpdates({ enabled: true })
 
-  const loadDashboardData = useCallback(async (useCache = true) => {
-    try {
-      setError(null)
+  // Stable reference for loadDashboardData to prevent infinite re-renders
+  const loadDashboardData = useCallback(
+    async (useCache = true, signal?: AbortSignal) => {
+      try {
+        if (signal?.aborted) return
 
-      // Load user profile
-      const profileResult = await getCurrentUserProfile()
-      if (!profileResult.isSuccess) {
-        throw new Error("Failed to load user profile")
-      }
-      if (profileResult.data) {
-        setUserProfile(profileResult.data)
-      }
+        setError(null)
 
-      // Load dashboard data in parallel
-      const [metricsResult, alertsResult, activitiesResult] = await Promise.all(
-        [getDashboardMetrics(), getLowStockAlerts(), getRecentTransactions()]
-      )
+        // Load user profile
+        const profileResult = await getCurrentUserProfile()
+        if (signal?.aborted) return
 
-      if (metricsResult.isSuccess && metricsResult.data) {
-        setMetrics(metricsResult.data)
-      }
+        if (!profileResult.isSuccess) {
+          throw new Error("Failed to load user profile")
+        }
+        if (profileResult.data && !signal?.aborted) {
+          setUserProfile(profileResult.data)
+        }
 
-      if (alertsResult.isSuccess && alertsResult.data) {
-        setAlerts(alertsResult.data)
-      }
+        // Load dashboard data in parallel
+        const [metricsResult, alertsResult, activitiesResult] =
+          await Promise.all([
+            getDashboardMetrics(),
+            getLowStockAlerts(),
+            getRecentTransactions()
+          ])
 
-      if (activitiesResult.isSuccess && activitiesResult.data) {
-        setActivities(activitiesResult.data)
+        if (signal?.aborted) return
+
+        if (metricsResult.isSuccess && metricsResult.data) {
+          setMetrics(metricsResult.data)
+        }
+
+        if (alertsResult.isSuccess && alertsResult.data) {
+          setAlerts(alertsResult.data)
+        }
+
+        if (activitiesResult.isSuccess && activitiesResult.data) {
+          setActivities(activitiesResult.data)
+        }
+      } catch (err) {
+        if (signal?.aborted) return
+        setError(
+          err instanceof Error ? err.message : "Failed to load dashboard"
+        )
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false)
+          setRefreshing(false)
+        }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard")
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [])
+    },
+    []
+  )
 
   useEffect(() => {
-    loadDashboardData()
+    const abortController = new AbortController()
+    loadDashboardData(true, abortController.signal)
+
+    return () => {
+      abortController.abort()
+    }
   }, [loadDashboardData])
 
   useEffect(() => {
@@ -180,12 +207,13 @@ export default function EnhancedDashboardPage() {
   const handleRefresh = async () => {
     setRefreshing(true)
     clearCache()
-    await loadDashboardData(false)
+    const abortController = new AbortController()
+    await loadDashboardData(false, abortController.signal)
   }
 
   if (loading) {
     return (
-      <LoadingScreen 
+      <LoadingScreen
         title="Dashboard Overview"
         subtitle="Loading your station data..."
       />

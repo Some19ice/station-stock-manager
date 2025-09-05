@@ -63,6 +63,9 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
 
       // Magnetic effect
       if (magnetic) {
+        const cardElement = cardRef.current
+        if (!cardElement) return
+
         const handleMouseMove = (e: MouseEvent) => {
           const card = cardRef.current
           if (!card) return
@@ -82,21 +85,23 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
         }
 
         const handleMouseLeave = () => {
-          gsap.to(cardRef.current, {
-            x: 0,
-            y: 0,
-            duration: 0.5,
-            ease: "elastic.out(1, 0.3)"
-          })
+          if (cardRef.current) {
+            gsap.to(cardRef.current, {
+              x: 0,
+              y: 0,
+              duration: 0.5,
+              ease: "elastic.out(1, 0.3)"
+            })
+          }
         }
 
-        const cardElement = cardRef.current
         cardElement.addEventListener("mousemove", handleMouseMove)
         cardElement.addEventListener("mouseleave", handleMouseLeave)
 
         return () => {
-          cardElement?.removeEventListener("mousemove", handleMouseMove)
-          cardElement?.removeEventListener("mouseleave", handleMouseLeave)
+          // Store element reference to ensure cleanup even if ref changes
+          cardElement.removeEventListener("mousemove", handleMouseMove)
+          cardElement.removeEventListener("mouseleave", handleMouseLeave)
         }
       }
     }, [delay, magnetic])
