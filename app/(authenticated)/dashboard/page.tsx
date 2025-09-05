@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic"
 
+import React from "react"
 import { validateUserRole, getCurrentUserProfile } from "@/actions/auth"
 import {
   getDashboardMetrics,
@@ -80,21 +81,23 @@ interface Widget {
 }
 
 // Enhanced loading components with better animations
-const MetricsLoading = () => (
+const MetricsLoading = React.memo(() => (
   <div className="animate-pulse space-y-4">
     <div className="h-4 w-3/4 rounded bg-gray-200"></div>
     <div className="h-8 w-1/2 rounded bg-gray-200"></div>
   </div>
-)
+))
+MetricsLoading.displayName = 'MetricsLoading'
 
-const AlertsLoading = () => (
+const AlertsLoading = React.memo(() => (
   <div className="animate-pulse space-y-3">
     <div className="h-4 rounded bg-gray-200"></div>
     <div className="h-4 w-5/6 rounded bg-gray-200"></div>
   </div>
-)
+))
+AlertsLoading.displayName = 'AlertsLoading'
 
-const ActivityLoading = () => (
+const ActivityLoading = React.memo(() => (
   <div className="animate-pulse space-y-3">
     {[...Array(3)].map((_, i) => (
       <div key={i} className="flex space-x-3">
@@ -106,7 +109,8 @@ const ActivityLoading = () => (
       </div>
     ))}
   </div>
-)
+))
+ActivityLoading.displayName = 'ActivityLoading'
 
 export default function EnhancedDashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
@@ -232,15 +236,15 @@ export default function EnhancedDashboardPage() {
   }, [loadDashboardData])
 
   useEffect(() => {
-    // Page entrance animation
-    if (pageRef.current) {
+    // Page entrance animation - only run once when component mounts
+    if (pageRef.current && !loading) {
       gsap.fromTo(
         pageRef.current,
         { opacity: 0, y: 30 },
         { opacity: 1, y: 0, duration: 1, ease: "power2.out" }
       )
     }
-  }, [])
+  }, [loading]) // Only depend on loading state
 
   const handleRefresh = async () => {
     // Prevent multiple refresh requests

@@ -1,3 +1,4 @@
+import React from "react"
 import {
   EnhancedCard,
   EnhancedCardContent,
@@ -32,7 +33,7 @@ interface EnhancedMetricsCardsProps {
   isRefreshing?: boolean
 }
 
-function AnimatedNumber({
+const AnimatedNumber = React.memo(function AnimatedNumber({
   value,
   className,
   delay = 0,
@@ -137,7 +138,7 @@ function AnimatedNumber({
   )
 }
 
-function TrendIndicator({
+const TrendIndicator = React.memo(function TrendIndicator({
   trend,
   value,
   className
@@ -176,7 +177,7 @@ function TrendIndicator({
   )
 }
 
-export function EnhancedMetricsCards({
+export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
   metrics,
   onRetry,
   isRefreshing = false
