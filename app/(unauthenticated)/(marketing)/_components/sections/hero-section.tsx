@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button"
 import { AnimatedBackground } from "@/components/ui/animated-background"
 import { FloatingElements } from "@/components/ui/floating-elements"
-import { motion } from "framer-motion"
 import {
   ArrowRight,
   LayoutDashboard,
@@ -147,11 +146,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
         className="relative z-10 mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8"
       >
         {/* Trust Badge */}
-        <motion.div
-          className="hero-badge mb-8 flex justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <div className="hero-badge mb-8 flex justify-center">
           <div className="group bg-card/90 hover:bg-card border-border/50 hover:border-primary/30 relative inline-flex items-center rounded-full px-6 py-3 text-sm font-medium shadow-lg ring-1 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
             <span className="mr-3 text-lg" aria-hidden="true">
               ⛽
@@ -159,7 +154,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
             <span>Trusted by 500+ Gas Stations</span>
             <div className="from-primary/0 via-primary/10 to-primary/0 absolute inset-0 rounded-full bg-gradient-to-r opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </div>
-        </motion.div>
+        </div>
 
         {/* Main Heading */}
         <h1 className="text-foreground mb-8 text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
@@ -215,17 +210,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
           >
             <Link href="#features" className="flex items-center gap-3">
               <span>View Features</span>
-              <motion.span
-                className="inline-block"
-                animate={{ y: [0, 4, 0] }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              >
-                ↓
-              </motion.span>
+              <span className="inline-block animate-bounce">↓</span>
             </Link>
           </Button>
         </div>
@@ -254,12 +239,9 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
             { number: "99.9%", label: "Uptime" },
             { number: "24/7", label: "Support" }
           ].map((stat, i) => (
-            <motion.div
+            <div
               key={stat.label}
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1 + i * 0.1 }}
+              className="hero-stat text-center"
             >
               <div className="text-primary text-3xl font-bold sm:text-4xl">
                 {stat.number}
@@ -267,7 +249,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
               <div className="text-foreground/70 mt-2 text-sm font-medium">
                 {stat.label}
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

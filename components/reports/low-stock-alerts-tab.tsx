@@ -162,7 +162,7 @@ export function LowStockAlertsTab() {
           <div>
             <p className="text-muted-foreground">Last Updated</p>
             <p className="font-medium">
-              {new Date(alert.lastUpdated).toLocaleDateString()}
+              {new Date().toLocaleDateString()}
             </p>
           </div>
         </div>

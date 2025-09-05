@@ -5,6 +5,8 @@ import { db } from "@/db"
 import { users } from "@/db/schema"
 import { eq, like } from "drizzle-orm"
 
+export const dynamic = "force-dynamic"
+
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET
 
 export async function POST(req: NextRequest) {

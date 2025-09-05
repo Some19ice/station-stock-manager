@@ -1,7 +1,6 @@
 "use client"
 
 import { forwardRef, useEffect, useRef } from "react"
-import { motion } from "framer-motion"
 import { gsap } from "gsap"
 import { cn } from "@/lib/utils"
 
@@ -19,7 +18,6 @@ const AnimatedPage = forwardRef<HTMLDivElement, AnimatedPageProps>(
     useEffect(() => {
       if (!pageRef.current) return
 
-      // Enhanced page entrance animation
       const tl = gsap.timeline()
 
       tl.fromTo(
@@ -39,7 +37,6 @@ const AnimatedPage = forwardRef<HTMLDivElement, AnimatedPageProps>(
       )
 
       if (stagger) {
-        // Stagger child animations
         const children = pageRef.current.children
         if (children.length > 0) {
           gsap.fromTo(
@@ -56,6 +53,10 @@ const AnimatedPage = forwardRef<HTMLDivElement, AnimatedPageProps>(
           )
         }
       }
+
+      return () => {
+        tl.kill()
+      }
     }, [stagger])
 
     const variants = {
@@ -65,16 +66,12 @@ const AnimatedPage = forwardRef<HTMLDivElement, AnimatedPageProps>(
     }
 
     return (
-      <motion.div
+      <div
         ref={ref || pageRef}
         className={cn("relative w-full", variants[variant], className)}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.5 }}
       >
         {children}
-      </motion.div>
+      </div>
     )
   }
 )
@@ -97,7 +94,9 @@ const AnimatedGrid = forwardRef<HTMLDivElement, AnimatedGridProps>(
       if (!gridRef.current) return
 
       const items = gridRef.current.children
-      gsap.fromTo(
+      const tl = gsap.timeline()
+      
+      tl.fromTo(
         items,
         { opacity: 0, y: 30, scale: 0.9 },
         {
@@ -109,6 +108,10 @@ const AnimatedGrid = forwardRef<HTMLDivElement, AnimatedGridProps>(
           ease: "back.out(1.2)"
         }
       )
+
+      return () => {
+        tl.kill()
+      }
     }, [staggerDelay])
 
     return (
@@ -147,14 +150,19 @@ const AnimatedText = forwardRef<HTMLDivElement, AnimatedTextProps>(
         .join("")
 
       const spans = textRef.current.querySelectorAll("span")
+      const tl = gsap.timeline()
 
-      gsap.to(spans, {
+      tl.to(spans, {
         opacity: 1,
         duration: 0.1,
         stagger: speed,
         delay: delay,
         ease: "power2.out"
       })
+
+      return () => {
+        tl.kill()
+      }
     }, [text, delay, speed])
 
     return (
@@ -173,50 +181,50 @@ interface AnimatedLoaderProps {
 
 const AnimatedLoader = forwardRef<HTMLDivElement, AnimatedLoaderProps>(
   ({ className, size = "md", variant = "spinner" }, ref) => {
+    const loaderRef = useRef<HTMLDivElement>(null)
+
     const sizes = {
       sm: "h-4 w-4",
       md: "h-8 w-8",
       lg: "h-12 w-12"
     }
 
-    if (variant === "spinner") {
-      return (
-        <motion.div
-          ref={ref}
-          className={cn(
-            "border-primary/20 border-t-primary rounded-full border-2",
-            sizes[size],
-            className
-          )}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        />
-      )
-    }
+    useEffect(() => {
+      if (!loaderRef.current) return
+
+      let tl: gsap.core.Timeline
+
+      if (variant === "spinner") {
+        tl = gsap.timeline({ repeat: -1 })
+        tl.to(loaderRef.current, {
+          rotation: 360,
+          duration: 1,
+          ease: "none"
+        })
+      } else if (variant === "pulse") {
+        tl = gsap.timeline({ repeat: -1 })
+        tl.to(loaderRef.current, {
+          opacity: 0.5,
+          duration: 0.75,
+          yoyo: true,
+          repeat: 1,
+          ease: "power2.inOut"
+        })
+      }
+
+      return () => {
+        tl?.kill()
+      }
+    }, [variant])
 
     if (variant === "dots") {
       return (
         <div ref={ref} className={cn("flex space-x-1", className)}>
           {[0, 1, 2].map(i => (
-            <motion.div
+            <DotLoader
               key={i}
-              className={cn(
-                "bg-primary rounded-full",
-                size === "sm"
-                  ? "h-1 w-1"
-                  : size === "md"
-                    ? "h-2 w-2"
-                    : "h-3 w-3"
-              )}
-              animate={{
-                scale: [1, 1.5, 1],
-                opacity: [0.5, 1, 0.5]
-              }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                delay: i * 0.2
-              }}
+              size={size}
+              delay={i * 0.2}
             />
           ))}
         </div>
@@ -224,15 +232,59 @@ const AnimatedLoader = forwardRef<HTMLDivElement, AnimatedLoaderProps>(
     }
 
     return (
-      <motion.div
-        ref={ref}
-        className={cn("bg-primary/20 rounded", sizes[size], className)}
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+      <div
+        ref={ref || loaderRef}
+        className={cn(
+          variant === "spinner" 
+            ? "border-primary/20 border-t-primary rounded-full border-2"
+            : "bg-primary/20 rounded",
+          sizes[size],
+          className
+        )}
       />
     )
   }
 )
+
+const DotLoader = ({ size, delay }: { size: "sm" | "md" | "lg", delay: number }) => {
+  const dotRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!dotRef.current) return
+
+    const tl = gsap.timeline({ repeat: -1, delay })
+    tl.to(dotRef.current, {
+      scale: 1.5,
+      opacity: 1,
+      duration: 0.5,
+      ease: "power2.out"
+    })
+    .to(dotRef.current, {
+      scale: 1,
+      opacity: 0.5,
+      duration: 0.5,
+      ease: "power2.in"
+    })
+
+    return () => {
+      tl.kill()
+    }
+  }, [delay])
+
+  return (
+    <div
+      ref={dotRef}
+      className={cn(
+        "bg-primary rounded-full opacity-50",
+        size === "sm"
+          ? "h-1 w-1"
+          : size === "md"
+            ? "h-2 w-2"
+            : "h-3 w-3"
+      )}
+    />
+  )
+}
 
 AnimatedLoader.displayName = "AnimatedLoader"
 

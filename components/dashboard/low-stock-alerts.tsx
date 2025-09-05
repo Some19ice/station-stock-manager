@@ -169,7 +169,7 @@ export const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ alerts }) => {
     return () => {
       tl.kill()
     }
-  }, [alerts.length])
+  }, [alerts])
 
   if (!alerts || alerts.length === 0) {
     return (

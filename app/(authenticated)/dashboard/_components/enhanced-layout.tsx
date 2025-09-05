@@ -20,7 +20,6 @@ import { ScrollIndicator } from "@/components/ui/scroll-indicator"
 import { usePathname } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { gsap } from "gsap"
-import { motion, AnimatePresence } from "framer-motion"
 import { AppSidebar } from "./app-sidebar"
 import { cn } from "@/lib/utils"
 
@@ -120,7 +119,7 @@ export default function EnhancedDashboardLayout({
           />
 
           {/* Enhanced header with glassmorphism */}
-          <motion.header
+          <header
             ref={headerRef}
             className={cn(
               "sticky top-0 z-40 w-full transition-all duration-500",
@@ -128,21 +127,15 @@ export default function EnhancedDashboardLayout({
                 ? "bg-background/80 border-border/50 supports-[backdrop-filter]:bg-background/70 border-b shadow-lg backdrop-blur-xl"
                 : "bg-background/95 supports-[backdrop-filter]:bg-background/60 border-b border-transparent backdrop-blur-md"
             )}
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
           >
             {/* Subtle overlay */}
             <div className="bg-accent/5 absolute inset-0 opacity-0 transition-opacity duration-500 hover:opacity-100" />
 
             <div className="relative flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
               <div className="flex items-center gap-2 px-4">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
+                <div className="hover:scale-105 active:scale-95 transition-transform">
                   <SidebarTrigger className="hover:bg-accent/50 -ml-1 transition-colors" />
-                </motion.div>
+                </div>
 
                 <Separator
                   orientation="vertical"
@@ -150,20 +143,13 @@ export default function EnhancedDashboardLayout({
                 />
 
                 {isClient && breadcrumbs.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
+                  <div className="opacity-0">
                     <Breadcrumb>
                       <BreadcrumbList>
                         {breadcrumbs.map((crumb, index) => (
-                          <motion.div
+                          <div
                             key={`${crumb.href}-${index}`}
                             className="flex items-center"
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 + index * 0.1 }}
                           >
                             {index > 0 && (
                               <BreadcrumbSeparator className="mx-2" />
@@ -182,36 +168,25 @@ export default function EnhancedDashboardLayout({
                                 </BreadcrumbLink>
                               )}
                             </BreadcrumbItem>
-                          </motion.div>
+                          </div>
                         ))}
                       </BreadcrumbList>
                     </Breadcrumb>
-                  </motion.div>
+                  </div>
                 )}
               </div>
             </div>
-          </motion.header>
+          </header>
 
           {/* Enhanced content area */}
-          <motion.div
+          <div
             ref={contentRef}
-            className="relative flex flex-1 flex-col gap-4 p-4"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            className="dashboard-content relative flex flex-1 flex-col gap-4 p-4"
           >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
+            <div className="dashboard-children">
+              {children}
+            </div>
+          </div>
 
           {/* Enhanced scroll indicator */}
           <ScrollIndicator

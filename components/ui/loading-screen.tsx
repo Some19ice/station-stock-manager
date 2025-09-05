@@ -1,13 +1,11 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { motion } from "framer-motion"
 import { gsap } from "gsap"
 import { Sparkles, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AnimatedSkeleton } from "./animated-loading"
 import { EnhancedCard, EnhancedCardContent } from "./enhanced-card"
-import { Badge } from "./badge"
 import { AnimatedPage } from "./animated-page"
 
 interface LoadingScreenProps {
@@ -249,27 +247,41 @@ function ActivityLoading() {
 }
 
 function LoadingHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  const headerRef = useRef<HTMLDivElement>(null)
+  const iconRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (headerRef.current) {
+      gsap.fromTo(
+        headerRef.current,
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+      )
+    }
+
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        rotation: 360,
+        duration: 2,
+        repeat: -1,
+        ease: "none"
+      })
+    }
+  }, [])
+
   return (
-    <motion.div
-      className="flex items-center justify-between"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
+    <div ref={headerRef} className="flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        >
+        <div ref={iconRef}>
           <Sparkles className="text-primary h-8 w-8" />
-        </motion.div>
+        </div>
         <div>
           <AnimatedSkeleton className="mb-2 h-8 w-48" />
           {subtitle && <AnimatedSkeleton className="h-4 w-32" />}
         </div>
       </div>
       <AnimatedSkeleton className="h-10 w-24 rounded" />
-    </motion.div>
+    </div>
   )
 }
 
@@ -283,6 +295,29 @@ export function LoadingScreen({
   className,
   variant = "dashboard"
 }: LoadingScreenProps) {
+  const minimalRef = useRef<HTMLDivElement>(null)
+  const simpleIconRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (variant === "minimal" && minimalRef.current) {
+      gsap.to(minimalRef.current, {
+        rotation: 360,
+        duration: 2,
+        repeat: -1,
+        ease: "none"
+      })
+    }
+
+    if (variant === "simple" && simpleIconRef.current) {
+      gsap.to(simpleIconRef.current, {
+        rotation: 360,
+        duration: 2,
+        repeat: -1,
+        ease: "none"
+      })
+    }
+  }, [variant])
+
   if (variant === "users") {
     return (
       <AnimatedPage className={className}>
@@ -308,12 +343,9 @@ export function LoadingScreen({
   if (variant === "minimal") {
     return (
       <div className={cn("flex items-center justify-center py-12", className)}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        >
+        <div ref={minimalRef}>
           <RefreshCw className="text-primary h-8 w-8" />
-        </motion.div>
+        </div>
       </div>
     )
   }
@@ -322,12 +354,9 @@ export function LoadingScreen({
     return (
       <div className={cn("space-y-6 py-8", className)}>
         <div className="flex items-center justify-center gap-3">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          >
+          <div ref={simpleIconRef}>
             <Sparkles className="text-primary h-6 w-6" />
-          </motion.div>
+          </div>
           <AnimatedSkeleton className="h-6 w-32" />
         </div>
         <div className="space-y-4">

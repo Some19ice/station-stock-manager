@@ -1,7 +1,6 @@
 "use client"
 
 import { forwardRef, useEffect, useRef } from "react"
-import { motion } from "framer-motion"
 import { gsap } from "gsap"
 import { cn } from "@/lib/utils"
 
@@ -20,25 +19,30 @@ const AnimatedSkeleton = forwardRef<HTMLDivElement, AnimatedSkeletonProps>(
     useEffect(() => {
       if (!skeletonRef.current) return
 
+      let tl: gsap.core.Timeline
+
       if (animation === "wave") {
-        gsap.to(skeletonRef.current, {
+        tl = gsap.timeline({ repeat: -1 })
+        tl.to(skeletonRef.current, {
           backgroundPosition: "200% 0",
           duration: 1.5,
-          repeat: -1,
           ease: "none"
         })
       } else if (animation === "shimmer") {
-        gsap.fromTo(
+        tl = gsap.timeline({ repeat: -1, yoyo: true })
+        tl.fromTo(
           skeletonRef.current,
           { opacity: 0.6 },
           {
             opacity: 1,
             duration: 1,
-            repeat: -1,
-            yoyo: true,
             ease: "power2.inOut"
           }
         )
+      }
+
+      return () => {
+        tl?.kill()
       }
     }, [animation])
 
@@ -107,7 +111,9 @@ const AnimatedLoadingGrid = forwardRef<
       if (!gridRef.current || !stagger) return
 
       const items = gridRef.current.children
-      gsap.fromTo(
+      const tl = gsap.timeline()
+      
+      tl.fromTo(
         items,
         { opacity: 0, y: 20, scale: 0.95 },
         {
@@ -119,6 +125,10 @@ const AnimatedLoadingGrid = forwardRef<
           ease: "power2.out"
         }
       )
+
+      return () => {
+        tl.kill()
+      }
     }, [stagger])
 
     const totalItems = rows * cols
@@ -130,36 +140,63 @@ const AnimatedLoadingGrid = forwardRef<
         {...props}
       >
         {Array.from({ length: totalItems }).map((_, index) => (
-          <motion.div
+          <LoadingGridItem
             key={index}
-            className={cn("bg-card rounded-lg border", itemHeight)}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              delay: stagger ? index * 0.1 : 0,
-              duration: 0.5
-            }}
-          >
-            <div className="space-y-3 p-4">
-              <div className="flex items-center space-x-3">
-                <AnimatedSkeleton
-                  variant="circular"
-                  className="h-10 w-10"
-                  animation="pulse"
-                />
-                <div className="flex-1 space-y-2">
-                  <AnimatedSkeleton className="h-4 w-3/4" animation="shimmer" />
-                  <AnimatedSkeleton className="h-3 w-1/2" animation="shimmer" />
-                </div>
-              </div>
-              <AnimatedSkeleton className="h-8 w-full" animation="wave" />
-            </div>
-          </motion.div>
+            itemHeight={itemHeight}
+            delay={stagger ? index * 0.1 : 0}
+          />
         ))}
       </div>
     )
   }
 )
+
+const LoadingGridItem = ({ itemHeight, delay }: { itemHeight: string; delay: number }) => {
+  const itemRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!itemRef.current) return
+
+    const tl = gsap.timeline()
+    tl.fromTo(
+      itemRef.current,
+      { opacity: 0, scale: 0.9 },
+      {
+        opacity: 1,
+        scale: 1,
+        duration: 0.5,
+        delay,
+        ease: "power2.out"
+      }
+    )
+
+    return () => {
+      tl.kill()
+    }
+  }, [delay])
+
+  return (
+    <div
+      ref={itemRef}
+      className={cn("bg-card rounded-lg border", itemHeight)}
+    >
+      <div className="space-y-3 p-4">
+        <div className="flex items-center space-x-3">
+          <AnimatedSkeleton
+            variant="circular"
+            className="h-10 w-10"
+            animation="pulse"
+          />
+          <div className="flex-1 space-y-2">
+            <AnimatedSkeleton className="h-4 w-3/4" animation="shimmer" />
+            <AnimatedSkeleton className="h-3 w-1/2" animation="shimmer" />
+          </div>
+        </div>
+        <AnimatedSkeleton className="h-8 w-full" animation="wave" />
+      </div>
+    </div>
+  )
+}
 
 AnimatedLoadingGrid.displayName = "AnimatedLoadingGrid"
 
@@ -184,13 +221,27 @@ const LoadingCard = forwardRef<HTMLDivElement, LoadingCardProps>(
     },
     ref
   ) => {
+    const cardRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      if (!cardRef.current) return
+
+      const tl = gsap.timeline()
+      tl.fromTo(
+        cardRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+      )
+
+      return () => {
+        tl.kill()
+      }
+    }, [])
+
     return (
-      <motion.div
-        ref={ref}
+      <div
+        ref={ref || cardRef}
         className={cn("bg-card space-y-4 rounded-lg border p-6", className)}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
       >
         {/* Header */}
         <div className="flex items-center space-x-3">
@@ -227,7 +278,7 @@ const LoadingCard = forwardRef<HTMLDivElement, LoadingCardProps>(
             <AnimatedSkeleton className="h-8 w-16 rounded" animation="pulse" />
           </div>
         )}
-      </motion.div>
+      </div>
     )
   }
 )

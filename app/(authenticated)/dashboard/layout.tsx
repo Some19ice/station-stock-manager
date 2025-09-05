@@ -3,6 +3,8 @@ import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import EnhancedDashboardLayout from "./_components/enhanced-layout"
 
+export const dynamic = "force-dynamic"
+
 export default async function DashboardLayout({
   children
 }: {

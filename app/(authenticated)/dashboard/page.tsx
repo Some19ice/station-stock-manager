@@ -44,19 +44,8 @@ import {
 } from "@/components/ui/enhanced-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Sparkles,
-  Activity,
-  Clock,
-  Users,
-  TrendingUp,
-  Bell,
-  Settings,
-  RefreshCw,
-  Zap
-} from "lucide-react"
+import { Sparkles, Activity, Clock, RefreshCw } from "lucide-react"
 import { gsap } from "gsap"
-import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface UserProfile {
@@ -131,7 +120,9 @@ export default function EnhancedDashboardPage() {
   const { isOnline: isConnected } = useRealtimeUpdates({ enabled: true })
 
   // Stable reference for loadDashboardData using useRef to prevent infinite re-renders
-  const loadDashboardDataRef = useRef<(useCache?: boolean, signal?: AbortSignal) => Promise<void>>()
+  const loadDashboardDataRef = useRef<(useCache?: boolean, signal?: AbortSignal) => Promise<void>>(
+    async () => {}
+  )
   
   loadDashboardDataRef.current = async (useCache = true, signal?: AbortSignal) => {
     try {
@@ -253,19 +244,11 @@ export default function EnhancedDashboardPage() {
     <AnimatedPage ref={pageRef}>
       <div className="space-y-8">
         {/* Enhanced header with status indicators */}
-        <motion.div
-          className="flex items-center justify-between"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <motion.div
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              transition={{ duration: 0.2 }}
-            >
+            <div className="cursor-pointer">
               <Sparkles className="text-primary h-8 w-8" />
-            </motion.div>
+            </div>
             <div>
               <h1 className="text-foreground text-3xl font-bold">
                 Dashboard Overview
@@ -294,7 +277,7 @@ export default function EnhancedDashboardPage() {
             />
             Refresh All
           </Button>
-        </motion.div>
+        </div>
 
         {/* Enhanced metrics */}
         <DashboardErrorBoundary>

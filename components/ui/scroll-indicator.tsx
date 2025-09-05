@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { gsap } from "gsap"
 import { ArrowUp } from "lucide-react"
 import { Button } from "./button"
 import { cn } from "@/lib/utils"
@@ -24,6 +24,7 @@ export function ScrollIndicator({
   const [scrollProgress, setScrollProgress] = useState(0)
   const [showBackToTopButton, setShowBackToTopButton] = useState(false)
   const progressRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,12 +34,45 @@ export function ScrollIndicator({
       const scrollPercent = (scrollTop / docHeight) * 100
 
       setScrollProgress(scrollPercent)
-      setShowBackToTopButton(scrollTop > 300)
+      
+      const shouldShow = scrollTop > 300
+      if (shouldShow !== showBackToTopButton) {
+        setShowBackToTopButton(shouldShow)
+        
+        if (buttonRef.current) {
+          if (shouldShow) {
+            gsap.fromTo(
+              buttonRef.current,
+              { opacity: 0, scale: 0.8, y: 20 },
+              { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: "power2.out" }
+            )
+          } else {
+            gsap.to(buttonRef.current, {
+              opacity: 0,
+              scale: 0.8,
+              y: 20,
+              duration: 0.3,
+              ease: "power2.in"
+            })
+          }
+        }
+      }
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  }, [showBackToTopButton])
+
+  useEffect(() => {
+    if (progressRef.current) {
+      gsap.to(progressRef.current, {
+        scaleX: scrollProgress / 100,
+        duration: 0.1,
+        ease: "none",
+        transformOrigin: "0%"
+      })
+    }
+  }, [scrollProgress])
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -47,53 +81,66 @@ export function ScrollIndicator({
     })
   }
 
+  const handleButtonHover = () => {
+    if (buttonRef.current) {
+      gsap.to(buttonRef.current, {
+        scale: 1.1,
+        duration: 0.2,
+        ease: "power2.out"
+      })
+    }
+  }
+
+  const handleButtonLeave = () => {
+    if (buttonRef.current) {
+      gsap.to(buttonRef.current, {
+        scale: 1,
+        duration: 0.2,
+        ease: "power2.out"
+      })
+    }
+  }
+
   return (
     <>
       {/* Progress bar */}
       {showProgress && (
-        <motion.div
+        <div
           ref={progressRef}
           className={cn(
             "from-primary via-secondary to-accent fixed top-0 right-0 left-0 z-50 h-1 bg-gradient-to-r",
             className
           )}
           style={{
-            scaleX: scrollProgress / 100,
+            transform: "scaleX(0)",
             transformOrigin: "0%"
           }}
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: scrollProgress / 100 }}
-          transition={{ duration: 0.1 }}
         />
       )}
 
       {/* Back to top button */}
-      {showBackToTop && (
-        <AnimatePresence>
-          {showBackToTopButton && (
-            <motion.div
-              className="fixed right-6 bottom-6 z-40"
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Button
-                onClick={scrollToTop}
-                size="icon"
-                className={cn(
-                  "h-12 w-12 rounded-full shadow-lg backdrop-blur-sm",
-                  "bg-background/80 border-border/50 border",
-                  "hover:bg-accent/80 hover:scale-110",
-                  "transition-all duration-300",
-                  showButton ? "block" : "hidden"
-                )}
-              >
-                <ArrowUp className="h-5 w-5" />
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {showBackToTop && showBackToTopButton && (
+        <div
+          ref={buttonRef}
+          className="fixed right-6 bottom-6 z-40"
+          style={{ opacity: 0 }}
+        >
+          <Button
+            onClick={scrollToTop}
+            onMouseEnter={handleButtonHover}
+            onMouseLeave={handleButtonLeave}
+            size="icon"
+            className={cn(
+              "h-12 w-12 rounded-full shadow-lg backdrop-blur-sm",
+              "bg-background/80 border-border/50 border",
+              "hover:bg-accent/80",
+              "transition-colors duration-300",
+              showButton ? "block" : "hidden"
+            )}
+          >
+            <ArrowUp className="h-5 w-5" />
+          </Button>
+        </div>
       )}
 
       {/* Fade overlay */}

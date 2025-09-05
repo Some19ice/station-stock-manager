@@ -45,7 +45,6 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.44.1",
-    "framer-motion": "^12.15.0",
     "gsap": "^3.13.0",
     "jspdf": "^3.0.2",
     "lucide-react": "^0.511.0",

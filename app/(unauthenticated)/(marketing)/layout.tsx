@@ -27,8 +27,6 @@ export default async function MarketingLayout({
       <ScrollIndicator
         showProgress={true}
         showBackToTop={true}
-        showButton={true}
-        showFade={true}
       />
 
       <RedirectToast />

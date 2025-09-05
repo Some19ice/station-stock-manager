@@ -9,7 +9,7 @@ interface CacheEntry<T> {
 }
 
 class DashboardCache {
-  private cache = new Map<string, CacheEntry<any>>()
+  private cache = new Map<string, CacheEntry<unknown>>()
   private readonly DEFAULT_TTL = 5 * 60 * 1000 // 5 minutes
 
   set<T>(key: string, data: T, ttl = this.DEFAULT_TTL): void {
@@ -30,7 +30,7 @@ class DashboardCache {
       return null
     }
     
-    return entry.data
+    return entry.data as T
   }
 
   invalidate(key: string): void {

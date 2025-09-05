@@ -1,6 +1,7 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { useEffect, useRef } from "react"
+import { gsap } from "gsap"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -17,57 +18,117 @@ export function SimpleLoading({
   size = "md",
   variant = "spinner"
 }: SimpleLoadingProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const messageRef = useRef<HTMLParagraphElement>(null)
+
   const sizes = {
     sm: "h-4 w-4",
     md: "h-8 w-8",
     lg: "h-12 w-12"
   }
 
+  useEffect(() => {
+    if (containerRef.current) {
+      gsap.fromTo(
+        containerRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.3, ease: "power2.out" }
+      )
+    }
+
+    if (messageRef.current) {
+      gsap.fromTo(
+        messageRef.current,
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.3, delay: 0.2, ease: "power2.out" }
+      )
+    }
+  }, [])
+
   const SpinnerVariant = () => (
     <Loader2 className={cn("text-primary animate-spin", sizes[size])} />
   )
 
-  const DotsVariant = () => (
-    <div className="flex space-x-1">
-      {[0, 1, 2].map(i => (
-        <motion.div
-          key={i}
-          className={cn(
-            "bg-primary rounded-full",
-            size === "sm" ? "h-2 w-2" : size === "md" ? "h-3 w-3" : "h-4 w-4"
-          )}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.7, 1, 0.7]
-          }}
-          transition={{
-            duration: 0.8,
-            repeat: Infinity,
-            delay: i * 0.2
-          }}
-        />
-      ))}
-    </div>
-  )
+  const DotsVariant = () => {
+    const dotsRef = useRef<HTMLDivElement>(null)
 
-  const PulseVariant = () => (
-    <motion.div
-      className={cn("bg-primary/20 rounded-full", sizes[size])}
-      animate={{
-        scale: [1, 1.1, 1],
-        opacity: [0.5, 1, 0.5]
-      }}
-      transition={{
-        duration: 1.5,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }}
-    >
+    useEffect(() => {
+      if (!dotsRef.current) return
+
+      const dots = dotsRef.current.children
+      const tl = gsap.timeline({ repeat: -1 })
+
+      Array.from(dots).forEach((dot, i) => {
+        tl.to(dot, {
+          scale: 1.2,
+          opacity: 1,
+          duration: 0.4,
+          ease: "power2.out"
+        }, i * 0.2)
+        .to(dot, {
+          scale: 1,
+          opacity: 0.7,
+          duration: 0.4,
+          ease: "power2.in"
+        }, i * 0.2 + 0.4)
+      })
+
+      return () => {
+        tl.kill()
+      }
+    }, [])
+
+    return (
+      <div ref={dotsRef} className="flex space-x-1">
+        {[0, 1, 2].map(i => (
+          <div
+            key={i}
+            className={cn(
+              "bg-primary rounded-full opacity-70",
+              size === "sm" ? "h-2 w-2" : size === "md" ? "h-3 w-3" : "h-4 w-4"
+            )}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  const PulseVariant = () => {
+    const pulseRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      if (!pulseRef.current) return
+
+      const tl = gsap.timeline({ repeat: -1 })
+      tl.to(pulseRef.current, {
+        scale: 1.1,
+        opacity: 1,
+        duration: 0.75,
+        ease: "power2.inOut"
+      })
+      .to(pulseRef.current, {
+        scale: 1,
+        opacity: 0.5,
+        duration: 0.75,
+        ease: "power2.inOut"
+      })
+
+      return () => {
+        tl.kill()
+      }
+    }, [])
+
+    return (
       <div
-        className={cn("bg-primary h-full w-full rounded-full", "animate-pulse")}
-      />
-    </motion.div>
-  )
+        ref={pulseRef}
+        className={cn("bg-primary/20 rounded-full opacity-50", sizes[size])}
+      >
+        <div
+          className={cn("bg-primary h-full w-full rounded-full", "animate-pulse")}
+        />
+      </div>
+    )
+  }
 
   const renderVariant = () => {
     switch (variant) {
@@ -81,10 +142,8 @@ export function SimpleLoading({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <div
+      ref={containerRef}
       className={cn(
         "flex flex-col items-center justify-center gap-3",
         className
@@ -92,18 +151,16 @@ export function SimpleLoading({
     >
       {renderVariant()}
       {message && (
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+        <p
+          ref={messageRef}
           className={cn(
             "text-muted-foreground text-center",
             size === "sm" ? "text-xs" : size === "md" ? "text-sm" : "text-base"
           )}
         >
           {message}
-        </motion.p>
+        </p>
       )}
-    </motion.div>
+    </div>
   )
 }

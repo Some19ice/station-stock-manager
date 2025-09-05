@@ -15,15 +15,12 @@ import {
   Users,
   DollarSign,
   RefreshCw,
-  Zap,
-  AlertCircle,
   BarChart3,
   Sparkles
 } from "lucide-react"
 import { DashboardMetrics } from "@/actions/dashboard"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, memo } from "react"
 import { gsap } from "gsap"
-import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface EnhancedMetricsCardsProps {
@@ -32,7 +29,7 @@ interface EnhancedMetricsCardsProps {
   isRefreshing?: boolean
 }
 
-function AnimatedNumber({
+const AnimatedNumber = memo(function AnimatedNumber({
   value,
   className,
   delay = 0,
@@ -45,6 +42,7 @@ function AnimatedNumber({
 }) {
   const numberRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const sparkleRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!numberRef.current || !containerRef.current) return
@@ -52,7 +50,6 @@ function AnimatedNumber({
     const numericValue = parseFloat(value.replace(/[^0-9.-]+/g, ""))
     if (isNaN(numericValue)) return
 
-    // Create timeline for proper cleanup
     const tl = gsap.timeline()
     const obj = { value: 0 }
 
@@ -106,11 +103,22 @@ function AnimatedNumber({
       0
     )
 
-    // Cleanup function to prevent memory leaks
+    // Sparkle animation for high priority items
+    if (priority === "high" && sparkleRef.current) {
+      gsap.to(sparkleRef.current, {
+        scale: 1.2,
+        rotation: 360,
+        duration: 2,
+        repeat: -1,
+        yoyo: true,
+        ease: "power2.inOut"
+      })
+    }
+
     return () => {
       tl.kill()
     }
-  }, [value, delay])
+  }, [value, delay, priority])
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
@@ -118,26 +126,15 @@ function AnimatedNumber({
         0
       </div>
       {priority === "high" && (
-        <motion.div
-          className="absolute -top-1 -right-1"
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 5, -5, 0]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatType: "reverse"
-          }}
-        >
+        <div ref={sparkleRef} className="absolute -top-1 -right-1">
           <Sparkles className="text-primary h-4 w-4" />
-        </motion.div>
+        </div>
       )}
     </div>
   )
-}
+})
 
-function TrendIndicator({
+const TrendIndicator = memo(function TrendIndicator({
   trend,
   value,
   className
@@ -146,6 +143,37 @@ function TrendIndicator({
   value: string
   className?: string
 }) {
+  const indicatorRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!indicatorRef.current) return
+
+    const handleMouseEnter = () => {
+      gsap.to(indicatorRef.current, {
+        scale: 1.05,
+        duration: 0.2,
+        ease: "power2.out"
+      })
+    }
+
+    const handleMouseLeave = () => {
+      gsap.to(indicatorRef.current, {
+        scale: 1,
+        duration: 0.2,
+        ease: "power2.out"
+      })
+    }
+
+    const element = indicatorRef.current
+    element.addEventListener("mouseenter", handleMouseEnter)
+    element.addEventListener("mouseleave", handleMouseLeave)
+
+    return () => {
+      element.removeEventListener("mouseenter", handleMouseEnter)
+      element.removeEventListener("mouseleave", handleMouseLeave)
+    }
+  }, [])
+
   const icons = {
     up: TrendingUp,
     down: TrendingDown,
@@ -161,34 +189,65 @@ function TrendIndicator({
   const Icon = icons[trend]
 
   return (
-    <motion.div
+    <div
+      ref={indicatorRef}
       className={cn(
-        "flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium",
+        "flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium cursor-pointer",
         colors[trend],
         className
       )}
-      whileHover={{ scale: 1.05 }}
-      transition={{ duration: 0.2 }}
     >
       <Icon className="h-3 w-3" />
       <span>{value}</span>
-    </motion.div>
+    </div>
   )
-}
+})
 
-export function EnhancedMetricsCards({
+export const EnhancedMetricsCards = memo(function EnhancedMetricsCards({
   metrics,
   onRetry,
   isRefreshing = false
 }: EnhancedMetricsCardsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const iconRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!headerRef.current) return
+
+    gsap.fromTo(
+      headerRef.current,
+      { opacity: 0, y: -10 },
+      { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+    )
+  }, [])
+
+  const handleIconHover = () => {
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        rotation: 180,
+        duration: 0.3,
+        ease: "power2.out"
+      })
+    }
+  }
+
+  const handleIconLeave = () => {
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        rotation: 0,
+        duration: 0.3,
+        ease: "power2.out"
+      })
+    }
+  }
 
   const metricCards = [
     {
       title: "Total Sales",
       value: `₦${parseFloat(metrics.todaysSales.totalValue || "0").toLocaleString()}`,
       icon: DollarSign,
-      trend: "neutral" as const, // No trend data available in current interface
+      trend: "neutral" as const,
       trendValue: "Today",
       variant: "metric" as const,
       priority: "high" as const,
@@ -198,7 +257,7 @@ export function EnhancedMetricsCards({
       title: "Transactions",
       value: (metrics.todaysSales.transactionCount || 0).toString(),
       icon: ShoppingCart,
-      trend: "neutral" as const, // No trend data available in current interface
+      trend: "neutral" as const,
       trendValue: "Today",
       variant: "metric" as const,
       priority: "normal" as const,
@@ -208,12 +267,12 @@ export function EnhancedMetricsCards({
       title: "Low Stock Items",
       value: (metrics.stockStatus.lowStockCount || 0).toString(),
       icon: Package,
-      trend: (metrics.stockStatus.lowStockCount || 0) > 5 ? "down" : "up",
+      trend: ((metrics.stockStatus.lowStockCount || 0) > 5 ? "down" : "up") as "up" | "down" | "neutral",
       trendValue: `${metrics.stockStatus.lowStockCount || 0} items`,
       variant:
-        (metrics.stockStatus.lowStockCount || 0) > 5 ? "alert" : "metric",
+        ((metrics.stockStatus.lowStockCount || 0) > 5 ? "alert" : "metric") as "default" | "metric" | "alert" | "feature",
       priority:
-        (metrics.stockStatus.lowStockCount || 0) > 5 ? "high" : "normal",
+        ((metrics.stockStatus.lowStockCount || 0) > 5 ? "high" : "normal") as "high" | "normal",
       bgColor: "bg-chart-3/10"
     },
     {
@@ -230,19 +289,16 @@ export function EnhancedMetricsCards({
 
   return (
     <div ref={containerRef} className="mb-8">
-      <motion.div
-        className="mb-6 flex items-center justify-between"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
+      <div ref={headerRef} className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <motion.div
-            whileHover={{ rotate: 180 }}
-            transition={{ duration: 0.3 }}
+          <div
+            ref={iconRef}
+            onMouseEnter={handleIconHover}
+            onMouseLeave={handleIconLeave}
+            className="cursor-pointer"
           >
             <BarChart3 className="text-primary h-6 w-6" />
-          </motion.div>
+          </div>
           <h2 className="text-foreground text-2xl font-bold">Key Metrics</h2>
         </div>
 
@@ -258,69 +314,117 @@ export function EnhancedMetricsCards({
           />
           Refresh
         </Button>
-      </motion.div>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {metricCards.map((metric, index) => {
           const Icon = metric.icon
 
           return (
-            <EnhancedCard
+            <MetricCard
               key={metric.title}
-              variant={
-                metric.variant as "default" | "metric" | "alert" | "feature"
-              }
-              hover={true}
-              glow={metric.priority === "high"}
-              magnetic={true}
-              delay={index}
-              className={cn("relative overflow-hidden", metric.bgColor)}
-            >
-              <EnhancedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <EnhancedCardTitle className="text-muted-foreground text-sm font-medium">
-                  {metric.title}
-                </EnhancedCardTitle>
-                <motion.div
-                  whileHover={{
-                    scale: 1.1,
-                    rotate: 5
-                  }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Icon className="text-muted-foreground h-5 w-5" />
-                </motion.div>
-              </EnhancedCardHeader>
-
-              <EnhancedCardContent>
-                <AnimatedNumber
-                  value={metric.value}
-                  delay={index}
-                  priority={metric.priority as "high" | "normal"}
-                  className="mb-3"
-                />
-
-                <div className="flex items-center justify-between">
-                  <TrendIndicator
-                    trend={metric.trend as "up" | "down" | "neutral"}
-                    value={metric.trendValue}
-                  />
-
-                  {metric.priority === "high" && (
-                    <Badge variant="secondary" className="text-xs">
-                      Priority
-                    </Badge>
-                  )}
-                </div>
-              </EnhancedCardContent>
-
-              {/* Subtle background pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="bg-primary/10 absolute inset-0" />
-              </div>
-            </EnhancedCard>
+              metric={metric}
+              Icon={Icon}
+              index={index}
+            />
           )
         })}
       </div>
     </div>
   )
-}
+})
+
+const MetricCard = memo(function MetricCard({
+  metric,
+  Icon,
+  index
+}: {
+  metric: {
+    title: string
+    value: string
+    icon: React.ComponentType<{ className?: string }>
+    trend: "up" | "down" | "neutral"
+    trendValue: string
+    variant: "default" | "metric" | "alert" | "feature"
+    priority: "high" | "normal"
+    bgColor: string
+  }
+  Icon: React.ComponentType<{ className?: string }>
+  index: number
+}) {
+  const iconRef = useRef<HTMLDivElement>(null)
+
+  const handleIconHover = () => {
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        scale: 1.1,
+        rotation: 5,
+        duration: 0.2,
+        ease: "power2.out"
+      })
+    }
+  }
+
+  const handleIconLeave = () => {
+    if (iconRef.current) {
+      gsap.to(iconRef.current, {
+        scale: 1,
+        rotation: 0,
+        duration: 0.2,
+        ease: "power2.out"
+      })
+    }
+  }
+
+  return (
+    <EnhancedCard
+      variant={metric.variant as "default" | "metric" | "alert" | "feature"}
+      hover={true}
+      glow={metric.priority === "high"}
+      magnetic={true}
+      delay={index}
+      className={cn("relative overflow-hidden", metric.bgColor)}
+    >
+      <EnhancedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <EnhancedCardTitle className="text-muted-foreground text-sm font-medium">
+          {metric.title}
+        </EnhancedCardTitle>
+        <div
+          ref={iconRef}
+          onMouseEnter={handleIconHover}
+          onMouseLeave={handleIconLeave}
+          className="cursor-pointer"
+        >
+          <Icon className="text-muted-foreground h-5 w-5" />
+        </div>
+      </EnhancedCardHeader>
+
+      <EnhancedCardContent>
+        <AnimatedNumber
+          value={metric.value}
+          delay={index}
+          priority={metric.priority as "high" | "normal"}
+          className="mb-3"
+        />
+
+        <div className="flex items-center justify-between">
+          <TrendIndicator
+            trend={metric.trend as "up" | "down" | "neutral"}
+            value={metric.trendValue}
+          />
+
+          {metric.priority === "high" && (
+            <Badge variant="secondary" className="text-xs">
+              Priority
+            </Badge>
+          )}
+        </div>
+      </EnhancedCardContent>
+
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="bg-primary/10 absolute inset-0" />
+      </div>
+    </EnhancedCard>
+  )
+})

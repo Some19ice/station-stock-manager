@@ -1,7 +1,6 @@
 "use client"
 
 import { forwardRef, useEffect, useRef } from "react"
-import { motion } from "framer-motion"
 import { gsap } from "gsap"
 import {
   Card,
@@ -41,8 +40,10 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
     useEffect(() => {
       if (!cardRef.current) return
 
+      const tl = gsap.timeline()
+
       // Entrance animation
-      gsap.fromTo(
+      tl.fromTo(
         cardRef.current,
         {
           opacity: 0,
@@ -61,50 +62,88 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
         }
       )
 
-      // Magnetic effect
-      if (magnetic) {
+      // Hover animations
+      if (hover) {
         const cardElement = cardRef.current
-        if (!cardElement) return
-
-        const handleMouseMove = (e: MouseEvent) => {
-          const card = cardRef.current
-          if (!card) return
-
-          const rect = card.getBoundingClientRect()
-          const centerX = rect.left + rect.width / 2
-          const centerY = rect.top + rect.height / 2
-          const deltaX = (e.clientX - centerX) * 0.1
-          const deltaY = (e.clientY - centerY) * 0.1
-
-          gsap.to(card, {
-            x: deltaX,
-            y: deltaY,
-            duration: 0.3,
+        
+        const handleMouseEnter = () => {
+          gsap.to(cardElement, {
+            scale: 1.02,
+            duration: 0.2,
             ease: "power2.out"
           })
         }
 
         const handleMouseLeave = () => {
-          if (cardRef.current) {
-            gsap.to(cardRef.current, {
-              x: 0,
-              y: 0,
-              duration: 0.5,
-              ease: "elastic.out(1, 0.3)"
+          gsap.to(cardElement, {
+            scale: 1,
+            duration: 0.2,
+            ease: "power2.out"
+          })
+        }
+
+        cardElement.addEventListener("mouseenter", handleMouseEnter)
+        cardElement.addEventListener("mouseleave", handleMouseLeave)
+
+        // Cleanup function
+        const cleanup = () => {
+          cardElement.removeEventListener("mouseenter", handleMouseEnter)
+          cardElement.removeEventListener("mouseleave", handleMouseLeave)
+        }
+
+        // Magnetic effect
+        if (magnetic) {
+          const handleMouseMove = (e: MouseEvent) => {
+            const card = cardRef.current
+            if (!card) return
+
+            const rect = card.getBoundingClientRect()
+            const centerX = rect.left + rect.width / 2
+            const centerY = rect.top + rect.height / 2
+            const deltaX = (e.clientX - centerX) * 0.1
+            const deltaY = (e.clientY - centerY) * 0.1
+
+            gsap.to(card, {
+              x: deltaX,
+              y: deltaY,
+              duration: 0.3,
+              ease: "power2.out"
             })
+          }
+
+          const handleMagneticLeave = () => {
+            if (cardRef.current) {
+              gsap.to(cardRef.current, {
+                x: 0,
+                y: 0,
+                scale: 1,
+                duration: 0.5,
+                ease: "elastic.out(1, 0.3)"
+              })
+            }
+          }
+
+          cardElement.addEventListener("mousemove", handleMouseMove)
+          cardElement.addEventListener("mouseleave", handleMagneticLeave)
+
+          return () => {
+            cleanup()
+            cardElement.removeEventListener("mousemove", handleMouseMove)
+            cardElement.removeEventListener("mouseleave", handleMagneticLeave)
+            tl.kill()
           }
         }
 
-        cardElement.addEventListener("mousemove", handleMouseMove)
-        cardElement.addEventListener("mouseleave", handleMouseLeave)
-
         return () => {
-          // Store element reference to ensure cleanup even if ref changes
-          cardElement.removeEventListener("mousemove", handleMouseMove)
-          cardElement.removeEventListener("mouseleave", handleMouseLeave)
+          cleanup()
+          tl.kill()
         }
       }
-    }, [delay, magnetic])
+
+      return () => {
+        tl.kill()
+      }
+    }, [delay, magnetic, hover])
 
     const variants = {
       default: "bg-card border-border/50",
@@ -114,12 +153,7 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
     }
 
     return (
-      <motion.div
-        ref={ref}
-        className="group relative"
-        whileHover={hover ? { scale: 1.02 } : undefined}
-        transition={{ duration: 0.2 }}
-      >
+      <div ref={ref} className="group relative">
         {/* Glow effect */}
         {glow && (
           <div
@@ -142,7 +176,7 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
         >
           {children}
         </Card>
-      </motion.div>
+      </div>
     )
   }
 )

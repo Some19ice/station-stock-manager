@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import {
   BarChart,
   Code2,
@@ -157,44 +156,27 @@ export function FeaturesSection() {
 
       <div ref={sectionRef} className="relative z-10 mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
-          <motion.div
-            className="mb-6 flex items-center justify-center gap-2"
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, type: "spring", bounce: 0.4 }}
-          >
+          <div className="features-badge mb-6 flex items-center justify-center gap-2">
             <Zap className="text-primary h-5 w-5" />
             <h2 className="text-primary text-sm font-bold tracking-wider uppercase">
               Everything Included
             </h2>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-          >
+          <div className="features-title">
             <h3 className="text-foreground mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               <span className="text-primary">Complete</span> Gas Station
               Management
             </h3>
-          </motion.div>
+          </div>
 
-          <motion.p
-            className="text-foreground/75 mx-auto mt-6 max-w-2xl text-lg leading-relaxed sm:text-xl"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
+          <p className="features-subtitle text-foreground/75 mx-auto mt-6 max-w-2xl text-lg leading-relaxed sm:text-xl">
             Everything you need to manage fuel inventory, track sales, and
             optimize operations.
             <span className="text-primary mt-2 block text-base font-medium">
               Trusted by industry leaders worldwide
             </span>
-          </motion.p>
+          </p>
         </div>
 
         <div className="mx-auto mt-20 max-w-2xl sm:mt-24 lg:mt-32 lg:max-w-none">
@@ -203,13 +185,9 @@ export function FeaturesSection() {
             className="grid max-w-xl grid-cols-1 gap-8 lg:max-w-none lg:grid-cols-3 lg:gap-12"
           >
             {features.map((feature, index) => (
-              <motion.div
+              <div
                 key={feature.name}
                 className="feature-card group relative"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
               >
                 <div className="bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-primary/10 relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all duration-500 hover:shadow-2xl">
                   {/* Card gradient overlay */}
@@ -224,65 +202,33 @@ export function FeaturesSection() {
 
                   <div className="relative z-10 p-8">
                     {/* Enhanced icon container */}
-                    <motion.div
-                      className="group-hover:from-primary/20 group-hover:to-secondary/20 from-muted/50 to-muted mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br transition-all duration-500"
-                      whileHover={{
-                        scale: 1.1,
-                        rotate: 5
-                      }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 17
-                      }}
-                    >
+                    <div className="feature-icon group-hover:from-primary/20 group-hover:to-secondary/20 from-muted/50 to-muted mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br transition-all duration-500">
                       <feature.icon
                         className="text-primary h-8 w-8 transition-colors duration-500 group-hover:text-white"
                         aria-hidden="true"
                       />
-                    </motion.div>
+                    </div>
 
                     {/* Feature name with hover effect */}
                     <dt className="mb-4 flex items-center justify-between">
                       <h4 className="text-foreground group-hover:text-primary text-xl font-bold tracking-tight transition-colors duration-300">
                         {feature.name}
                       </h4>
-                      <motion.div
-                        className="text-primary/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                        whileHover={{ scale: 1.2, rotate: 45 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 17
-                        }}
-                      >
+                      <div className="feature-arrow text-primary/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                         <ArrowUpRight className="h-5 w-5" />
-                      </motion.div>
+                      </div>
                     </dt>
 
                     {/* Enhanced description */}
                     <dd className="text-foreground/70 group-hover:text-foreground/80 text-base leading-relaxed transition-colors duration-300">
                       <p className="relative">
                         {feature.description}
-                        {/* Subtle hover accent */}
-                        <motion.span
-                          className="bg-primary/20 absolute -inset-1 -z-10 rounded opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                          initial={{ scaleX: 0 }}
-                          whileHover={{ scaleX: 1 }}
-                          transition={{ duration: 0.3 }}
-                        />
                       </p>
                     </dd>
 
                     {/* Progress indicator */}
                     <div className="bg-muted/30 mt-6 h-1 w-full overflow-hidden rounded-full">
-                      <motion.div
-                        className="from-primary to-secondary h-full bg-gradient-to-r"
-                        initial={{ width: "0%" }}
-                        whileInView={{ width: "100%" }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1.5, delay: index * 0.2 + 0.5 }}
-                      />
+                      <div className="feature-progress from-primary to-secondary h-full bg-gradient-to-r w-0" />
                     </div>
                   </div>
 
@@ -293,7 +239,7 @@ export function FeaturesSection() {
                     <div className="bg-accent/10 absolute right-8 bottom-6 h-1.5 w-1.5 animate-pulse rounded-full delay-300" />
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </dl>
         </div>

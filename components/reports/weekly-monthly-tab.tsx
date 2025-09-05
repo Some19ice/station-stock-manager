@@ -31,24 +31,24 @@ import { AnimatedCard } from "@/components/ui/animated-card"
 interface WeeklyReportData {
   dailyBreakdown: Array<{
     date: string
-    totalSales: string
-    transactionCount: number
+    sales: string
+    transactions: number
   }>
   weekTotals: {
-    totalSales: string
-    totalTransactions: number
+    sales: string
+    transactions: number
   }
 }
 
 interface MonthlyReportData {
   weeklyBreakdown: Array<{
     week: string
-    totalSales: string
-    transactionCount: number
+    sales: string
+    transactions: number
   }>
   monthTotals: {
-    totalSales: string
-    totalTransactions: number
+    sales: string
+    transactions: number
   }
   productPerformance: Array<{
     productName: string
@@ -188,13 +188,14 @@ export function WeeklyMonthlyTab() {
         // Transform null values to "0" strings
         const transformedData = {
           ...result.data,
-          dailyBreakdown: result.data.dailyBreakdown.map(day => ({
-            ...day,
-            totalSales: day.totalSales || "0"
+          dailyBreakdown: result.data.dailyBreakdown.map((day: { date: string; totalSales: string | null; transactionCount: number }) => ({
+            date: day.date,
+            sales: day.totalSales || "0",
+            transactions: day.transactionCount || 0
           })),
           weekTotals: {
-            ...result.data.weekTotals,
-            totalSales: result.data.weekTotals.totalSales || "0"
+            sales: result.data.weekTotals.totalSales || "0",
+            transactions: result.data.weekTotals.totalTransactions || 0
           }
         }
         setWeeklyData(transformedData)
@@ -237,17 +238,18 @@ export function WeeklyMonthlyTab() {
       if (result.isSuccess && result.data) {
         // Transform null values to "0" strings
         const transformedData = {
-          ...result.data,
           weeklyBreakdown: result.data.weeklyBreakdown.map(week => ({
-            ...week,
-            totalSales: week.totalSales || "0"
+            week: week.week,
+            sales: week.totalSales || "0",
+            transactions: week.transactionCount || 0
           })),
           monthTotals: {
-            ...result.data.monthTotals,
-            totalSales: result.data.monthTotals.totalSales || "0"
+            sales: result.data.monthTotals.totalSales || "0",
+            transactions: result.data.monthTotals.totalTransactions || 0
           },
           productPerformance: result.data.productPerformance.map(product => ({
-            ...product,
+            productName: product.productName,
+            type: product.type,
             totalQuantity: product.totalQuantity || "0",
             totalRevenue: product.totalRevenue || "0"
           }))
@@ -317,7 +319,7 @@ export function WeeklyMonthlyTab() {
     day,
     index
   }: {
-    day: any
+    day: { date: string; sales: string; transactions: number }
     index: number
   }) => {
     const itemRef = useRef<HTMLDivElement>(null)
@@ -353,19 +355,19 @@ export function WeeklyMonthlyTab() {
             })}
           </p>
           <p className="text-muted-foreground text-sm">
-            {day.transactionCount} transactions
+            {day.transactions} transactions
           </p>
         </div>
         <div className="text-right">
           <p className="font-semibold text-green-600">
-            {formatCurrency(day.totalSales)}
+            {formatCurrency(day.sales)}
           </p>
           <p className="text-muted-foreground text-sm">
-            {day.transactionCount > 0
+            {day.transactions > 0
               ? formatCurrency(
                   (
-                    parseFloat(day.totalSales) /
-                    day.transactionCount
+                    parseFloat(day.sales) /
+                    day.transactions
                   ).toFixed(2)
                 )
               : "₦0"}{" "}
@@ -381,7 +383,7 @@ export function WeeklyMonthlyTab() {
     week,
     index
   }: {
-    week: any
+    week: { week: string; sales: string; transactions: number }
     index: number
   }) => {
     const itemRef = useRef<HTMLDivElement>(null)
@@ -411,19 +413,19 @@ export function WeeklyMonthlyTab() {
         <div>
           <p className="font-medium">Week {week.week}</p>
           <p className="text-muted-foreground text-sm">
-            {week.transactionCount} transactions
+            {week.transactions} transactions
           </p>
         </div>
         <div className="text-right">
           <p className="font-semibold text-green-600">
-            {formatCurrency(week.totalSales)}
+            {formatCurrency(week.sales)}
           </p>
           <p className="text-muted-foreground text-sm">
-            {week.transactionCount > 0
+            {week.transactions > 0
               ? formatCurrency(
                   (
-                    parseFloat(week.totalSales) /
-                    week.transactionCount
+                    parseFloat(week.sales) /
+                    week.transactions
                   ).toFixed(2)
                 )
               : "₦0"}{" "}
@@ -439,7 +441,7 @@ export function WeeklyMonthlyTab() {
     product,
     index
   }: {
-    product: any
+    product: { productName: string; type: string; totalQuantity: string; totalRevenue: string }
     index: number
   }) => {
     const itemRef = useRef<HTMLDivElement>(null)
@@ -595,7 +597,7 @@ export function WeeklyMonthlyTab() {
                       </p>
                     </div>
                     <p className="text-2xl font-bold text-green-600">
-                      {formatCurrency(weeklyData.weekTotals.totalSales)}
+                      {formatCurrency(weeklyData.weekTotals.sales)}
                     </p>
                   </AnimatedCard>
                   <AnimatedCard hoverEffect={true} className="p-4">
@@ -606,7 +608,7 @@ export function WeeklyMonthlyTab() {
                       </p>
                     </div>
                     <p className="text-2xl font-bold">
-                      {weeklyData.weekTotals.totalTransactions}
+                      {weeklyData.weekTotals.transactions}
                     </p>
                   </AnimatedCard>
                   <AnimatedCard hoverEffect={true} className="p-4">
@@ -619,7 +621,7 @@ export function WeeklyMonthlyTab() {
                     <p className="text-2xl font-bold">
                       {formatCurrency(
                         (
-                          parseFloat(weeklyData.weekTotals.totalSales) /
+                          parseFloat(weeklyData.weekTotals.sales) /
                           weeklyData.dailyBreakdown.length
                         ).toFixed(2)
                       )}
@@ -735,7 +737,7 @@ export function WeeklyMonthlyTab() {
                         </p>
                       </div>
                       <p className="text-2xl font-bold text-green-600">
-                        {formatCurrency(monthlyData.monthTotals.totalSales)}
+                        {formatCurrency(monthlyData.monthTotals.sales)}
                       </p>
                     
                   </AnimatedCard>
@@ -748,7 +750,7 @@ export function WeeklyMonthlyTab() {
                         </p>
                       </div>
                       <p className="text-2xl font-bold">
-                        {monthlyData.monthTotals.totalTransactions}
+                        {monthlyData.monthTotals.transactions}
                       </p>
                     
                   </AnimatedCard>
@@ -763,7 +765,7 @@ export function WeeklyMonthlyTab() {
                       <p className="text-2xl font-bold">
                         {formatCurrency(
                           (
-                            parseFloat(monthlyData.monthTotals.totalSales) /
+                            parseFloat(monthlyData.monthTotals.sales) /
                             Math.max(monthlyData.weeklyBreakdown.length, 1)
                           ).toFixed(2)
                         )}
@@ -824,8 +826,8 @@ function generateWeeklyCSV(
     `Weekly Report - ${startDate} to ${endDate}`,
     "",
     "Summary",
-    `Total Sales,${data.weekTotals.totalSales}`,
-    `Total Transactions,${data.weekTotals.totalTransactions}`,
+    `Total Sales,${data.weekTotals.sales}`,
+    `Total Transactions,${data.weekTotals.transactions}`,
     "",
     "Daily Breakdown",
     "Date,Sales,Transactions,Average Transaction"
@@ -833,11 +835,11 @@ function generateWeeklyCSV(
 
   data.dailyBreakdown.forEach(day => {
     const avgTransaction =
-      day.transactionCount > 0
-        ? (parseFloat(day.totalSales) / day.transactionCount).toFixed(2)
+      day.transactions > 0
+        ? (parseFloat(day.sales) / day.transactions).toFixed(2)
         : "0"
     lines.push(
-      `${day.date},${day.totalSales},${day.transactionCount},${avgTransaction}`
+      `${day.date},${day.sales},${day.transactions},${avgTransaction}`
     )
   })
 
@@ -853,8 +855,8 @@ function generateMonthlyCSV(
     `Monthly Report - ${startDate} to ${endDate}`,
     "",
     "Summary",
-    `Total Sales,${data.monthTotals.totalSales}`,
-    `Total Transactions,${data.monthTotals.totalTransactions}`,
+    `Total Sales,${data.monthTotals.sales}`,
+    `Total Transactions,${data.monthTotals.transactions}`,
     "",
     "Weekly Breakdown",
     "Week,Sales,Transactions,Average Transaction"
@@ -862,11 +864,11 @@ function generateMonthlyCSV(
 
   data.weeklyBreakdown.forEach(week => {
     const avgTransaction =
-      week.transactionCount > 0
-        ? (parseFloat(week.totalSales) / week.transactionCount).toFixed(2)
+      week.transactions > 0
+        ? (parseFloat(week.sales) / week.transactions).toFixed(2)
         : "0"
     lines.push(
-      `Week ${week.week},${week.totalSales},${week.transactionCount},${avgTransaction}`
+      `Week ${week.week},${week.sales},${week.transactions},${avgTransaction}`
     )
   })
 
