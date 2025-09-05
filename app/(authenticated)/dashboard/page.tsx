@@ -116,8 +116,10 @@ export default function EnhancedDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [isDataLoading, setIsDataLoading] = useState(false)
   const pageRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const mountedRef = useRef(true)
 
   // Enhanced cache and real-time updates
   const { invalidate: clearCache } = useDashboardCache(
@@ -134,58 +136,83 @@ export default function EnhancedDashboardPage() {
   const loadDashboardDataRef = useRef<(useCache?: boolean, signal?: AbortSignal) => Promise<void>>()
   
   loadDashboardDataRef.current = async (useCache = true, signal?: AbortSignal) => {
+    // Prevent multiple simultaneous requests
+    if (isDataLoading && !refreshing) return
+    
     try {
-      if (signal?.aborted) return
+      if (signal?.aborted || !mountedRef.current) return
 
+      setIsDataLoading(true)
       setError(null)
 
-      // Load user profile
+      // Load user profile first - critical for authorization
       const profileResult = await getCurrentUserProfile()
-      if (signal?.aborted) return
+      if (signal?.aborted || !mountedRef.current) return
 
       if (!profileResult.isSuccess) {
         throw new Error("Failed to load user profile")
       }
-      if (profileResult.data && !signal?.aborted) {
+      
+      // Only update state if request wasn't cancelled and component is mounted
+      if (profileResult.data && !signal?.aborted && mountedRef.current) {
         setUserProfile(profileResult.data)
       }
 
-      // Load dashboard data in parallel
-      const [metricsResult, alertsResult, activitiesResult] =
-        await Promise.all([
-          getDashboardMetrics(),
-          getLowStockAlerts(),
-          getRecentTransactions()
-        ])
+      // Load dashboard data in parallel with individual error handling
+      const dataPromises = [
+        getDashboardMetrics().catch(err => ({ isSuccess: false, error: err.message })),
+        getLowStockAlerts().catch(err => ({ isSuccess: false, error: err.message })),
+        getRecentTransactions().catch(err => ({ isSuccess: false, error: err.message }))
+      ]
 
-      if (signal?.aborted) return
+      const [metricsResult, alertsResult, activitiesResult] = await Promise.all(dataPromises)
+      
+      // Check for cancellation after all requests complete
+      if (signal?.aborted || !mountedRef.current) return
 
+      // Update state atomically to prevent partial updates
+      const updates: (() => void)[] = []
+      
       if (metricsResult.isSuccess && metricsResult.data) {
-        setMetrics(metricsResult.data)
+        updates.push(() => setMetrics(metricsResult.data))
       }
 
       if (alertsResult.isSuccess && alertsResult.data) {
-        setAlerts(alertsResult.data)
+        updates.push(() => setAlerts(alertsResult.data))
       }
 
       if (activitiesResult.isSuccess && activitiesResult.data) {
-        setActivities(activitiesResult.data)
+        updates.push(() => setActivities(activitiesResult.data))
       }
+
+      // Apply all updates if not cancelled and component is mounted
+      if (!signal?.aborted && mountedRef.current) {
+        updates.forEach(update => update())
+      }
+
     } catch (err) {
-      if (signal?.aborted) return
+      if (signal?.aborted || !mountedRef.current) return
       setError(
         err instanceof Error ? err.message : "Failed to load dashboard"
       )
     } finally {
-      if (!signal?.aborted) {
+      if (!signal?.aborted && mountedRef.current) {
         setLoading(false)
         setRefreshing(false)
+        setIsDataLoading(false)
       }
     }
   }
 
   const loadDashboardData = useCallback((useCache = true, signal?: AbortSignal) => {
     return loadDashboardDataRef.current?.(useCache, signal) || Promise.resolve()
+  }, [])
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
   }, [])
 
   useEffect(() => {
@@ -216,6 +243,9 @@ export default function EnhancedDashboardPage() {
   }, [])
 
   const handleRefresh = async () => {
+    // Prevent multiple refresh requests
+    if (isDataLoading) return
+    
     setRefreshing(true)
     clearCache()
     
