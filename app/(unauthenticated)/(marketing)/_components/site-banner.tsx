@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -23,6 +23,13 @@ export function SiteBanner({
 }: SiteBannerProps) {
   const [isVisible, setIsVisible] = useState(true)
 
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--banner-height", 
+      isVisible ? "48px" : "0px"
+    )
+  }, [isVisible])
+
   if (!isVisible) return null
 
   const variants = {
@@ -34,7 +41,7 @@ export function SiteBanner({
   return (
     <div
       className={cn(
-        "relative flex items-center justify-center px-4 py-3 text-sm font-medium transition-all duration-300",
+        "fixed top-0 left-0 right-0 z-50 flex items-center justify-center px-4 py-3 text-sm font-medium transition-all duration-300",
         variants[variant],
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full"
       )}

@@ -108,7 +108,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
 
   if (!mounted) {
     return (
-      <SectionWrapper className="relative overflow-hidden py-20 sm:py-32">
+      <SectionWrapper className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-32">
         <div className="relative z-10 mx-auto max-w-5xl text-center">
           <div className="mb-8 flex justify-center">
             <div className="bg-card/80 relative inline-flex items-center rounded-full px-4 py-2 text-sm shadow-lg">
@@ -128,7 +128,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
   }
 
   return (
-    <SectionWrapper className="relative overflow-hidden py-20 sm:py-32 lg:py-40">
+    <SectionWrapper className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-32 lg:pt-48 lg:pb-40">
       {/* Enhanced Background Effects */}
       <AnimatedBackground variant="hero" particleCount={40} />
       <FloatingElements variant="hero" density="medium" animated />
