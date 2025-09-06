@@ -92,7 +92,9 @@ export default function InventoryPage() {
           "-=0.2"
         )
       
-      return () => tl.kill()
+      return () => {
+        tl.kill()
+      }
     }
   }, [isLoading])
 
@@ -106,7 +108,9 @@ export default function InventoryPage() {
         { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }
       )
       
-      return () => tl.kill()
+      return () => {
+        tl.kill()
+      }
     }
   }, [activeTab, isLoading])
 

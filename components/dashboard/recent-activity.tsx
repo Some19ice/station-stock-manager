@@ -391,7 +391,9 @@ export const RecentActivity = React.memo<RecentActivityProps>(function RecentAct
       { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
     )
     
-    return () => tl.kill()
+    return () => {
+      tl.kill()
+    }
   }, [])
 
   // Empty state animation
@@ -414,7 +416,9 @@ export const RecentActivity = React.memo<RecentActivityProps>(function RecentAct
       }
     )
     
-    return () => tl.kill()
+    return () => {
+      tl.kill()
+    }
   }, [transactions.length])
 
   // Timeline container animation
@@ -428,7 +432,9 @@ export const RecentActivity = React.memo<RecentActivityProps>(function RecentAct
       { opacity: 1, scale: 1, duration: 0.8, ease: "power2.out", delay: 0.2 }
     )
     
-    return () => tl.kill()
+    return () => {
+      tl.kill()
+    }
   }, [transactions.length])
 
   const timeGroups = groupTransactionsByTime(transactions)
