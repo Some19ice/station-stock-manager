@@ -168,16 +168,16 @@ export default function EnhancedDashboardPage() {
       // Update state atomically to prevent partial updates
       const updates: (() => void)[] = []
       
-      if (metricsResult.isSuccess && metricsResult.data) {
-        updates.push(() => setMetrics(metricsResult.data))
+      if (metricsResult.isSuccess && 'data' in metricsResult && metricsResult.data) {
+        updates.push(() => setMetrics(metricsResult.data as DashboardMetrics))
       }
 
-      if (alertsResult.isSuccess && alertsResult.data) {
-        updates.push(() => setAlerts(alertsResult.data))
+      if (alertsResult.isSuccess && 'data' in alertsResult && alertsResult.data) {
+        updates.push(() => setAlerts(alertsResult.data as LowStockAlert[]))
       }
 
-      if (activitiesResult.isSuccess && activitiesResult.data) {
-        updates.push(() => setActivities(activitiesResult.data))
+      if (activitiesResult.isSuccess && 'data' in activitiesResult && activitiesResult.data) {
+        updates.push(() => setActivities(activitiesResult.data as RecentTransaction[]))
       }
 
       // Apply all updates if not cancelled and component is mounted

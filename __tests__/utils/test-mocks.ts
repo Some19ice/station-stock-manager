@@ -1,7 +1,106 @@
 import { jest } from "@jest/globals"
 
+// Type definitions for better type safety
+interface MockUser {
+  id: string
+  clerkUserId: string
+  username: string
+  role: string
+  stationId: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface MockStation {
+  id: string
+  customerId: string
+  name: string
+  address: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface MockCustomer {
+  id: string
+  userId: string
+  membership: string
+  stripeCustomerId: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface MockProduct {
+  id: string
+  name: string
+  type: string
+  currentStock: number
+  minStockLevel: number
+  unitPrice: number
+  stationId: string
+  supplierId: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface MockSupplier {
+  id: string
+  name: string
+  contactInfo: string
+  stationId: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface MockTransaction {
+  id: string
+  stationId: string
+  userId: string
+  totalAmount: number
+  paymentMethod: string
+  createdAt: Date
+}
+
+interface DbOverrides {
+  users?: MockUser | MockUser[]
+  stations?: MockStation | MockStation[]
+  customers?: MockCustomer | MockCustomer[]
+  products?: MockProduct | MockProduct[]
+  suppliers?: MockSupplier | MockSupplier[]
+  transactions?: MockTransaction | MockTransaction[]
+}
+
+interface TestMockOptions {
+  userId?: string | null
+  dbOverrides?: DbOverrides
+}
+
+interface ChainableQuery<T = unknown> {
+  values: jest.Mock
+  returning: jest.Mock
+  where: jest.Mock
+  set: jest.Mock
+  then: jest.Mock
+}
+
+interface DbMock {
+  select: jest.Mock
+  insert: jest.Mock
+  update: jest.Mock
+  delete: jest.Mock
+  transaction: jest.Mock
+  query: {
+    [key: string]: {
+      findFirst: jest.Mock
+      findMany: jest.Mock
+    }
+  }
+}
+
 // Mock data templates
-export const mockUser = {
+export const mockUser: MockUser = {
   id: "550e8400-e29b-41d4-a716-446655440000",
   clerkUserId: "user_test123",
   username: "testuser",
@@ -12,7 +111,7 @@ export const mockUser = {
   updatedAt: new Date("2024-01-01")
 }
 
-export const mockStation = {
+export const mockStation: MockStation = {
   id: "550e8400-e29b-41d4-a716-446655440001",
   customerId: "550e8400-e29b-41d4-a716-446655440010",
   name: "Test Station",
@@ -21,7 +120,7 @@ export const mockStation = {
   updatedAt: new Date("2024-01-01")
 }
 
-export const mockCustomer = {
+export const mockCustomer: MockCustomer = {
   id: "550e8400-e29b-41d4-a716-446655440010",
   userId: "user_test123",
   membership: "free",
@@ -30,7 +129,7 @@ export const mockCustomer = {
   updatedAt: new Date("2024-01-01")
 }
 
-export const mockProduct = {
+export const mockProduct: MockProduct = {
   id: "550e8400-e29b-41d4-a716-446655440002",
   name: "Test Product",
   type: "fuel",
@@ -44,7 +143,7 @@ export const mockProduct = {
   updatedAt: new Date("2024-01-01")
 }
 
-export const mockSupplier = {
+export const mockSupplier: MockSupplier = {
   id: "550e8400-e29b-41d4-a716-446655440003",
   name: "Test Supplier",
   contactInfo: "test@supplier.com",
@@ -54,7 +153,7 @@ export const mockSupplier = {
   updatedAt: new Date("2024-01-01")
 }
 
-export const mockTransaction = {
+export const mockTransaction: MockTransaction = {
   id: "550e8400-e29b-41d4-a716-446655440004",
   stationId: "550e8400-e29b-41d4-a716-446655440001",
   userId: "550e8400-e29b-41d4-a716-446655440000",
@@ -64,7 +163,7 @@ export const mockTransaction = {
 }
 
 // Helper to create test UUIDs
-export const createTestUUID = (suffix: string = "0000") => {
+export const createTestUUID = (suffix: string = "0000"): string => {
   return `550e8400-e29b-41d4-a716-44665544${suffix.padStart(4, "0")}`
 }
 
@@ -84,12 +183,12 @@ export const setupAuthMock = (userId: string | null = "user_test123") => {
 }
 
 // Reset auth mock
-export const resetAuthMock = () => {
+export const resetAuthMock = (): void => {
   mockAuth.mockReset()
 }
 
 // Database query result builder
-export const createQueryResult = (data: any) => {
+export const createQueryResult = <T>(data: T | T[]): T[] => {
   if (Array.isArray(data)) {
     return data
   }
@@ -97,7 +196,7 @@ export const createQueryResult = (data: any) => {
 }
 
 // Simple database mock
-export const createDbMock = (overrides: any = {}) => {
+export const createDbMock = (overrides: DbOverrides = {}): DbMock => {
   const defaultResults = {
     users: mockUser,
     stations: mockStation,
@@ -110,8 +209,8 @@ export const createDbMock = (overrides: any = {}) => {
   const results = { ...defaultResults, ...overrides }
 
   // Create chainable query builder
-  const createChainable = (result: any) => {
-    const chainable = {
+  const createChainable = <T>(result: T): ChainableQuery<T> => {
+    const chainable: ChainableQuery<T> = {
       values: jest.fn(() => chainable),
       returning: jest.fn(() => Promise.resolve(createQueryResult(result))),
       where: jest.fn(() => chainable),
@@ -124,17 +223,17 @@ export const createDbMock = (overrides: any = {}) => {
     return chainable
   }
 
-  const dbMock = {
+  const dbMock: DbMock = {
     // Query builder methods
     select: jest.fn(() => createChainable([])),
-    insert: jest.fn((table: any) =>
-      createChainable(results[table?.name] || mockUser)
+    insert: jest.fn((table: { name?: string } = {}) =>
+      createChainable(results[table.name as keyof typeof results] || mockUser)
     ),
     update: jest.fn(() => createChainable(mockUser)),
     delete: jest.fn(() => createChainable([])),
 
     // Transaction method
-    transaction: jest.fn(async (callback: any) => {
+    transaction: jest.fn(async (callback: (tx: DbMock) => Promise<unknown>) => {
       const txMock = createDbMock(overrides)
       return callback(txMock)
     }),
@@ -180,18 +279,19 @@ export const createDbMock = (overrides: any = {}) => {
 }
 
 // Reset database mock
-export const resetDbMock = (dbMock: any) => {
+export const resetDbMock = (dbMock: DbMock): void => {
   // Reset all query methods
   Object.keys(dbMock.query).forEach(table => {
     Object.keys(dbMock.query[table]).forEach(method => {
-      if (typeof dbMock.query[table][method]?.mockReset === "function") {
-        dbMock.query[table][method].mockReset()
+      const mockMethod = dbMock.query[table][method as keyof typeof dbMock.query[typeof table]]
+      if (typeof mockMethod?.mockReset === "function") {
+        mockMethod.mockReset()
       }
     })
   })
 
   // Reset builder methods
-  ;["select", "insert", "update", "delete", "transaction"].forEach(method => {
+  ;(["select", "insert", "update", "delete", "transaction"] as const).forEach(method => {
     if (typeof dbMock[method]?.mockReset === "function") {
       dbMock[method].mockReset()
     }
@@ -199,12 +299,7 @@ export const resetDbMock = (dbMock: any) => {
 }
 
 // Test setup utility
-export const setupTestMocks = (
-  options: {
-    userId?: string | null
-    dbOverrides?: any
-  } = {}
-) => {
+export const setupTestMocks = (options: TestMockOptions = {}) => {
   const { userId = "user_test123", dbOverrides = {} } = options
 
   const auth = setupAuthMock(userId)
@@ -225,7 +320,7 @@ export const setupTestMocks = (
 }
 
 // Cleanup utility
-export const cleanupTestMocks = (mocks: { auth: any; db: any }) => {
+export const cleanupTestMocks = (mocks: { auth: ReturnType<typeof setupAuthMock>; db: DbMock }): void => {
   resetAuthMock()
   resetDbMock(mocks.db)
 }
@@ -254,8 +349,8 @@ export const drizzleOperators = {
 // Mock Zod schema
 export const createZodMock = () => {
   const zodMock = {
-    parse: jest.fn(data => data),
-    safeParse: jest.fn(data => ({ success: true, data }))
+    parse: jest.fn((data: unknown) => data),
+    safeParse: jest.fn((data: unknown) => ({ success: true, data }))
   }
 
   // Add chainable methods
@@ -271,10 +366,10 @@ export const createZodMock = () => {
     "max",
     "optional",
     "enum"
-  ]
+  ] as const
 
   chainableMethods.forEach(method => {
-    zodMock[method] = jest.fn(() => zodMock)
+    ;(zodMock as Record<string, jest.Mock>)[method] = jest.fn(() => zodMock)
   })
 
   return zodMock
