@@ -106,7 +106,8 @@ export function Header({ userMembership, userRole }: HeaderProps) {
   return (
     <header
       ref={headerRef}
-      className="fixed inset-x-0 top-0 z-50 transition-all duration-300"
+      className="fixed inset-x-0 z-40 transition-all duration-300"
+      style={{ top: "var(--banner-height, 0px)" }}
     >
       <nav
         className="flex items-center justify-between p-6 lg:px-8"
