@@ -444,8 +444,8 @@ export const RecentActivity = React.memo<RecentActivityProps>(function RecentAct
   )
 
   return (
-    <Card className="h-[500px] flex flex-col">
-      <div ref={headerRef} className="flex-shrink-0 p-4 border-b">
+    <Card className="flex h-[1000px] flex-col">
+      <div ref={headerRef} className="flex-shrink-0 border-b p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -468,7 +468,10 @@ export const RecentActivity = React.memo<RecentActivityProps>(function RecentAct
 
       <div className="flex-1 overflow-y-auto p-4">
         {transactions.length === 0 ? (
-          <div ref={emptyStateRef} className="h-full flex items-center justify-center">
+          <div
+            ref={emptyStateRef}
+            className="flex h-full items-center justify-center"
+          >
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                 <Activity className="h-8 w-8 text-gray-400" />
@@ -517,8 +520,10 @@ export const RecentActivity = React.memo<RecentActivityProps>(function RecentAct
                         )
                       })
                     ) : (
-                      <div className="text-center py-4 text-gray-500">
-                        <p className="text-sm">No {group.period.toLowerCase()} transactions</p>
+                      <div className="py-4 text-center text-gray-500">
+                        <p className="text-sm">
+                          No {group.period.toLowerCase()} transactions
+                        </p>
                       </div>
                     )}
                   </div>
@@ -528,19 +533,21 @@ export const RecentActivity = React.memo<RecentActivityProps>(function RecentAct
               {/* Always show Earlier section */}
               {!timeGroups.some(group => group.period === "Earlier") && (
                 <div>
-                  <TimeGroupHeader 
+                  <TimeGroupHeader
                     group={{
                       period: "Earlier",
                       transactions: [],
                       totalAmount: 0,
                       color: "bg-gray-100 text-gray-600"
-                    }} 
-                    index={timeGroups.length} 
+                    }}
+                    index={timeGroups.length}
                   />
                   <div className="space-y-1">
-                    <div className="text-center py-4 text-gray-500">
+                    <div className="py-4 text-center text-gray-500">
                       <p className="text-sm">No earlier transactions</p>
-                      <p className="text-xs mt-1">Transactions older than 2 days will appear here</p>
+                      <p className="mt-1 text-xs">
+                        Transactions older than 2 days will appear here
+                      </p>
                     </div>
                   </div>
                 </div>

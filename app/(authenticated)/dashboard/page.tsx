@@ -24,14 +24,12 @@ import { EnhancedMetricsCards } from "@/components/dashboard/enhanced-metrics-ca
 import { LowStockAlerts } from "@/components/dashboard/low-stock-alerts"
 import { RecentActivity } from "@/components/dashboard/recent-activity"
 import { QuickActions } from "@/components/dashboard/quick-actions"
-import { CustomizableDashboard } from "@/components/dashboard/customizable-dashboard"
 import {
   DashboardErrorBoundary,
   WidgetError
 } from "@/components/dashboard/error-boundary"
 import { useDashboardCache } from "@/hooks/use-dashboard-cache"
 import { useRealtimeUpdates } from "@/hooks/use-realtime-updates"
-import { WidgetWrapper } from "@/components/dashboard/widget-wrapper"
 import {
   AnimatedPage,
   AnimatedGrid,
@@ -76,7 +74,7 @@ const MetricsLoading = React.memo(() => (
     <div className="h-8 w-1/2 rounded bg-gray-200"></div>
   </div>
 ))
-MetricsLoading.displayName = 'MetricsLoading'
+MetricsLoading.displayName = "MetricsLoading"
 
 const AlertsLoading = React.memo(() => (
   <div className="animate-pulse space-y-3">
@@ -84,7 +82,7 @@ const AlertsLoading = React.memo(() => (
     <div className="h-4 w-5/6 rounded bg-gray-200"></div>
   </div>
 ))
-AlertsLoading.displayName = 'AlertsLoading'
+AlertsLoading.displayName = "AlertsLoading"
 
 const ActivityLoading = React.memo(() => (
   <div className="animate-pulse space-y-3">
@@ -99,7 +97,7 @@ const ActivityLoading = React.memo(() => (
     ))}
   </div>
 ))
-ActivityLoading.displayName = 'ActivityLoading'
+ActivityLoading.displayName = "ActivityLoading"
 
 export default function EnhancedDashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
@@ -126,14 +124,17 @@ export default function EnhancedDashboardPage() {
   const { isOnline: isConnected } = useRealtimeUpdates({ enabled: true })
 
   // Stable reference for loadDashboardData using useRef to prevent infinite re-renders
-  const loadDashboardDataRef = useRef<(useCache?: boolean, signal?: AbortSignal) => Promise<void>>(
-    async () => {}
-  )
-  
-  loadDashboardDataRef.current = async (useCache = true, signal?: AbortSignal) => {
+  const loadDashboardDataRef = useRef<
+    (useCache?: boolean, signal?: AbortSignal) => Promise<void>
+  >(async () => {})
+
+  loadDashboardDataRef.current = async (
+    useCache = true,
+    signal?: AbortSignal
+  ) => {
     // Prevent multiple simultaneous requests
     if (isDataLoading && !refreshing) return
-    
+
     try {
       if (signal?.aborted || !mountedRef.current) return
 
@@ -147,7 +148,7 @@ export default function EnhancedDashboardPage() {
       if (!profileResult.isSuccess) {
         throw new Error("Failed to load user profile")
       }
-      
+
       // Only update state if request wasn't cancelled and component is mounted
       if (profileResult.data && !signal?.aborted && mountedRef.current) {
         setUserProfile(profileResult.data)
@@ -155,41 +156,62 @@ export default function EnhancedDashboardPage() {
 
       // Load dashboard data in parallel with individual error handling
       const dataPromises = [
-        getDashboardMetrics().catch(err => ({ isSuccess: false, error: err.message })),
-        getLowStockAlerts().catch(err => ({ isSuccess: false, error: err.message })),
-        getRecentTransactions().catch(err => ({ isSuccess: false, error: err.message }))
+        getDashboardMetrics().catch(err => ({
+          isSuccess: false,
+          error: err.message
+        })),
+        getLowStockAlerts().catch(err => ({
+          isSuccess: false,
+          error: err.message
+        })),
+        getRecentTransactions().catch(err => ({
+          isSuccess: false,
+          error: err.message
+        }))
       ]
 
-      const [metricsResult, alertsResult, activitiesResult] = await Promise.all(dataPromises)
-      
+      const [metricsResult, alertsResult, activitiesResult] =
+        await Promise.all(dataPromises)
+
       // Check for cancellation after all requests complete
       if (signal?.aborted || !mountedRef.current) return
 
       // Update state atomically to prevent partial updates
       const updates: (() => void)[] = []
-      
-      if (metricsResult.isSuccess && 'data' in metricsResult && metricsResult.data) {
+
+      if (
+        metricsResult.isSuccess &&
+        "data" in metricsResult &&
+        metricsResult.data
+      ) {
         updates.push(() => setMetrics(metricsResult.data as DashboardMetrics))
       }
 
-      if (alertsResult.isSuccess && 'data' in alertsResult && alertsResult.data) {
+      if (
+        alertsResult.isSuccess &&
+        "data" in alertsResult &&
+        alertsResult.data
+      ) {
         updates.push(() => setAlerts(alertsResult.data as LowStockAlert[]))
       }
 
-      if (activitiesResult.isSuccess && 'data' in activitiesResult && activitiesResult.data) {
-        updates.push(() => setActivities(activitiesResult.data as RecentTransaction[]))
+      if (
+        activitiesResult.isSuccess &&
+        "data" in activitiesResult &&
+        activitiesResult.data
+      ) {
+        updates.push(() =>
+          setActivities(activitiesResult.data as RecentTransaction[])
+        )
       }
 
       // Apply all updates if not cancelled and component is mounted
       if (!signal?.aborted && mountedRef.current) {
         updates.forEach(update => update())
       }
-
     } catch (err) {
       if (signal?.aborted || !mountedRef.current) return
-      setError(
-        err instanceof Error ? err.message : "Failed to load dashboard"
-      )
+      setError(err instanceof Error ? err.message : "Failed to load dashboard")
     } finally {
       if (!signal?.aborted && mountedRef.current) {
         setLoading(false)
@@ -199,9 +221,14 @@ export default function EnhancedDashboardPage() {
     }
   }
 
-  const loadDashboardData = useCallback((useCache = true, signal?: AbortSignal) => {
-    return loadDashboardDataRef.current?.(useCache, signal) || Promise.resolve()
-  }, [])
+  const loadDashboardData = useCallback(
+    (useCache = true, signal?: AbortSignal) => {
+      return (
+        loadDashboardDataRef.current?.(useCache, signal) || Promise.resolve()
+      )
+    },
+    []
+  )
 
   useEffect(() => {
     mountedRef.current = true
@@ -215,7 +242,7 @@ export default function EnhancedDashboardPage() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
-    
+
     abortControllerRef.current = new AbortController()
     loadDashboardData(true, abortControllerRef.current.signal)
 
@@ -240,16 +267,16 @@ export default function EnhancedDashboardPage() {
   const handleRefresh = async () => {
     // Prevent multiple refresh requests
     if (isDataLoading) return
-    
+
     setRefreshing(true)
     clearCache()
-    
+
     // Cancel existing request and create new one
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
     abortControllerRef.current = new AbortController()
-    
+
     await loadDashboardData(false, abortControllerRef.current.signal)
   }
 
@@ -315,54 +342,36 @@ export default function EnhancedDashboardPage() {
 
         {/* Enhanced metrics */}
         <DashboardErrorBoundary>
-          <WidgetWrapper title="Key Metrics">
-            {metrics ? (
-              <EnhancedMetricsCards
-                metrics={metrics}
-                onRetry={handleRefresh}
-                isRefreshing={refreshing}
-              />
-            ) : (
-              <MetricsLoading />
-            )}
-          </WidgetWrapper>
+          {metrics ? (
+            <EnhancedMetricsCards
+              metrics={metrics}
+              onRetry={handleRefresh}
+              isRefreshing={refreshing}
+            />
+          ) : (
+            <MetricsLoading />
+          )}
         </DashboardErrorBoundary>
 
         {/* Stock Alerts - moved above recent activities */}
         <DashboardErrorBoundary>
-          <WidgetWrapper title="Stock Alerts">
-            {alerts ? <LowStockAlerts alerts={alerts} /> : <AlertsLoading />}
-          </WidgetWrapper>
+          {alerts ? <LowStockAlerts alerts={alerts} /> : <AlertsLoading />}
         </DashboardErrorBoundary>
 
         {/* Enhanced grid layout */}
         <div className="grid gap-6 lg:grid-cols-2">
           <DashboardErrorBoundary>
-            <WidgetWrapper title="Recent Activity">
-              {activities ? (
-                <RecentActivity transactions={activities} />
-              ) : (
-                <ActivityLoading />
-              )}
-            </WidgetWrapper>
+            {activities ? (
+              <RecentActivity transactions={activities} />
+            ) : (
+              <ActivityLoading />
+            )}
           </DashboardErrorBoundary>
 
           <DashboardErrorBoundary>
-            <WidgetWrapper title="Quick Actions">
-              <QuickActions userRole="manager" />
-            </WidgetWrapper>
+            <QuickActions userRole="manager" />
           </DashboardErrorBoundary>
         </div>
-
-        {/* Customizable dashboard */}
-        <DashboardErrorBoundary>
-          <CustomizableDashboard
-            widgets={[]}
-            onWidgetToggle={() => {}}
-            onWidgetReorder={() => {}}
-            userRole="manager"
-          />
-        </DashboardErrorBoundary>
       </div>
     </AnimatedPage>
   )

@@ -541,7 +541,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
   return (
     <TooltipProvider>
-      <Card className="flex h-[500px] flex-col">
+      <Card className="flex h-auto flex-col">
         {/* Ambient background effects */}
         <div className="bg-accent/5 absolute inset-0 opacity-50" />
         <div className="absolute top-0 left-1/4 h-32 w-32 animate-pulse rounded-full bg-blue-300/20 blur-xl filter" />
