@@ -1,0 +1,1 @@
+ALTER TABLE "theme_settings" DROP COLUMN "test";

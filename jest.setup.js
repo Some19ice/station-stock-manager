@@ -221,3 +221,31 @@ global.Request = jest.fn(input => ({
         }),
     },
 }));
+
+// Polyfill for `Response`
+if (typeof global.Response === 'undefined') {
+  global.Response = require('node-fetch').Response;
+}
+
+const { TextEncoder, TextDecoder } = require('util');
+
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+if (typeof global.BroadcastChannel === 'undefined') {
+  global.BroadcastChannel = class {
+    constructor(name) {}
+    postMessage(message) {}
+    close() {}
+    onmessage = null;
+    onmessageerror = null;
+    addEventListener(type, listener) {}
+    removeEventListener(type, listener) {}
+    dispatchEvent(event) {}
+  };
+}
+
+if (typeof global.TransformStream === 'undefined') {
+  const { TransformStream } = require('node:stream/web');
+  global.TransformStream = TransformStream;
+}

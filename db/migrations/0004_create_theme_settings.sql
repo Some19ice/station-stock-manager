@@ -1,0 +1,16 @@
+-- Create theme_settings table
+CREATE TABLE IF NOT EXISTS "theme_settings" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"station_id" uuid NOT NULL,
+	"settings" jsonb NOT NULL
+);
+--> statement-breakpoint
+
+-- Add foreign key constraint
+ALTER TABLE "theme_settings" ADD CONSTRAINT "theme_settings_station_id_stations_id_fk" FOREIGN KEY ("station_id") REFERENCES "public"."stations"("id") ON DELETE no action ON UPDATE no action;
+--> statement-breakpoint
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS "station_id_idx" ON "theme_settings"("station_id");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "settings_idx" ON "theme_settings" USING gin ("settings");

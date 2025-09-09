@@ -22,6 +22,41 @@
       "when": 1756341132413,
       "tag": "0002_rare_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1757420122452,
+      "tag": "0003_right_mordo",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1757420300000,
+      "tag": "0004_create_theme_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1757420341739,
+      "tag": "0005_sticky_azazel",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1757420400000,
+      "tag": "0006_reflective_obadiah_stane",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1757422577613,
+      "tag": "0007_smart_vargas",
+      "breakpoints": true
     }
   ]
 }

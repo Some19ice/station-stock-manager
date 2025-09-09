@@ -164,7 +164,7 @@ export default function EnhancedDashboardPage() {
           isSuccess: false,
           error: err.message
         })),
-        getRecentTransactions().catch(err => ({
+        getRecentTransactions(50).catch(err => ({
           isSuccess: false,
           error: err.message
         }))

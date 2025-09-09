@@ -1,0 +1,1 @@
+ALTER TABLE "theme_settings" ADD COLUMN "test" text;
