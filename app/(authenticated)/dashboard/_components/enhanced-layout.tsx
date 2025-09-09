@@ -199,7 +199,7 @@ export default function EnhancedDashboardLayout({
             showProgress={true}
             showBackToTop={true}
             showButton={false}
-            showFade={true}
+            showFade={false}
           />
         </SidebarInset>
       </SidebarProvider>
