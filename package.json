@@ -86,6 +86,7 @@
     "node-fetch": "^2.7.0",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.12",
+    "shadcn": "^3.2.1",
     "supabase": "^2.24.3",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.1",

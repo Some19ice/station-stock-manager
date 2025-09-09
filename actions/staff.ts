@@ -10,8 +10,8 @@ export interface StaffDashboardStats {
   todaysSales: {
     totalAmount: number
     transactionCount: number
-    fuelSales: number
-    productSales: number
+    pmsSales: number
+    lubricantSales: number
   }
   recentTransactions: Array<{
     id: string
@@ -44,7 +44,7 @@ export async function getStaffDashboardStats(): Promise<{
     const endOfDay = new Date(today)
     endOfDay.setHours(23, 59, 59, 999)
 
-    // Get today's sales for current user (simplified to avoid JOIN issues)
+    // Get today's sales for current user
     const todaysSalesQuery = await db
       .select({
         totalAmount: sql<string>`COALESCE(SUM(${transactions.totalAmount}), 0)`,
@@ -59,12 +59,55 @@ export async function getStaffDashboardStats(): Promise<{
         )
       )
 
+    // Get PMS sales for today
+    const pmsSalesQuery = await db
+      .select({
+        totalPmsSales: sql<string>`COALESCE(SUM(${transactionItems.totalPrice}), 0)`
+      })
+      .from(transactions)
+      .innerJoin(
+        transactionItems,
+        eq(transactions.id, transactionItems.transactionId)
+      )
+      .innerJoin(products, eq(transactionItems.productId, products.id))
+      .where(
+        and(
+          eq(transactions.userId, user.id),
+          eq(products.type, "pms"),
+          gte(transactions.transactionDate, startOfDay),
+          lte(transactions.transactionDate, endOfDay)
+        )
+      )
+
+    // Get Lubricant sales for today
+    const lubricantSalesQuery = await db
+      .select({
+        totalLubricantSales: sql<string>`COALESCE(SUM(${transactionItems.totalPrice}), 0)`
+      })
+      .from(transactions)
+      .innerJoin(
+        transactionItems,
+        eq(transactions.id, transactionItems.transactionId)
+      )
+      .innerJoin(products, eq(transactionItems.productId, products.id))
+      .where(
+        and(
+          eq(transactions.userId, user.id),
+          eq(products.type, "lubricant"),
+          gte(transactions.transactionDate, startOfDay),
+          lte(transactions.transactionDate, endOfDay)
+        )
+      )
+
     const salesData = todaysSalesQuery[0]
+    const pmsData = pmsSalesQuery[0]
+    const lubricantData = lubricantSalesQuery[0]
+
     const todaysSales = {
       totalAmount: parseFloat(salesData?.totalAmount || "0"),
       transactionCount: salesData?.transactionCount || 0,
-      fuelSales: 0, // Simplified - can be calculated separately if needed
-      productSales: 0 // Simplified - can be calculated separately if needed
+      pmsSales: parseFloat(pmsData?.totalPmsSales || "0"),
+      lubricantSales: parseFloat(lubricantData?.totalLubricantSales || "0")
     }
 
     // Get recent transactions for current user (avoid duplicates)
@@ -81,7 +124,7 @@ export async function getStaffDashboardStats(): Promise<{
 
     const recentTransactions = recentTransactionsQuery.map(tx => ({
       id: tx.id,
-      type: 'Sale', // Simplified to avoid complex joins
+      type: "Sale", // Simplified to avoid complex joins
       amount: parseFloat(tx.totalAmount),
       time: getTimeAgo(tx.transactionDate)
     }))

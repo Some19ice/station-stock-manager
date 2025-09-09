@@ -149,18 +149,18 @@ export default async function StaffDashboard() {
           <AnimatedCard hoverEffect={true}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-600">
-                Fuel Sales
+                PMS Sales
               </CardTitle>
               <Fuel className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-900">
-                ₦{todaysSales.fuelSales.toLocaleString()}
+                ₦{todaysSales.pmsSales.toLocaleString()}
               </div>
               <p className="mt-1 text-xs text-slate-500">
                 {todaysSales.totalAmount > 0
                   ? Math.round(
-                      (todaysSales.fuelSales / todaysSales.totalAmount) * 100
+                      (todaysSales.pmsSales / todaysSales.totalAmount) * 100
                     )
                   : 0}
                 % of total sales
@@ -171,18 +171,19 @@ export default async function StaffDashboard() {
           <AnimatedCard hoverEffect={true}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-600">
-                Products
+                Lubricant Sales
               </CardTitle>
               <Package className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-slate-900">
-                ₦{todaysSales.productSales.toLocaleString()}
+                ₦{todaysSales.lubricantSales.toLocaleString()}
               </div>
               <p className="mt-1 text-xs text-slate-500">
                 {todaysSales.totalAmount > 0
                   ? Math.round(
-                      (todaysSales.productSales / todaysSales.totalAmount) * 100
+                      (todaysSales.lubricantSales / todaysSales.totalAmount) *
+                        100
                     )
                   : 0}
                 % of total sales
