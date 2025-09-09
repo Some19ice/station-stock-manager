@@ -10,6 +10,7 @@ import {
   transactions,
   transactionItems,
   stockMovements,
+  themeSettings,
   customersRelations,
   stationsRelations,
   usersRelations,
@@ -37,6 +38,7 @@ const dbSchema = {
   transactions,
   transactionItems,
   stockMovements,
+  themeSettings,
   // relations
   customersRelations,
   stationsRelations,

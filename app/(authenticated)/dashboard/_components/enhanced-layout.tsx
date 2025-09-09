@@ -141,7 +141,7 @@ export default function EnhancedDashboardLayout({
 
             <div className="relative flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
               <div className="flex items-center gap-2 px-4">
-                <div className="hover:scale-105 active:scale-95 transition-transform">
+                <div className="transition-transform hover:scale-105 active:scale-95">
                   <SidebarTrigger className="hover:bg-accent/50 -ml-1 transition-colors" />
                 </div>
 
@@ -151,7 +151,7 @@ export default function EnhancedDashboardLayout({
                 />
 
                 {isClient && breadcrumbs.length > 0 && (
-                  <div className="opacity-0">
+                  <div className="opacity-100 transition-opacity duration-300">
                     <Breadcrumb>
                       <BreadcrumbList>
                         {breadcrumbs.map((crumb, index) => (
@@ -191,9 +191,7 @@ export default function EnhancedDashboardLayout({
             ref={contentRef}
             className="dashboard-content relative flex flex-1 flex-col gap-4 p-4"
           >
-            <div className="dashboard-children">
-              {children}
-            </div>
+            <div className="dashboard-children">{children}</div>
           </div>
 
           {/* Enhanced scroll indicator */}

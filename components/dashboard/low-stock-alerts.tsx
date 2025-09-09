@@ -222,9 +222,9 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
         </div>
       </div>
 
-      <div ref={containerRef} className="space-y-3">
+      <div ref={containerRef} className="space-y-2">
         {alerts &&
-          alerts.slice(0, 5).map((alert, index) => {
+          alerts.slice(0, 3).map((alert, index) => {
             if (!alert || !alert.id) return null
             const severity = getAlertSeverity(
               alert.currentStock || "0",
@@ -261,7 +261,7 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
                   )}
                 />
 
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="relative flex-shrink-0">
@@ -428,13 +428,13 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
           })}
       </div>
 
-      {alerts && alerts.length > 5 && (
-        <Card className="mt-4 border-dashed border-gray-300 bg-gray-50/50 transition-colors hover:bg-gray-100/50">
-          <CardContent className="p-4">
+      {alerts && alerts.length > 3 && (
+        <Card className="mt-3 border-dashed border-gray-300 bg-gray-50/50 transition-colors hover:bg-gray-100/50">
+          <CardContent className="p-3">
             <Button
               asChild
               variant="ghost"
-              className="group h-auto w-full py-3 hover:bg-transparent"
+              className="group h-auto w-full py-2 hover:bg-transparent"
             >
               <Link
                 href="/inventory?filter=low-stock"
@@ -445,7 +445,7 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
                   View All {alerts?.length || 0} Low Stock Items
                 </span>
                 <Badge variant="outline" className="bg-white">
-                  +{(alerts?.length || 0) - 5}
+                  +{(alerts?.length || 0) - 3}
                 </Badge>
               </Link>
             </Button>
