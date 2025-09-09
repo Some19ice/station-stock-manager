@@ -350,9 +350,11 @@ export default function EnhancedDashboardPage() {
         </DashboardErrorBoundary>
 
         {/* Stock Alerts - moved above recent activities */}
-        <DashboardErrorBoundary>
-          {alerts ? <LowStockAlerts alerts={alerts} /> : <AlertsLoading />}
-        </DashboardErrorBoundary>
+        {alerts && alerts.length > 0 && (
+          <DashboardErrorBoundary>
+            <LowStockAlerts alerts={alerts} />
+          </DashboardErrorBoundary>
+        )}
 
         {/* Enhanced grid layout */}
         <div className="grid gap-6 lg:grid-cols-2">
