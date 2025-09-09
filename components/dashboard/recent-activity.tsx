@@ -829,203 +829,214 @@ export const RecentActivity = React.memo<RecentActivityProps>(function RecentAct
    return (
      <Card className="relative flex h-full flex-col overflow-hidden">
        {/* Ambient background effects - properly contained within card */}
-       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-white to-purple-50/10 opacity-40 z-0" />
-       <div className="absolute top-4 right-1/4 h-24 w-24 animate-pulse rounded-full bg-blue-300/5 blur-lg filter z-0" />
+       <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-50/20 via-white to-purple-50/10 opacity-40" />
+       <div className="absolute top-4 right-1/4 z-0 h-24 w-24 animate-pulse rounded-full bg-blue-300/5 blur-lg filter" />
        <div
-         className="absolute bottom-4 left-1/4 h-20 w-20 animate-pulse rounded-full bg-purple-300/5 blur-lg filter z-0"
+         className="absolute bottom-4 left-1/4 z-0 h-20 w-20 animate-pulse rounded-full bg-purple-300/5 blur-lg filter"
          style={{ animationDelay: "1s" }}
        />
 
-      <div
-        ref={headerRef}
-        className="relative z-20 flex-shrink-0 border-b bg-white/90 p-6 backdrop-blur-sm"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 shadow-md">
-              <Activity className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Recent Activity
-              </h3>
-              <div className="mt-1 flex items-center gap-2">
-                <Badge variant="secondary" className="animate-pulse">
-                  {transactions.length} Transaction
-                  {transactions.length !== 1 ? "s" : ""}
-                </Badge>
-                {animationComplete && (
-                  <Badge
-                    variant="outline"
-                    className="bg-green-100 text-green-700"
-                  >
-                    Live
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
+       <div
+         ref={headerRef}
+         className="relative z-20 flex-shrink-0 border-b bg-white/90 p-6 backdrop-blur-sm"
+       >
+         <div className="flex items-center justify-between">
+           <div className="flex items-center gap-4">
+             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 shadow-md">
+               <Activity className="h-5 w-5 text-white" />
+             </div>
+             <div>
+               <h3 className="text-xl font-bold text-gray-900">
+                 Recent Activity
+               </h3>
+               <div className="mt-1 flex items-center gap-2">
+                 <Badge variant="secondary" className="animate-pulse">
+                   {transactions.length} Transaction
+                   {transactions.length !== 1 ? "s" : ""}
+                 </Badge>
+                 {animationComplete && (
+                   <Badge
+                     variant="outline"
+                     className="bg-green-100 text-green-700"
+                   >
+                     Live
+                   </Badge>
+                 )}
+               </div>
+             </div>
+           </div>
 
-          <div className="text-right">
-            <div className="text-lg font-bold text-gray-900 tabular-nums">
-              ₦{totalAmount.toLocaleString()}
-            </div>
-            <div className="text-sm font-medium text-gray-500">Total Value</div>
-          </div>
-        </div>
-      </div>
+           <div className="text-right">
+             <div className="text-lg font-bold text-gray-900 tabular-nums">
+               ₦{totalAmount.toLocaleString()}
+             </div>
+             <div className="text-sm font-medium text-gray-500">
+               Total Value
+             </div>
+           </div>
+         </div>
+       </div>
 
        <div className="relative z-20 max-h-[800px] flex-1 overflow-y-auto">
-        {transactions.length === 0 ? (
-          <div
-            ref={emptyStateRef}
-            className="flex h-full items-center justify-center p-8"
-          >
-            <div className="max-w-sm text-center">
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-blue-100 to-purple-100 shadow-lg">
-                <Activity className="h-10 w-10 text-blue-600" />
-              </div>
-              <h4 className="mb-3 text-xl font-bold text-gray-900">
-                No Recent Activity
-              </h4>
-              <p className="mb-6 leading-relaxed text-gray-600">
-                Transaction activity will appear here as they happen. Start
-                recording your first sale!
-              </p>
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg hover:from-blue-700 hover:to-purple-700"
-              >
-                <Zap className="mr-2 h-5 w-5" />
-                Start Recording Sales
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div ref={timelineRef} className="relative p-6">
-            {/* Enhanced timeline background */}
-            <div className="absolute top-12 bottom-0 left-9 w-0.5 bg-gradient-to-b from-blue-300 via-purple-200 to-transparent opacity-40" />
+         {transactions.length === 0 ? (
+           <div
+             ref={emptyStateRef}
+             className="flex h-full items-center justify-center p-8"
+           >
+             <div className="max-w-sm text-center">
+               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r from-blue-100 to-purple-100 shadow-lg">
+                 <Activity className="h-10 w-10 text-blue-600" />
+               </div>
+               <h4 className="mb-3 text-xl font-bold text-gray-900">
+                 No Recent Activity
+               </h4>
+               <p className="mb-6 leading-relaxed text-gray-600">
+                 Transaction activity will appear here as they happen. Start
+                 recording your first sale!
+               </p>
+               <Button
+                 size="lg"
+                 className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg hover:from-blue-700 hover:to-purple-700"
+               >
+                 <Zap className="mr-2 h-5 w-5" />
+                 Start Recording Sales
+               </Button>
+             </div>
+           </div>
+         ) : (
+           <div ref={timelineRef} className="relative p-6">
+             {/* Enhanced timeline background */}
+             <div className="absolute top-12 bottom-0 left-9 w-0.5 bg-gradient-to-b from-blue-300 via-purple-200 to-transparent opacity-40" />
 
-            {/* Time groups and transactions */}
-            <div className="space-y-8">
-              {timeGroups.map((group, groupIndex) => (
-                <div key={group.period} className="relative">
-                  <TimeGroupHeader group={group} index={groupIndex} />
+             {/* Time groups and transactions */}
+             <div className="space-y-8">
+               {timeGroups.map((group, groupIndex) => (
+                 <div key={group.period} className="relative">
+                   <TimeGroupHeader group={group} index={groupIndex} />
 
-                  <div className="space-y-4">
-                    {group.transactions.map((transaction, transactionIndex) => {
-                      const overallIndex =
-                        timeGroups
-                          .slice(0, groupIndex)
-                          .reduce((acc, g) => acc + g.transactions.length, 0) +
-                        transactionIndex
+                   <div className="space-y-4">
+                     {group.transactions.map(
+                       (transaction, transactionIndex) => {
+                         const overallIndex =
+                           timeGroups
+                             .slice(0, groupIndex)
+                             .reduce(
+                               (acc, g) => acc + g.transactions.length,
+                               0
+                             ) + transactionIndex
 
-                      const isLastInGroup =
-                        transactionIndex === group.transactions.length - 1
-                      const isLastOverall =
-                        groupIndex === timeGroups.length - 1 && isLastInGroup
+                         const isLastInGroup =
+                           transactionIndex === group.transactions.length - 1
+                         const isLastOverall =
+                           groupIndex === timeGroups.length - 1 && isLastInGroup
 
-                      return (
-                        <AnimatedTransactionItem
-                          key={transaction.id}
-                          transaction={transaction}
-                          index={overallIndex}
-                          formatCurrency={formatCurrency}
-                          formatTimeAgo={formatTimeAgo}
-                          isLast={isLastOverall}
-                        />
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+                         return (
+                           <AnimatedTransactionItem
+                             key={transaction.id}
+                             transaction={transaction}
+                             index={overallIndex}
+                             formatCurrency={formatCurrency}
+                             formatTimeAgo={formatTimeAgo}
+                             isLast={isLastOverall}
+                           />
+                         )
+                       }
+                     )}
+                   </div>
+                 </div>
+               ))}
+             </div>
 
              {/* Enhanced floating action button - removed from content area */}
 
-            {/* View All / Show Less Button */}
-            {transactions.length > 15 && (
-              <div className="mt-8 flex justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAll(!showAll)}
-                  className={cn(
-                    "group flex items-center gap-2 rounded-full px-6 py-2 transition-all duration-300",
-                    "hover:scale-105 hover:shadow-lg focus:ring-2 focus:ring-blue-300/50",
-                    showAll
-                      ? "border-blue-200 bg-blue-50 text-blue-700"
-                      : "border-gray-200 bg-gray-50 text-gray-700"
-                  )}
-                >
-                  {showAll ? (
-                    <>
-                      <MoreHorizontal className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-                      <span className="text-sm font-medium">Show Less</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-                      <span className="text-sm font-medium">
-                        View All {transactions.length} Transactions
-                      </span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
+             {/* View All / Show Less Button */}
+             {transactions.length > 15 && (
+               <div className="mt-8 flex justify-center">
+                 <Button
+                   variant="outline"
+                   onClick={() => setShowAll(!showAll)}
+                   className={cn(
+                     "group flex items-center gap-2 rounded-full px-6 py-2 transition-all duration-300",
+                     "hover:scale-105 hover:shadow-lg focus:ring-2 focus:ring-blue-300/50",
+                     showAll
+                       ? "border-blue-200 bg-blue-50 text-blue-700"
+                       : "border-gray-200 bg-gray-50 text-gray-700"
+                   )}
+                 >
+                   {showAll ? (
+                     <>
+                       <MoreHorizontal className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                       <span className="text-sm font-medium">Show Less</span>
+                     </>
+                   ) : (
+                     <>
+                       <Eye className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                       <span className="text-sm font-medium">
+                         View All {transactions.length} Transactions
+                       </span>
+                     </>
+                   )}
+                 </Button>
+               </div>
+             )}
 
-            {/* Performance indicator */}
-            <div className="mt-8 flex items-center justify-center">
-              <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs text-gray-500 backdrop-blur-sm">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-                <span className="font-medium">Real-time updates active</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+             {/* Performance indicator */}
+             <div className="mt-8 flex items-center justify-center">
+               <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs text-gray-500 backdrop-blur-sm">
+                 <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+                 <span className="font-medium">Real-time updates active</span>
+               </div>
+             </div>
+           </div>
+         )}
+       </div>
 
-      {/* Enhanced gradient overlay for scroll indication */}
-      <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-6 bg-gradient-to-t from-white/80 to-transparent opacity-60 z-10" />
+       {/* Enhanced gradient overlay for scroll indication */}
+       <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-6 bg-gradient-to-t from-white/80 to-transparent opacity-60" />
 
-      {/* Scroll indicator - only show when content exceeds visible area */}
-      {!showAll && transactions.length > 15 && (
-        <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 transform items-center gap-1">
-          <div className="h-1 w-8 animate-pulse rounded-full bg-blue-400/60" />
-          <div
-            className="h-1 w-4 animate-pulse rounded-full bg-blue-400/40"
-            style={{ animationDelay: "0.5s" }}
-          />
-          <div
-            className="h-1 w-2 animate-pulse rounded-full bg-blue-400/20"
-            style={{ animationDelay: "1s" }}
-          />
-        </div>
-      )}
+       {/* Scroll indicator - only show when content exceeds visible area */}
+       {!showAll && transactions.length > 15 && (
+         <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 transform items-center gap-1">
+           <div className="h-1 w-8 animate-pulse rounded-full bg-blue-400/60" />
+           <div
+             className="h-1 w-4 animate-pulse rounded-full bg-blue-400/40"
+             style={{ animationDelay: "0.5s" }}
+           />
+           <div
+             className="h-1 w-2 animate-pulse rounded-full bg-blue-400/20"
+             style={{ animationDelay: "1s" }}
+           />
+         </div>
+       )}
 
-      {/* Enhanced floating action button - positioned relative to card */}
-      {animationComplete && transactions.length > 0 && (
-        <div className="absolute right-4 top-20 z-30">
-          <Button
-            size="sm"
-            className={cn(
-              "group h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transition-all duration-300",
-              "hover:scale-105 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl",
-              "focus:ring-2 focus:ring-blue-300/50"
-            )}
-            onClick={() => {
-              // Scroll to top within the card content area
-              const scrollContainer = timelineRef.current?.closest(".overflow-y-auto")
-              scrollContainer?.scrollTo({
-                top: 0,
-                behavior: "smooth"
-              })
-            }}
-          >
-            <ArrowUp className="h-4 w-4 text-white transition-transform duration-300 group-hover:scale-110" />
-          </Button>
-        </div>
-      )}
-    </Card>
-  )
+       {/* Enhanced floating action button - positioned at bottom of section */}
+       {animationComplete && transactions.length > 0 && (
+         <div className="absolute right-4 bottom-6 z-30 sm:right-6">
+           <Button
+             size="sm"
+             className={cn(
+               "group h-11 w-11 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transition-all duration-300",
+               "hover:scale-105 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl",
+               "focus:ring-2 focus:ring-blue-300/50 focus:outline-none",
+               "border-2 border-white/20",
+               "sm:h-12 sm:w-12"
+             )}
+             onClick={() => {
+               // Scroll to top within the card content area
+               const scrollContainer =
+                 timelineRef.current?.closest(".overflow-y-auto")
+               scrollContainer?.scrollTo({
+                 top: 0,
+                 behavior: "smooth"
+               })
+             }}
+             title="Scroll to top"
+             aria-label="Scroll to top of recent activity"
+           >
+             <ArrowUp className="h-4 w-4 text-white transition-transform duration-300 group-hover:scale-110 sm:h-5 sm:w-5" />
+           </Button>
+         </div>
+       )}
+     </Card>
+   )
 })

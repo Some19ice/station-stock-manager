@@ -31,15 +31,44 @@ export function ThemeSettings() {
   const loadThemeSettings = async () => {
     try {
       const themeSettings = await getThemeSettings()
-      setSettings(themeSettings)
-      setOriginalSettings(themeSettings)
-      
+
+      // Defensive programming: ensure themeSettings is valid
+      if (!themeSettings || typeof themeSettings !== "object") {
+        throw new Error("Invalid theme settings received")
+      }
+
+      // Validate required properties with fallbacks
+      const validSettings = {
+        mode:
+          themeSettings.mode === "dark"
+            ? ("dark" as const)
+            : ("light" as const),
+        primaryColor:
+          typeof themeSettings.primaryColor === "string" &&
+          themeSettings.primaryColor.length > 0
+            ? themeSettings.primaryColor
+            : "#3B82F6"
+      }
+
+      setSettings(validSettings)
+      setOriginalSettings(validSettings)
+
       // Apply the theme immediately
-      setTheme(themeSettings.mode)
-      applyPrimaryColor(themeSettings.primaryColor)
+      setTheme(validSettings.mode)
+      applyPrimaryColor(validSettings.primaryColor)
     } catch (error) {
       console.error("Failed to load theme settings:", error)
       toast.error("Failed to load theme settings")
+
+      // Use default settings as fallback
+      const defaultSettings = {
+        mode: "light" as const,
+        primaryColor: "#3B82F6"
+      }
+      setSettings(defaultSettings)
+      setOriginalSettings(defaultSettings)
+      setTheme(defaultSettings.mode)
+      applyPrimaryColor(defaultSettings.primaryColor)
     } finally {
       setLoading(false)
     }

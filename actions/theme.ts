@@ -13,7 +13,10 @@ export async function getThemeSettings(): Promise<ThemeSettings> {
   }
 
   const userProfileResponse = await getCurrentUserProfile()
-  if (!userProfileResponse.isSuccess || !userProfileResponse.data?.user.stationId) {
+  if (
+    !userProfileResponse.isSuccess ||
+    !userProfileResponse.data?.user.stationId
+  ) {
     throw new Error("No station associated with user")
   }
 
@@ -23,15 +26,35 @@ export async function getThemeSettings(): Promise<ThemeSettings> {
     .where(eq(themeSettings.stationId, userProfileResponse.data.user.stationId))
     .limit(1)
 
-  if (result.length === 0) {
-    // Return default theme if no settings found
-    return {
-      mode: "light",
-      primaryColor: "#3B82F6"
-    }
+  // Return default theme if no settings found or settings are invalid
+  const defaultSettings: ThemeSettings = {
+    mode: "light",
+    primaryColor: "#3B82F6"
   }
 
-  return result[0].settings
+  if (result.length === 0) {
+    return defaultSettings
+  }
+
+  const settings = result[0].settings
+
+  // Validate settings structure and provide fallbacks
+  if (!settings || typeof settings !== "object") {
+    console.warn("Invalid theme settings found, using defaults")
+    return defaultSettings
+  }
+
+  // Ensure required properties exist with proper types
+  const validatedSettings: ThemeSettings = {
+    mode: settings.mode === "dark" ? "dark" : "light",
+    primaryColor:
+      typeof settings.primaryColor === "string" &&
+      settings.primaryColor.length > 0
+        ? settings.primaryColor
+        : defaultSettings.primaryColor
+  }
+
+  return validatedSettings
 }
 
 export async function updateThemeSettings(settings: ThemeSettings): Promise<ThemeSettings> {
