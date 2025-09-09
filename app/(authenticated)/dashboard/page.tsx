@@ -343,11 +343,7 @@ export default function EnhancedDashboardPage() {
         {/* Enhanced metrics */}
         <DashboardErrorBoundary>
           {metrics ? (
-            <EnhancedMetricsCards
-              metrics={metrics}
-              onRetry={handleRefresh}
-              isRefreshing={refreshing}
-            />
+            <EnhancedMetricsCards metrics={metrics} />
           ) : (
             <MetricsLoading />
           )}

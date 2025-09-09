@@ -303,18 +303,20 @@ export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
           <h2 className="text-foreground text-2xl font-bold">Key Metrics</h2>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRetry}
-          disabled={isRefreshing}
-          className="hover:bg-accent/50 transition-colors"
-        >
-          <RefreshCw
-            className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
-          />
-          Refresh
-        </Button>
+        {onRetry && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRetry}
+            disabled={isRefreshing}
+            className="hover:bg-accent/50 transition-colors"
+          >
+            <RefreshCw
+              className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
+            />
+            Refresh
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
