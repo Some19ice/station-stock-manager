@@ -64,8 +64,7 @@ export function QuantityInput({
   }
 
   // Quick quantity buttons for common amounts
-  const quickQuantities =
-    product.type === "pms" ? [5, 10, 20, 30, 50] : [1, 2, 5, 10]
+  const quickQuantities = [1, 2, 5, 10]
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

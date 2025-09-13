@@ -17,7 +17,8 @@ import {
   DollarSign,
   RefreshCw,
   BarChart3,
-  Sparkles
+  Sparkles,
+  Fuel
 } from "lucide-react"
 import { DashboardMetrics } from "@/actions/dashboard"
 import { useEffect, useRef } from "react"
@@ -255,6 +256,16 @@ export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
       bgColor: "bg-chart-1/10"
     },
     {
+      title: "PMS Volume",
+      value: `${parseFloat(metrics.pmsMetrics.todaysVolume || "0").toFixed(1)}L`,
+      icon: Fuel,
+      trend: (metrics.pmsMetrics.deviationAlerts > 0 ? "down" : "up") as "up" | "down" | "neutral",
+      trendValue: `₦${parseFloat(metrics.pmsMetrics.todaysRevenue || "0").toLocaleString()}`,
+      variant: (metrics.pmsMetrics.deviationAlerts > 0 ? "alert" : "feature") as "default" | "metric" | "alert" | "feature",
+      priority: (metrics.pmsMetrics.deviationAlerts > 0 ? "high" : "normal") as "high" | "normal",
+      bgColor: "bg-blue-50"
+    },
+    {
       title: "Transactions",
       value: (metrics.todaysSales.transactionCount || 0).toString(),
       icon: ShoppingCart,
@@ -319,7 +330,7 @@ export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {metricCards.map((metric, index) => {
           const Icon = metric.icon
 

@@ -11,6 +11,10 @@ import {
   transactionItems,
   stockMovements,
   themeSettings,
+  pumpConfigurations,
+  pumpMeterReadings,
+  dailyPmsCalculations,
+  pmsSalesRecords,
   customersRelations,
   stationsRelations,
   usersRelations,
@@ -18,7 +22,11 @@ import {
   productsRelations,
   transactionsRelations,
   transactionItemsRelations,
-  stockMovementsRelations
+  stockMovementsRelations,
+  pumpConfigurationsRelations,
+  pumpMeterReadingsRelations,
+  dailyPmsCalculationsRelations,
+  pmsSalesRecordsRelations
 } from "./schema"
 
 config({ path: ".env.local" })
@@ -39,6 +47,10 @@ const dbSchema = {
   transactionItems,
   stockMovements,
   themeSettings,
+  pumpConfigurations,
+  pumpMeterReadings,
+  dailyPmsCalculations,
+  pmsSalesRecords,
   // relations
   customersRelations,
   stationsRelations,
@@ -47,7 +59,11 @@ const dbSchema = {
   productsRelations,
   transactionsRelations,
   transactionItemsRelations,
-  stockMovementsRelations
+  stockMovementsRelations,
+  pumpConfigurationsRelations,
+  pumpMeterReadingsRelations,
+  dailyPmsCalculationsRelations,
+  pmsSalesRecordsRelations
 }
 
 function initializeDb(url: string) {

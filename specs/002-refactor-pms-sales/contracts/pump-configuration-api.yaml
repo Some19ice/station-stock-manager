@@ -1,0 +1,212 @@
+openapi: 3.0.3
+info:
+  title: Pump Configuration API
+  description: API for managing pump configurations and status
+  version: 1.0.0
+
+paths:
+  /api/pump-configurations:
+    get:
+      summary: Get pump configurations for a station
+      parameters:
+        - name: stationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of pump configurations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PumpConfiguration"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Create new pump configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePumpConfiguration"
+      responses:
+        "201":
+          description: Pump configuration created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/PumpConfiguration"
+
+  /api/pump-configurations/{pumpId}:
+    put:
+      summary: Update pump configuration
+      parameters:
+        - name: pumpId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePumpConfiguration"
+      responses:
+        "200":
+          description: Pump configuration updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/PumpConfiguration"
+
+  /api/pump-configurations/{pumpId}/status:
+    patch:
+      summary: Update pump status
+      parameters:
+        - name: pumpId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, maintenance, calibration, repair]
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Pump status updated
+
+components:
+  schemas:
+    PumpConfiguration:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        pumpNumber:
+          type: string
+        pmsProductId:
+          type: string
+          format: uuid
+        isActive:
+          type: boolean
+        meterCapacity:
+          type: number
+        installDate:
+          type: string
+          format: date
+        lastCalibrationDate:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+          enum: [active, maintenance, calibration, repair]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePumpConfiguration:
+      type: object
+      required:
+        - stationId
+        - pumpNumber
+        - pmsProductId
+        - meterCapacity
+        - installDate
+      properties:
+        stationId:
+          type: string
+          format: uuid
+        pumpNumber:
+          type: string
+        pmsProductId:
+          type: string
+          format: uuid
+        meterCapacity:
+          type: number
+          minimum: 1
+        installDate:
+          type: string
+          format: date
+
+    UpdatePumpConfiguration:
+      type: object
+      properties:
+        pumpNumber:
+          type: string
+        meterCapacity:
+          type: number
+          minimum: 1
+        lastCalibrationDate:
+          type: string
+          format: date
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              isSuccess:
+                type: boolean
+                example: false
+              error:
+                type: string
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              isSuccess:
+                type: boolean
+                example: false
+              error:
+                type: string
+                example: "Unauthorized"

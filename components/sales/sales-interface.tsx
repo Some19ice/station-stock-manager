@@ -18,12 +18,13 @@ import { toast } from "sonner"
 import { recordSale } from "@/actions/sales"
 import { getProducts } from "@/actions/products"
 import { gsap } from "gsap"
+import Link from "next/link"
 
 interface Product {
   id: string
   name: string
   brand?: string
-  type: "pms" | "lubricant"
+  type: "lubricant" // Only lubricants - PMS handled via meter readings
   currentStock: string
   unitPrice: string
   unit: string
@@ -46,9 +47,8 @@ export function SalesInterface({
   stationId,
   onSaleComplete
 }: SalesInterfaceProps) {
-  const [selectedType, setSelectedType] = useState<"pms" | "lubricant" | null>(
-    null
-  )
+  // Only allow lubricant transactions - PMS uses meter readings
+  const [selectedType, setSelectedType] = useState<"lubricant" | null>(null)
 
   // Refs for animations
   const productsGridRef = useRef<HTMLDivElement>(null)
@@ -389,26 +389,49 @@ export function SalesInterface({
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="mb-2 text-2xl font-bold">Select Product Type</h2>
+          <h2 className="mb-2 text-2xl font-bold">Transaction Sales</h2>
           <p className="text-muted-foreground mb-6">
-            Choose the type of product you want to sell
+            Record individual product sales (lubricants only)
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
-          <Card
-            className="hover:border-primary cursor-pointer border-2 transition-shadow hover:shadow-lg"
-            onClick={() => setSelectedType("pms")}
-          >
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-fit rounded-full bg-blue-100 p-3">
-                <Fuel className="h-8 w-8 text-blue-600" />
+        {/* PMS Sales Information */}
+        <Card className="mx-auto max-w-2xl border-blue-200 bg-blue-50">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-blue-100 p-2">
+                <Fuel className="h-5 w-5 text-blue-600" />
               </div>
-              <CardTitle className="text-xl">PMS (Petrol)</CardTitle>
-              <CardDescription>Premium Motor Spirit sales</CardDescription>
-            </CardHeader>
-          </Card>
+              <div>
+                <CardTitle className="text-lg text-blue-900">
+                  PMS Sales Recording
+                </CardTitle>
+                <CardDescription className="text-blue-700">
+                  PMS sales are recorded via daily meter readings, not
+                  individual transactions
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="mb-3 text-sm text-blue-800">
+              To record PMS sales, use the <strong>PMS Meter Readings</strong>{" "}
+              page to enter your daily closing readings for each pump.
+            </p>
+            <Link href="/staff/meter-readings">
+              <Button
+                variant="outline"
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                <Fuel className="mr-2 h-4 w-4" />
+                Go to Meter Readings
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
+        {/* Lubricant Sales */}
+        <div className="mx-auto max-w-md">
           <Card
             className="hover:border-primary cursor-pointer border-2 transition-shadow hover:shadow-lg"
             onClick={() => setSelectedType("lubricant")}
@@ -417,8 +440,10 @@ export function SalesInterface({
               <div className="mx-auto mb-4 w-fit rounded-full bg-orange-100 p-3">
                 <Wrench className="h-8 w-8 text-orange-600" />
               </div>
-              <CardTitle className="text-xl">Lubricants</CardTitle>
-              <CardDescription>Engine oils and lubricants</CardDescription>
+              <CardTitle className="text-xl">
+                Lubricants & Accessories
+              </CardTitle>
+              <CardDescription>Engine oils and other products</CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -436,17 +461,8 @@ export function SalesInterface({
           </Button>
           <div>
             <h2 className="flex items-center gap-2 text-2xl font-bold">
-              {selectedType === "pms" ? (
-                <>
-                  <Fuel className="h-6 w-6 text-blue-600" />
-                  PMS Sales
-                </>
-              ) : (
-                <>
-                  <Wrench className="h-6 w-6 text-orange-600" />
-                  Lubricant Sales
-                </>
-              )}
+              <Wrench className="h-6 w-6 text-orange-600" />
+              Lubricant Sales
             </h2>
             <p className="text-muted-foreground">
               Select products and quantities to record sale
@@ -474,7 +490,7 @@ export function SalesInterface({
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
             <Input
-              placeholder={`Search ${selectedType === "pms" ? "PMS products" : "lubricants"}...`}
+              placeholder="Search lubricants..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -590,26 +606,6 @@ export function SalesInterface({
                           <Plus className="mr-1 h-4 w-4" />
                           Add 1
                         </Button>
-                        {selectedType === "pms" && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => addToCart(product, 10)}
-                              disabled={stock < 10}
-                            >
-                              +10L
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => addToCart(product, 20)}
-                              disabled={stock < 20}
-                            >
-                              +20L
-                            </Button>
-                          </>
-                        )}
                       </div>
                     </CardContent>
                   </Card>

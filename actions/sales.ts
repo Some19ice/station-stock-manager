@@ -104,6 +104,13 @@ export async function recordSale(input: z.infer<typeof recordSaleSchema>) {
             throw new Error(`Product not found: ${item.productId}`)
           }
 
+          // Prevent PMS products from being sold via transactions
+          if (product.type === "pms") {
+            throw new Error(
+              `PMS sales must be recorded via meter readings, not individual transactions. Use the meter reading system instead.`
+            )
+          }
+
           const currentStock = parseFloat(product.currentStock)
           if (currentStock < item.quantity) {
             throw new Error(

@@ -1,0 +1,472 @@
+openapi: 3.0.3
+info:
+  title: Director User Management API
+  description: API endpoints for Director-level user account management and administration
+  version: 1.0.0
+
+paths:
+  /api/admin/users:
+    get:
+      summary: Get all users (Director access)
+      description: Retrieve paginated list of all users across all stations (Director-only access)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [staff, manager, director]
+          description: Filter by user role
+        - name: stationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by station ID
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+          description: Filter by active status
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+          description: Search by username or email
+      responses:
+        200:
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DirectorUserView"
+                      pagination:
+                        $ref: "#/components/schemas/Pagination"
+                      summary:
+                        type: object
+                        properties:
+                          totalUsers:
+                            type: integer
+                          roleBreakdown:
+                            type: object
+                            properties:
+                              staff:
+                                type: integer
+                              manager:
+                                type: integer
+                              director:
+                                type: integer
+                          activeUsers:
+                            type: integer
+                          inactiveUsers:
+                            type: integer
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Director access required
+
+    post:
+      summary: Create new user (Director access)
+      description: Create a new user account with role assignment (Director-only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stationId
+                - username
+                - email
+                - role
+              properties:
+                stationId:
+                  type: string
+                  format: uuid
+                  description: Station to assign the user to
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  pattern: "^[a-zA-Z0-9._-]+$"
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                role:
+                  type: string
+                  enum: [staff, manager, director]
+                sendInvitation:
+                  type: boolean
+                  default: true
+                  description: Whether to send email invitation to the user
+      responses:
+        201:
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/DirectorUserView"
+        400:
+          description: Bad request - Invalid user data or business rule violation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    examples:
+                      username_taken: "Username already exists"
+                      email_taken: "Email already in use"
+                      invalid_station: "Station not found"
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Director access required
+
+  /api/admin/users/{userId}:
+    get:
+      summary: Get specific user details (Director access)
+      description: Retrieve detailed information about a specific user including activity logs
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/DirectorUserView"
+                      - type: object
+                        properties:
+                          recentActivity:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                action:
+                                  type: string
+                                details:
+                                  type: string
+                                timestamp:
+                                  type: string
+                                  format: date-time
+                          permissions:
+                            type: array
+                            items:
+                              type: string
+                          lastLogin:
+                            type: string
+                            format: date-time
+                            nullable: true
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Director access required
+        404:
+          description: User not found
+
+    patch:
+      summary: Update user details (Director access)
+      description: Update user information, role, or status (Director-only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  pattern: "^[a-zA-Z0-9._-]+$"
+                role:
+                  type: string
+                  enum: [staff, manager, director]
+                isActive:
+                  type: boolean
+                stationId:
+                  type: string
+                  format: uuid
+                  description: Transfer user to different station
+      responses:
+        200:
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/DirectorUserView"
+        400:
+          description: Bad request - Invalid update data or business rule violation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    examples:
+                      last_director: "Cannot deactivate or change role of last Director"
+                      username_taken: "Username already exists"
+                      invalid_station: "Station not found"
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Director access required
+        404:
+          description: User not found
+
+    delete:
+      summary: Deactivate user (Director access)
+      description: Deactivate a user account (soft delete - Director-only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: User deactivated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+                        format: uuid
+                      deactivatedAt:
+                        type: string
+                        format: date-time
+        400:
+          description: Bad request - Cannot deactivate (e.g., last Director)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Cannot deactivate last Director in the system"
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Director access required
+        404:
+          description: User not found
+
+  /api/admin/users/bulk-actions:
+    post:
+      summary: Perform bulk user actions (Director access)
+      description: Perform bulk operations on multiple users (Director-only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+                - userIds
+              properties:
+                action:
+                  type: string
+                  enum: [activate, deactivate, transfer_station, assign_role]
+                userIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  minItems: 1
+                  maxItems: 50
+                parameters:
+                  type: object
+                  properties:
+                    stationId:
+                      type: string
+                      format: uuid
+                      description: Required for transfer_station action
+                    role:
+                      type: string
+                      enum: [staff, manager, director]
+                      description: Required for assign_role action
+      responses:
+        200:
+          description: Bulk action completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      successCount:
+                        type: integer
+                      failureCount:
+                        type: integer
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            userId:
+                              type: string
+                              format: uuid
+                            success:
+                              type: boolean
+                            error:
+                              type: string
+                              nullable: true
+        400:
+          description: Bad request - Invalid bulk action parameters
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Director access required
+
+components:
+  schemas:
+    DirectorUserView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        clerkUserId:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+          enum: [staff, manager, director]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        station:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            address:
+              type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions based on user role
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+        hasNext:
+          type: boolean
+        hasPrev:
+          type: boolean
+
+  securitySchemes:
+    ClerkAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - ClerkAuth: []

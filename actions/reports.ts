@@ -2,12 +2,16 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { db } from "@/db"
-import { 
-  transactions, 
-  transactionItems, 
-  products, 
-  users, 
-  stockMovements 
+import {
+  transactions,
+  transactionItems,
+  products,
+  users,
+  stockMovements,
+  dailyPmsCalculations,
+  pmsSalesRecords,
+  pumpMeterReadings,
+  pumpConfigurations
 } from "@/db/schema"
 import { eq, and, gte, lte, desc, sql, sum, count } from "drizzle-orm"
 import { z } from "zod"
@@ -40,10 +44,21 @@ export interface DailyReportData {
     }>
   }
   pmsReport: {
-    openingStock: string
-    litresSold: string
-    closingStock: string
-    revenue: string
+    totalVolume: string
+    totalRevenue: string
+    averageUnitPrice: string
+    pumpCount: number
+    estimatedVolumeCount: string
+    meterBased: boolean
+    calculations?: Array<{
+      pumpNumber: string
+      openingReading: string
+      closingReading: string
+      volumeDispensed: string
+      revenue: string
+      hasRollover: boolean
+      isEstimated: boolean
+    }>
   }
   lubricantBreakdown: Array<{
     productName: string
@@ -78,7 +93,9 @@ export interface LowStockAlert {
 /**
  * Generate end-of-day report with sales overview, PMS report, and lubricant breakdown
  */
-export async function generateDailyReport(input: z.infer<typeof reportFiltersSchema>) {
+export async function generateDailyReport(
+  input: z.infer<typeof reportFiltersSchema>
+) {
   try {
     const { userId } = await auth()
     if (!userId) {
@@ -117,7 +134,10 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
         totalRevenue: sum(transactionItems.totalPrice)
       })
       .from(transactionItems)
-      .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
+      .innerJoin(
+        transactions,
+        eq(transactionItems.transactionId, transactions.id)
+      )
       .innerJoin(products, eq(transactionItems.productId, products.id))
       .where(
         and(
@@ -129,35 +149,67 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
       .groupBy(products.id, products.name, products.brand, products.unit)
       .orderBy(desc(sum(transactionItems.totalPrice)))
 
-    // Get PMS data
-    const pmsProducts = await db
+    // Get meter-based PMS data for the specific date
+    const reportDateStr = startDate.toISOString().split("T")[0]
+
+    // First try to get from PMS sales records (aggregated data)
+    const [pmsSalesRecord] = await db
       .select()
-      .from(products)
+      .from(pmsSalesRecords)
       .where(
         and(
-          eq(products.stationId, stationId),
-          eq(products.type, "pms"),
-          eq(products.isActive, true)
+          eq(pmsSalesRecords.stationId, stationId),
+          eq(pmsSalesRecords.recordDate, reportDateStr)
         )
       )
 
-    // Calculate PMS sales for the day
-    const pmsSales = await db
+    // Get detailed pump calculations for the date
+    const pumpCalculations = await db
       .select({
-        totalQuantity: sum(transactionItems.quantity),
-        totalRevenue: sum(transactionItems.totalPrice)
+        pumpNumber: pumpConfigurations.pumpNumber,
+        openingReading: dailyPmsCalculations.openingReading,
+        closingReading: dailyPmsCalculations.closingReading,
+        volumeDispensed: dailyPmsCalculations.volumeDispensed,
+        totalRevenue: dailyPmsCalculations.totalRevenue,
+        hasRollover: dailyPmsCalculations.hasRollover,
+        isEstimated: dailyPmsCalculations.isEstimated
       })
-      .from(transactionItems)
-      .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
-      .innerJoin(products, eq(transactionItems.productId, products.id))
+      .from(dailyPmsCalculations)
+      .innerJoin(
+        pumpConfigurations,
+        eq(dailyPmsCalculations.pumpId, pumpConfigurations.id)
+      )
       .where(
         and(
-          eq(transactions.stationId, stationId),
-          eq(products.type, "pms"),
-          gte(transactions.transactionDate, startDate),
-          lte(transactions.transactionDate, endOfDay)
+          eq(pumpConfigurations.stationId, stationId),
+          eq(dailyPmsCalculations.calculationDate, reportDateStr)
         )
       )
+      .orderBy(pumpConfigurations.pumpNumber)
+
+    // If no meter-based data available, fall back to transaction-based for backward compatibility
+    let pmsSales = null
+    if (!pmsSalesRecord && pumpCalculations.length === 0) {
+      pmsSales = await db
+        .select({
+          totalQuantity: sum(transactionItems.quantity),
+          totalRevenue: sum(transactionItems.totalPrice)
+        })
+        .from(transactionItems)
+        .innerJoin(
+          transactions,
+          eq(transactionItems.transactionId, transactions.id)
+        )
+        .innerJoin(products, eq(transactionItems.productId, products.id))
+        .where(
+          and(
+            eq(transactions.stationId, stationId),
+            eq(products.type, "pms"),
+            gte(transactions.transactionDate, startDate),
+            lte(transactions.transactionDate, endOfDay)
+          )
+        )
+    }
 
     // Get lubricant breakdown
     const lubricantSales = await db
@@ -171,7 +223,10 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
       })
       .from(products)
       .leftJoin(transactionItems, eq(products.id, transactionItems.productId))
-      .leftJoin(transactions, eq(transactionItems.transactionId, transactions.id))
+      .leftJoin(
+        transactions,
+        eq(transactionItems.transactionId, transactions.id)
+      )
       .where(
         and(
           eq(products.stationId, stationId),
@@ -179,14 +234,20 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
           eq(products.isActive, true)
         )
       )
-      .groupBy(products.id, products.name, products.brand, products.currentStock)
+      .groupBy(
+        products.id,
+        products.name,
+        products.brand,
+        products.currentStock
+      )
 
     // Calculate averages and format data
     const totalSales = salesOverview[0]?.totalSales || "0"
     const totalTransactions = salesOverview[0]?.totalTransactions || 0
-    const averageTransaction = totalTransactions > 0 
-      ? (parseFloat(totalSales) / totalTransactions).toFixed(2)
-      : "0"
+    const averageTransaction =
+      totalTransactions > 0
+        ? (parseFloat(totalSales) / totalTransactions).toFixed(2)
+        : "0"
 
     const reportData: DailyReportData = {
       salesOverview: {
@@ -194,7 +255,9 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
         totalTransactions,
         averageTransaction,
         productsSold: productsSold
-          .filter(item => item.totalQuantity && parseFloat(item.totalQuantity) > 0)
+          .filter(
+            item => item.totalQuantity && parseFloat(item.totalQuantity) > 0
+          )
           .map(item => ({
             productName: item.productName,
             brand: item.brand || "N/A",
@@ -203,28 +266,102 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
             unit: item.unit
           }))
       },
-      pmsReport: {
-        openingStock: pmsProducts[0]?.currentStock || "0",
-        litresSold: pmsSales[0]?.totalQuantity || "0",
-        closingStock: pmsProducts[0] 
-          ? (parseFloat(pmsProducts[0].currentStock) - parseFloat(pmsSales[0]?.totalQuantity || "0")).toString()
-          : "0",
-        revenue: pmsSales[0]?.totalRevenue || "0"
-      },
+      pmsReport: pmsSalesRecord
+        ? {
+            // Use meter-based data from PMS sales record
+            totalVolume: pmsSalesRecord.totalVolumeDispensed,
+            totalRevenue: pmsSalesRecord.totalRevenue,
+            averageUnitPrice: pmsSalesRecord.averageUnitPrice,
+            pumpCount: pmsSalesRecord.pumpCount,
+            estimatedVolumeCount: pmsSalesRecord.estimatedVolumeCount,
+            meterBased: true,
+            calculations: pumpCalculations.map(calc => ({
+              pumpNumber: calc.pumpNumber,
+              openingReading: calc.openingReading,
+              closingReading: calc.closingReading,
+              volumeDispensed: calc.volumeDispensed,
+              revenue: calc.totalRevenue,
+              hasRollover: calc.hasRollover,
+              isEstimated: calc.isEstimated
+            }))
+          }
+        : pumpCalculations.length > 0
+          ? {
+              // Use individual pump calculations if no aggregated record
+              totalVolume: pumpCalculations
+                .reduce(
+                  (sum, calc) => sum + parseFloat(calc.volumeDispensed),
+                  0
+                )
+                .toString(),
+              totalRevenue: pumpCalculations
+                .reduce((sum, calc) => sum + parseFloat(calc.totalRevenue), 0)
+                .toString(),
+              averageUnitPrice:
+                pumpCalculations.length > 0
+                  ? (
+                      pumpCalculations.reduce(
+                        (sum, calc) => sum + parseFloat(calc.totalRevenue),
+                        0
+                      ) /
+                      pumpCalculations.reduce(
+                        (sum, calc) => sum + parseFloat(calc.volumeDispensed),
+                        0
+                      )
+                    ).toFixed(2)
+                  : "0",
+              pumpCount: pumpCalculations.length,
+              estimatedVolumeCount: pumpCalculations
+                .filter(calc => calc.isEstimated)
+                .reduce(
+                  (sum, calc) => sum + parseFloat(calc.volumeDispensed),
+                  0
+                )
+                .toString(),
+              meterBased: true,
+              calculations: pumpCalculations.map(calc => ({
+                pumpNumber: calc.pumpNumber,
+                openingReading: calc.openingReading,
+                closingReading: calc.closingReading,
+                volumeDispensed: calc.volumeDispensed,
+                revenue: calc.totalRevenue,
+                hasRollover: calc.hasRollover,
+                isEstimated: calc.isEstimated
+              }))
+            }
+          : {
+              // Fall back to transaction-based data for backward compatibility
+              totalVolume: pmsSales?.[0]?.totalQuantity || "0",
+              totalRevenue: pmsSales?.[0]?.totalRevenue || "0",
+              averageUnitPrice:
+                pmsSales?.[0]?.totalQuantity && pmsSales?.[0]?.totalRevenue
+                  ? (
+                      parseFloat(pmsSales[0].totalRevenue) /
+                      parseFloat(pmsSales[0].totalQuantity)
+                    ).toFixed(2)
+                  : "0",
+              pumpCount: 0,
+              estimatedVolumeCount: "0",
+              meterBased: false
+            },
       lubricantBreakdown: lubricantSales
-        .filter(item => item.totalQuantity && parseFloat(item.totalQuantity) > 0)
+        .filter(
+          item => item.totalQuantity && parseFloat(item.totalQuantity) > 0
+        )
         .map(item => ({
           productName: item.productName,
           brand: item.brand || "N/A",
           openingStock: item.currentStock,
           unitsSold: item.totalQuantity || "0",
-          closingStock: (parseFloat(item.currentStock) - parseFloat(item.totalQuantity || "0")).toString(),
+          closingStock: (
+            parseFloat(item.currentStock) -
+            parseFloat(item.totalQuantity || "0")
+          ).toString(),
           revenue: item.totalRevenue || "0"
         }))
     }
 
     return { isSuccess: true, data: reportData }
-
   } catch (error) {
     console.error("Error generating daily report:", error)
     return { isSuccess: false, error: "Failed to generate daily report" }
@@ -234,7 +371,9 @@ export async function generateDailyReport(input: z.infer<typeof reportFiltersSch
 /**
  * Get staff performance report with individual transaction tracking
  */
-export async function getStaffPerformanceReport(input: z.infer<typeof reportFiltersSchema>) {
+export async function getStaffPerformanceReport(
+  input: z.infer<typeof reportFiltersSchema>
+) {
   try {
     const { userId } = await auth()
     if (!userId) {
@@ -242,7 +381,12 @@ export async function getStaffPerformanceReport(input: z.infer<typeof reportFilt
     }
 
     const validatedInput = reportFiltersSchema.parse(input)
-    const { stationId, startDate, endDate, userId: targetUserId } = validatedInput
+    const {
+      stationId,
+      startDate,
+      endDate,
+      userId: targetUserId
+    } = validatedInput
 
     const endOfDay = new Date(endDate)
     endOfDay.setHours(23, 59, 59, 999)
@@ -274,7 +418,7 @@ export async function getStaffPerformanceReport(input: z.infer<typeof reportFilt
 
     // Get top product for each staff member
     const staffData: StaffPerformanceData[] = []
-    
+
     for (const staff of staffPerformance) {
       const topProduct = await db
         .select({
@@ -282,7 +426,10 @@ export async function getStaffPerformanceReport(input: z.infer<typeof reportFilt
           totalQuantity: sum(transactionItems.quantity)
         })
         .from(transactionItems)
-        .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
+        .innerJoin(
+          transactions,
+          eq(transactionItems.transactionId, transactions.id)
+        )
         .innerJoin(products, eq(transactionItems.productId, products.id))
         .where(
           and(
@@ -298,9 +445,10 @@ export async function getStaffPerformanceReport(input: z.infer<typeof reportFilt
 
       const totalSales = staff.totalSales || "0"
       const transactionCount = staff.transactionCount || 0
-      const averageTransaction = transactionCount > 0 
-        ? (parseFloat(totalSales) / transactionCount).toFixed(2)
-        : "0"
+      const averageTransaction =
+        transactionCount > 0
+          ? (parseFloat(totalSales) / transactionCount).toFixed(2)
+          : "0"
 
       staffData.push({
         staffId: staff.staffId,
@@ -313,10 +461,12 @@ export async function getStaffPerformanceReport(input: z.infer<typeof reportFilt
     }
 
     return { isSuccess: true, data: staffData }
-
   } catch (error) {
     console.error("Error generating staff performance report:", error)
-    return { isSuccess: false, error: "Failed to generate staff performance report" }
+    return {
+      isSuccess: false,
+      error: "Failed to generate staff performance report"
+    }
   }
 }
 
@@ -349,12 +499,14 @@ export async function getLowStockAlerts(stationId: string) {
           sql`${products.currentStock}::numeric <= ${products.minThreshold}::numeric`
         )
       )
-      .orderBy(sql`(${products.currentStock}::numeric - ${products.minThreshold}::numeric)`)
+      .orderBy(
+        sql`(${products.currentStock}::numeric - ${products.minThreshold}::numeric)`
+      )
 
     const alerts: LowStockAlert[] = lowStockProducts.map(product => {
       const currentStock = parseFloat(product.currentStock)
       const minThreshold = parseFloat(product.minThreshold)
-      
+
       // Calculate recommended reorder quantity (2x minimum threshold)
       const reorderQuantity = (minThreshold * 2 - currentStock).toFixed(2)
 
@@ -371,7 +523,6 @@ export async function getLowStockAlerts(stationId: string) {
     })
 
     return { isSuccess: true, data: alerts }
-
   } catch (error) {
     console.error("Error getting low stock alerts:", error)
     return { isSuccess: false, error: "Failed to get low stock alerts" }
@@ -381,7 +532,9 @@ export async function getLowStockAlerts(stationId: string) {
 /**
  * Generate weekly report summary
  */
-export async function generateWeeklyReport(input: z.infer<typeof reportFiltersSchema>) {
+export async function generateWeeklyReport(
+  input: z.infer<typeof reportFiltersSchema>
+) {
   try {
     const { userId } = await auth()
     if (!userId) {
@@ -424,17 +577,178 @@ export async function generateWeeklyReport(input: z.infer<typeof reportFiltersSc
         )
       )
 
-    return { 
-      isSuccess: true, 
+    return {
+      isSuccess: true,
       data: {
         dailyBreakdown: dailySales,
         weekTotals: weekTotals[0] || { totalSales: "0", totalTransactions: 0 }
       }
     }
-
   } catch (error) {
     console.error("Error generating weekly report:", error)
     return { isSuccess: false, error: "Failed to generate weekly report" }
+  }
+}
+
+/**
+ * Get meter-based PMS report for a specific date range
+ */
+export async function getMeterBasedPmsReport(
+  input: z.infer<typeof reportFiltersSchema>
+) {
+  try {
+    const { userId } = await auth()
+    if (!userId) {
+      return { isSuccess: false, error: "Unauthorized" }
+    }
+
+    const validatedInput = reportFiltersSchema.parse(input)
+    const { stationId, startDate, endDate } = validatedInput
+
+    const startDateStr = startDate.toISOString().split("T")[0]
+    const endDateStr = endDate.toISOString().split("T")[0]
+
+    // Get PMS sales records for the date range
+    const pmsRecords = await db
+      .select()
+      .from(pmsSalesRecords)
+      .where(
+        and(
+          eq(pmsSalesRecords.stationId, stationId),
+          gte(pmsSalesRecords.recordDate, startDateStr),
+          lte(pmsSalesRecords.recordDate, endDateStr)
+        )
+      )
+      .orderBy(pmsSalesRecords.recordDate)
+
+    // Get detailed pump calculations for the date range
+    const pumpCalculations = await db
+      .select({
+        calculationDate: dailyPmsCalculations.calculationDate,
+        pumpNumber: pumpConfigurations.pumpNumber,
+        openingReading: dailyPmsCalculations.openingReading,
+        closingReading: dailyPmsCalculations.closingReading,
+        volumeDispensed: dailyPmsCalculations.volumeDispensed,
+        totalRevenue: dailyPmsCalculations.totalRevenue,
+        unitPrice: dailyPmsCalculations.unitPrice,
+        hasRollover: dailyPmsCalculations.hasRollover,
+        rolloverValue: dailyPmsCalculations.rolloverValue,
+        deviationFromAverage: dailyPmsCalculations.deviationFromAverage,
+        isEstimated: dailyPmsCalculations.isEstimated,
+        calculationMethod: dailyPmsCalculations.calculationMethod,
+        calculatedAt: dailyPmsCalculations.calculatedAt
+      })
+      .from(dailyPmsCalculations)
+      .innerJoin(
+        pumpConfigurations,
+        eq(dailyPmsCalculations.pumpId, pumpConfigurations.id)
+      )
+      .where(
+        and(
+          eq(pumpConfigurations.stationId, stationId),
+          gte(dailyPmsCalculations.calculationDate, startDateStr),
+          lte(dailyPmsCalculations.calculationDate, endDateStr)
+        )
+      )
+      .orderBy(
+        dailyPmsCalculations.calculationDate,
+        pumpConfigurations.pumpNumber
+      )
+
+    // Get daily reading status for the range
+    const meterReadings = await db
+      .select({
+        readingDate: pumpMeterReadings.readingDate,
+        pumpNumber: pumpConfigurations.pumpNumber,
+        readingType: pumpMeterReadings.readingType,
+        meterValue: pumpMeterReadings.meterValue,
+        isEstimated: pumpMeterReadings.isEstimated,
+        recordedAt: pumpMeterReadings.recordedAt
+      })
+      .from(pumpMeterReadings)
+      .innerJoin(
+        pumpConfigurations,
+        eq(pumpMeterReadings.pumpId, pumpConfigurations.id)
+      )
+      .where(
+        and(
+          eq(pumpConfigurations.stationId, stationId),
+          gte(pumpMeterReadings.readingDate, startDateStr),
+          lte(pumpMeterReadings.readingDate, endDateStr)
+        )
+      )
+      .orderBy(
+        pumpMeterReadings.readingDate,
+        pumpConfigurations.pumpNumber,
+        pumpMeterReadings.readingType
+      )
+
+    // Calculate summary metrics
+    const totalVolume = pmsRecords.reduce(
+      (sum, record) => sum + parseFloat(record.totalVolumeDispensed),
+      0
+    )
+    const totalRevenue = pmsRecords.reduce(
+      (sum, record) => sum + parseFloat(record.totalRevenue),
+      0
+    )
+    const totalEstimatedVolume = pmsRecords.reduce(
+      (sum, record) => sum + parseFloat(record.estimatedVolumeCount),
+      0
+    )
+
+    // Group calculations by date
+    const calculationsByDate = pumpCalculations.reduce(
+      (acc, calc) => {
+        if (!acc[calc.calculationDate]) {
+          acc[calc.calculationDate] = []
+        }
+        acc[calc.calculationDate].push(calc)
+        return acc
+      },
+      {} as Record<string, typeof pumpCalculations>
+    )
+
+    // Group readings by date and pump
+    const readingsByDateAndPump = meterReadings.reduce(
+      (acc, reading) => {
+        const key = `${reading.readingDate}-${reading.pumpNumber}`
+        if (!acc[key]) {
+          acc[key] = {}
+        }
+        acc[key][reading.readingType] = reading
+        return acc
+      },
+      {} as Record<string, Record<string, (typeof meterReadings)[0]>>
+    )
+
+    return {
+      isSuccess: true,
+      data: {
+        summary: {
+          totalVolume: totalVolume.toFixed(2),
+          totalRevenue: totalRevenue.toFixed(2),
+          averageUnitPrice:
+            totalVolume > 0 ? (totalRevenue / totalVolume).toFixed(2) : "0",
+          totalDays: pmsRecords.length,
+          estimatedVolumePercent:
+            totalVolume > 0
+              ? ((totalEstimatedVolume / totalVolume) * 100).toFixed(1)
+              : "0"
+        },
+        dailyRecords: pmsRecords,
+        calculationsByDate,
+        readingsByDateAndPump,
+        rawCalculations: pumpCalculations,
+        rawReadings: meterReadings
+      }
+    }
+  } catch (error) {
+    console.error("Error generating meter-based PMS report:", error)
+    return {
+      isSuccess: false,
+      error: "Failed to generate meter-based PMS report"
+    }
   }
 }
 

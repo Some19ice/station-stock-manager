@@ -1,0 +1,289 @@
+openapi: 3.0.3
+info:
+  title: Meter Readings API
+  description: API for recording and managing pump meter readings
+  version: 1.0.0
+
+paths:
+  /api/meter-readings:
+    get:
+      summary: Get meter readings for a date range
+      parameters:
+        - name: stationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: pumpId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of meter readings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MeterReading"
+
+    post:
+      summary: Record meter reading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMeterReading"
+      responses:
+        "201":
+          description: Meter reading recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/MeterReading"
+
+  /api/meter-readings/{readingId}:
+    put:
+      summary: Update meter reading (within time window)
+      parameters:
+        - name: readingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeterReading"
+      responses:
+        "200":
+          description: Meter reading updated
+        "403":
+          description: Modification window expired
+
+  /api/meter-readings/bulk:
+    post:
+      summary: Record multiple meter readings (daily batch)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stationId:
+                  type: string
+                  format: uuid
+                readingDate:
+                  type: string
+                  format: date
+                readingType:
+                  type: string
+                  enum: [opening, closing]
+                readings:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      pumpId:
+                        type: string
+                        format: uuid
+                      meterValue:
+                        type: number
+                      notes:
+                        type: string
+      responses:
+        "201":
+          description: Bulk readings recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      recordedCount:
+                        type: integer
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            pumpId:
+                              type: string
+                            error:
+                              type: string
+
+  /api/meter-readings/daily-status:
+    get:
+      summary: Get reading status for a specific date
+      parameters:
+        - name: stationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Daily reading status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                      pumps:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            pumpId:
+                              type: string
+                            pumpNumber:
+                              type: string
+                            hasOpening:
+                              type: boolean
+                            hasClosing:
+                              type: boolean
+                            openingValue:
+                              type: number
+                              nullable: true
+                            closingValue:
+                              type: number
+                              nullable: true
+
+components:
+  schemas:
+    MeterReading:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        pumpId:
+          type: string
+          format: uuid
+        readingDate:
+          type: string
+          format: date
+        readingType:
+          type: string
+          enum: [opening, closing]
+        meterValue:
+          type: number
+        recordedBy:
+          type: string
+          format: uuid
+        recordedAt:
+          type: string
+          format: date-time
+        isEstimated:
+          type: boolean
+        estimationMethod:
+          type: string
+          enum: [transaction_based, historical_average, manual]
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        isModified:
+          type: boolean
+        originalValue:
+          type: number
+          nullable: true
+        modifiedBy:
+          type: string
+          format: uuid
+          nullable: true
+        modifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateMeterReading:
+      type: object
+      required:
+        - pumpId
+        - readingDate
+        - readingType
+        - meterValue
+      properties:
+        pumpId:
+          type: string
+          format: uuid
+        readingDate:
+          type: string
+          format: date
+        readingType:
+          type: string
+          enum: [opening, closing]
+        meterValue:
+          type: number
+          minimum: 0
+        notes:
+          type: string
+        isEstimated:
+          type: boolean
+          default: false
+        estimationMethod:
+          type: string
+          enum: [transaction_based, historical_average, manual]
+
+    UpdateMeterReading:
+      type: object
+      properties:
+        meterValue:
+          type: number
+          minimum: 0
+        notes:
+          type: string

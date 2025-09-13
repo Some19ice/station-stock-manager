@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: PMS Calculations API
+  description: API for calculating and managing PMS sales from meter readings
+  version: 1.0.0
+
+paths:
+  /api/pms-calculations:
+    get:
+      summary: Get PMS calculations for date range
+      parameters:
+        - name: stationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: List of PMS calculations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PMSCalculation"
+
+    post:
+      summary: Calculate PMS sales for specific date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stationId:
+                  type: string
+                  format: uuid
+                calculationDate:
+                  type: string
+                  format: date
+                forceRecalculate:
+                  type: boolean
+                  default: false
+      responses:
+        "201":
+          description: Calculations completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      calculatedCount:
+                        type: integer
+                      totalVolume:
+                        type: number
+                      totalRevenue:
+                        type: number
+                      calculations:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PMSCalculation"
+
+  /api/pms-calculations/{calculationId}/approve:
+    post:
+      summary: Approve estimated or override calculation
+      parameters:
+        - name: calculationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approved:
+                  type: boolean
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Calculation approval updated
+
+  /api/pms-calculations/rollover:
+    post:
+      summary: Handle meter rollover
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pumpId:
+                  type: string
+                  format: uuid
+                calculationDate:
+                  type: string
+                  format: date
+                rolloverValue:
+                  type: number
+                newReading:
+                  type: number
+      responses:
+        "200":
+          description: Rollover handled and calculation updated
+
+  /api/pms-calculations/deviations:
+    get:
+      summary: Get calculations with significant deviations
+      parameters:
+        - name: stationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: thresholdPercent
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 20
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 7
+      responses:
+        "200":
+          description: List of calculations with deviations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/PMSCalculation"
+                        - type: object
+                          properties:
+                            averageVolume:
+                              type: number
+                            deviationPercent:
+                              type: number
+
+components:
+  schemas:
+    PMSCalculation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        pumpId:
+          type: string
+          format: uuid
+        calculationDate:
+          type: string
+          format: date
+        openingReading:
+          type: number
+        closingReading:
+          type: number
+        volumeDispensed:
+          type: number
+        unitPrice:
+          type: number
+        totalRevenue:
+          type: number
+        hasRollover:
+          type: boolean
+        rolloverValue:
+          type: number
+          nullable: true
+        deviationFromAverage:
+          type: number
+        isEstimated:
+          type: boolean
+        calculationMethod:
+          type: string
+          enum: [meter_readings, estimated, manual_override]
+        calculatedBy:
+          type: string
+          format: uuid
+        calculatedAt:
+          type: string
+          format: date-time
+        approvedBy:
+          type: string
+          format: uuid
+          nullable: true
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        pump:
+          type: object
+          properties:
+            pumpNumber:
+              type: string
+            pmsProduct:
+              type: object
+              properties:
+                name:
+                  type: string
+                unitPrice:
+                  type: number

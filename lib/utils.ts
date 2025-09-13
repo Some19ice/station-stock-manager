@@ -333,6 +333,84 @@ export const transactionSchemas = {
     .optional()
 } as const
 
+// PMS Pump Configuration validation schemas
+export const pumpConfigurationSchemas = {
+  create: z.object({
+    stationId: commonSchemas.uuid,
+    pmsProductId: commonSchemas.uuid,
+    pumpNumber: commonSchemas.requiredString,
+    meterCapacity: z.number().positive().min(1),
+    installDate: commonSchemas.dateString
+  }),
+
+  update: z.object({
+    pumpNumber: commonSchemas.requiredString.optional(),
+    meterCapacity: z.number().positive().min(1).optional(),
+    lastCalibrationDate: commonSchemas.dateString.optional()
+  }),
+
+  statusUpdate: z.object({
+    status: z.enum(["active", "maintenance", "calibration", "repair"]),
+    notes: commonSchemas.optionalString
+  })
+} as const
+
+// Meter Reading validation schemas
+export const meterReadingSchemas = {
+  create: z.object({
+    pumpId: commonSchemas.uuid,
+    readingDate: commonSchemas.dateString,
+    readingType: z.enum(["opening", "closing"]),
+    meterValue: z.number().min(0),
+    notes: commonSchemas.optionalString,
+    isEstimated: commonSchemas.boolean.optional(),
+    estimationMethod: z.enum(["transaction_based", "historical_average", "manual"]).optional()
+  }),
+
+  update: z.object({
+    meterValue: z.number().min(0),
+    notes: commonSchemas.optionalString
+  }),
+
+  bulk: z.object({
+    stationId: commonSchemas.uuid,
+    readingDate: commonSchemas.dateString,
+    readingType: z.enum(["opening", "closing"]),
+    readings: z.array(z.object({
+      pumpId: commonSchemas.uuid,
+      meterValue: z.number().min(0),
+      notes: commonSchemas.optionalString
+    }))
+  })
+} as const
+
+// PMS Calculation validation schemas
+export const pmsCalculationSchemas = {
+  create: z.object({
+    stationId: commonSchemas.uuid,
+    calculationDate: commonSchemas.dateString,
+    forceRecalculate: commonSchemas.boolean.optional()
+  }),
+
+  approve: z.object({
+    approved: commonSchemas.boolean,
+    notes: commonSchemas.optionalString
+  }),
+
+  rollover: z.object({
+    pumpId: commonSchemas.uuid,
+    calculationDate: commonSchemas.dateString,
+    rolloverValue: z.number().positive(),
+    newReading: z.number().min(0)
+  }),
+
+  deviations: z.object({
+    stationId: commonSchemas.uuid,
+    thresholdPercent: z.number().positive().default(20),
+    days: z.number().int().positive().default(7)
+  })
+} as const
+
 // Form validation helpers
 export function getFieldError(
   error: z.ZodError,

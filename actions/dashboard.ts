@@ -2,7 +2,16 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { db } from "@/db"
-import { transactions, transactionItems, products, users } from "@/db/schema"
+import {
+  transactions,
+  transactionItems,
+  products,
+  users,
+  dailyPmsCalculations,
+  pmsSalesRecords,
+  pumpConfigurations,
+  pumpMeterReadings
+} from "@/db/schema"
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm"
 import { validateUserRole, getCurrentUserProfile } from "./auth"
 
@@ -27,6 +36,22 @@ export interface DashboardMetrics {
     totalSold: string
     revenue: string
   }>
+  pmsMetrics: {
+    todaysVolume: string
+    todaysRevenue: string
+    averageUnitPrice: string
+    activePumps: number
+    totalPumps: number
+    estimatedVolumePercent: string
+    deviationAlerts: number
+    meterBased: boolean
+  }
+  meterReadingStatus: {
+    completeReadings: number
+    pendingReadings: number
+    missingReadings: number
+    estimatedReadings: number
+  }
 }
 
 export interface LowStockAlert {
@@ -70,6 +95,8 @@ export async function getDashboardMetrics(date?: Date): Promise<{
 
     const endOfDay = new Date(targetDate)
     endOfDay.setHours(23, 59, 59, 999)
+
+    const todayDateStr = targetDate.toISOString().split("T")[0]
 
     // Get today's sales metrics
     const todaysSalesQuery = await db
@@ -154,6 +181,146 @@ export async function getDashboardMetrics(date?: Date): Promise<{
       .orderBy(desc(sql`SUM(${transactionItems.totalPrice})`))
       .limit(5)
 
+    // Get meter-based PMS metrics for today
+    const [todaysPmsRecord] = await db
+      .select()
+      .from(pmsSalesRecords)
+      .where(
+        and(
+          eq(pmsSalesRecords.stationId, stationId),
+          eq(pmsSalesRecords.recordDate, todayDateStr)
+        )
+      )
+
+    // Get pump configuration counts
+    const pumpStatusQuery = await db
+      .select({
+        totalPumps: sql<number>`COUNT(*)`,
+        activePumps: sql<number>`COUNT(CASE WHEN ${pumpConfigurations.status} = 'active' AND ${pumpConfigurations.isActive} = true THEN 1 END)`
+      })
+      .from(pumpConfigurations)
+      .where(eq(pumpConfigurations.stationId, stationId))
+
+    const pumpStatus = pumpStatusQuery[0] || {
+      totalPumps: 0,
+      activePumps: 0
+    }
+
+    // Get deviation alerts count for today
+    const deviationAlertsQuery = await db
+      .select({
+        count: sql<number>`COUNT(*)`
+      })
+      .from(dailyPmsCalculations)
+      .innerJoin(
+        pumpConfigurations,
+        eq(dailyPmsCalculations.pumpId, pumpConfigurations.id)
+      )
+      .where(
+        and(
+          eq(pumpConfigurations.stationId, stationId),
+          eq(dailyPmsCalculations.calculationDate, todayDateStr),
+          sql`ABS(CAST(${dailyPmsCalculations.deviationFromAverage} AS DECIMAL)) >= 20`
+        )
+      )
+
+    const deviationAlerts = deviationAlertsQuery[0]?.count || 0
+
+    // Get meter reading status for today
+    const allPumpsForReadings = await db
+      .select({
+        pumpId: pumpConfigurations.id
+      })
+      .from(pumpConfigurations)
+      .where(
+        and(
+          eq(pumpConfigurations.stationId, stationId),
+          eq(pumpConfigurations.isActive, true),
+          eq(pumpConfigurations.status, "active")
+        )
+      )
+
+    const todaysReadings = await db
+      .select({
+        pumpId: pumpMeterReadings.pumpId,
+        readingType: pumpMeterReadings.readingType,
+        isEstimated: pumpMeterReadings.isEstimated
+      })
+      .from(pumpMeterReadings)
+      .where(eq(pumpMeterReadings.readingDate, todayDateStr))
+
+    // Calculate reading status
+    const totalPumpsForReadings = allPumpsForReadings.length
+    const readingsByPump = todaysReadings.reduce(
+      (acc, reading) => {
+        if (!acc[reading.pumpId]) {
+          acc[reading.pumpId] = { opening: null, closing: null }
+        }
+        acc[reading.pumpId][reading.readingType] = reading
+        return acc
+      },
+      {} as Record<string, { opening: any; closing: any }>
+    )
+
+    let completeReadings = 0
+    let pendingReadings = 0
+    let missingReadings = 0
+    let estimatedReadings = 0
+
+    allPumpsForReadings.forEach(pump => {
+      const pumpReadings = readingsByPump[pump.pumpId]
+
+      if (!pumpReadings) {
+        missingReadings++
+      } else if (pumpReadings.opening && pumpReadings.closing) {
+        completeReadings++
+        if (
+          pumpReadings.opening.isEstimated ||
+          pumpReadings.closing.isEstimated
+        ) {
+          estimatedReadings++
+        }
+      } else {
+        pendingReadings++
+        if (
+          pumpReadings.opening?.isEstimated ||
+          pumpReadings.closing?.isEstimated
+        ) {
+          estimatedReadings++
+        }
+      }
+    })
+
+    // Calculate PMS metrics
+    const pmsMetrics = todaysPmsRecord
+      ? {
+          todaysVolume: todaysPmsRecord.totalVolumeDispensed,
+          todaysRevenue: todaysPmsRecord.totalRevenue,
+          averageUnitPrice: todaysPmsRecord.averageUnitPrice,
+          activePumps: pumpStatus.activePumps,
+          totalPumps: pumpStatus.totalPumps,
+          estimatedVolumePercent:
+            parseFloat(todaysPmsRecord.totalVolumeDispensed) > 0
+              ? (
+                  (parseFloat(todaysPmsRecord.estimatedVolumeCount) /
+                    parseFloat(todaysPmsRecord.totalVolumeDispensed)) *
+                  100
+                ).toFixed(1)
+              : "0",
+          deviationAlerts,
+          meterBased: true
+        }
+      : {
+          todaysVolume: "0",
+          todaysRevenue: "0",
+          averageUnitPrice: "0",
+          activePumps: pumpStatus.activePumps,
+          totalPumps: pumpStatus.totalPumps,
+          estimatedVolumePercent: "0",
+          deviationAlerts,
+          meterBased: false
+        }
+
     const metrics: DashboardMetrics = {
       todaysSales: {
         totalValue: todaysSales.totalValue,
@@ -169,7 +336,14 @@ export async function getDashboardMetrics(date?: Date): Promise<{
         activeStaffCount: staffActivity.activeStaffCount,
         totalStaff: staffActivity.totalStaff
       },
-      topProducts: topProductsQuery
+      topProducts: topProductsQuery,
+      pmsMetrics,
+      meterReadingStatus: {
+        completeReadings,
+        pendingReadings,
+        missingReadings,
+        estimatedReadings
+      }
     }
 
     return { isSuccess: true, data: metrics }
@@ -236,6 +410,259 @@ export async function getLowStockAlerts(): Promise<{
   } catch (error) {
     console.error("Error fetching low stock alerts:", error)
     return { isSuccess: false, error: "Failed to fetch low stock alerts" }
+  }
+}
+
+export async function getPmsDashboardMetrics(date?: Date): Promise<{
+  isSuccess: boolean
+  data?: {
+    dailyMetrics: {
+      totalVolume: string
+      totalRevenue: string
+      averageUnitPrice: string
+      pumpCount: number
+      estimatedVolumeCount: string
+      estimatedPercentage: string
+    }
+    pumpStatus: {
+      activePumps: number
+      totalPumps: number
+      maintenancePumps: number
+      calibrationPumps: number
+      repairPumps: number
+    }
+    readingStatus: {
+      completeReadings: number
+      pendingReadings: number
+      missingReadings: number
+      estimatedReadings: number
+      completionPercentage: string
+    }
+    alerts: {
+      deviationAlerts: number
+      rolloverAlerts: number
+      estimationApprovals: number
+    }
+  }
+  error?: string
+}> {
+  try {
+    const { userId } = await auth()
+    if (!userId) {
+      return { isSuccess: false, error: "Unauthorized" }
+    }
+
+    const userProfileResult = await getCurrentUserProfile()
+    if (!userProfileResult.isSuccess || !userProfileResult.data) {
+      return { isSuccess: false, error: "User profile not found" }
+    }
+
+    const stationId = userProfileResult.data.user.stationId
+    const targetDate = date || new Date()
+    const todayDateStr = targetDate.toISOString().split("T")[0]
+
+    // Get daily PMS sales record
+    const [todaysPmsRecord] = await db
+      .select()
+      .from(pmsSalesRecords)
+      .where(
+        and(
+          eq(pmsSalesRecords.stationId, stationId),
+          eq(pmsSalesRecords.recordDate, todayDateStr)
+        )
+      )
+
+    // Get pump status breakdown
+    const pumpStatusBreakdown = await db
+      .select({
+        totalPumps: sql<number>`COUNT(*)`,
+        activePumps: sql<number>`COUNT(CASE WHEN ${pumpConfigurations.status} = 'active' AND ${pumpConfigurations.isActive} = true THEN 1 END)`,
+        maintenancePumps: sql<number>`COUNT(CASE WHEN ${pumpConfigurations.status} = 'maintenance' AND ${pumpConfigurations.isActive} = true THEN 1 END)`,
+        calibrationPumps: sql<number>`COUNT(CASE WHEN ${pumpConfigurations.status} = 'calibration' AND ${pumpConfigurations.isActive} = true THEN 1 END)`,
+        repairPumps: sql<number>`COUNT(CASE WHEN ${pumpConfigurations.status} = 'repair' AND ${pumpConfigurations.isActive} = true THEN 1 END)`
+      })
+      .from(pumpConfigurations)
+      .where(eq(pumpConfigurations.stationId, stationId))
+
+    const pumpStatus = pumpStatusBreakdown[0] || {
+      totalPumps: 0,
+      activePumps: 0,
+      maintenancePumps: 0,
+      calibrationPumps: 0,
+      repairPumps: 0
+    }
+
+    // Get alerts
+    const deviationAlertsQuery = await db
+      .select({
+        count: sql<number>`COUNT(*)`
+      })
+      .from(dailyPmsCalculations)
+      .innerJoin(
+        pumpConfigurations,
+        eq(dailyPmsCalculations.pumpId, pumpConfigurations.id)
+      )
+      .where(
+        and(
+          eq(pumpConfigurations.stationId, stationId),
+          eq(dailyPmsCalculations.calculationDate, todayDateStr),
+          sql`ABS(CAST(${dailyPmsCalculations.deviationFromAverage} AS DECIMAL)) >= 20`
+        )
+      )
+
+    const rolloverAlertsQuery = await db
+      .select({
+        count: sql<number>`COUNT(*)`
+      })
+      .from(dailyPmsCalculations)
+      .innerJoin(
+        pumpConfigurations,
+        eq(dailyPmsCalculations.pumpId, pumpConfigurations.id)
+      )
+      .where(
+        and(
+          eq(pumpConfigurations.stationId, stationId),
+          eq(dailyPmsCalculations.calculationDate, todayDateStr),
+          eq(dailyPmsCalculations.hasRollover, true)
+        )
+      )
+
+    const estimationApprovalsQuery = await db
+      .select({
+        count: sql<number>`COUNT(*)`
+      })
+      .from(dailyPmsCalculations)
+      .innerJoin(
+        pumpConfigurations,
+        eq(dailyPmsCalculations.pumpId, pumpConfigurations.id)
+      )
+      .where(
+        and(
+          eq(pumpConfigurations.stationId, stationId),
+          eq(dailyPmsCalculations.calculationDate, todayDateStr),
+          eq(dailyPmsCalculations.isEstimated, true),
+          sql`${dailyPmsCalculations.approvedBy} IS NULL`
+        )
+      )
+
+    // Get reading status
+    const activePumpsForReadings = await db
+      .select({
+        pumpId: pumpConfigurations.id
+      })
+      .from(pumpConfigurations)
+      .where(
+        and(
+          eq(pumpConfigurations.stationId, stationId),
+          eq(pumpConfigurations.isActive, true),
+          eq(pumpConfigurations.status, "active")
+        )
+      )
+
+    const todaysReadings = await db
+      .select({
+        pumpId: pumpMeterReadings.pumpId,
+        readingType: pumpMeterReadings.readingType,
+        isEstimated: pumpMeterReadings.isEstimated
+      })
+      .from(pumpMeterReadings)
+      .where(eq(pumpMeterReadings.readingDate, todayDateStr))
+
+    // Calculate reading completion
+    const readingsByPump = todaysReadings.reduce(
+      (acc, reading) => {
+        if (!acc[reading.pumpId]) {
+          acc[reading.pumpId] = { opening: null, closing: null }
+        }
+        acc[reading.pumpId][reading.readingType] = reading
+        return acc
+      },
+      {} as Record<string, { opening: any; closing: any }>
+    )
+
+    let completeReadings = 0
+    let pendingReadings = 0
+    let missingReadings = 0
+    let estimatedReadings = 0
+
+    activePumpsForReadings.forEach(pump => {
+      const pumpReadings = readingsByPump[pump.pumpId]
+
+      if (!pumpReadings) {
+        missingReadings++
+      } else if (pumpReadings.opening && pumpReadings.closing) {
+        completeReadings++
+        if (
+          pumpReadings.opening.isEstimated ||
+          pumpReadings.closing.isEstimated
+        ) {
+          estimatedReadings++
+        }
+      } else {
+        pendingReadings++
+        if (
+          pumpReadings.opening?.isEstimated ||
+          pumpReadings.closing?.isEstimated
+        ) {
+          estimatedReadings++
+        }
+      }
+    })
+
+    const totalPumpsForReadings = activePumpsForReadings.length
+    const completionPercentage =
+      totalPumpsForReadings > 0
+        ? ((completeReadings / totalPumpsForReadings) * 100).toFixed(1)
+        : "0"
+
+    // Build response
+    const dailyMetrics = todaysPmsRecord
+      ? {
+          totalVolume: todaysPmsRecord.totalVolumeDispensed,
+          totalRevenue: todaysPmsRecord.totalRevenue,
+          averageUnitPrice: todaysPmsRecord.averageUnitPrice,
+          pumpCount: todaysPmsRecord.pumpCount,
+          estimatedVolumeCount: todaysPmsRecord.estimatedVolumeCount,
+          estimatedPercentage:
+            parseFloat(todaysPmsRecord.totalVolumeDispensed) > 0
+              ? (
+                  (parseFloat(todaysPmsRecord.estimatedVolumeCount) /
+                    parseFloat(todaysPmsRecord.totalVolumeDispensed)) *
+                  100
+                ).toFixed(1)
+              : "0"
+        }
+      : {
+          totalVolume: "0",
+          totalRevenue: "0",
+          averageUnitPrice: "0",
+          pumpCount: 0,
+          estimatedVolumeCount: "0",
+          estimatedPercentage: "0"
+        }
+
+    return {
+      isSuccess: true,
+      data: {
+        dailyMetrics,
+        pumpStatus,
+        readingStatus: {
+          completeReadings,
+          pendingReadings,
+          missingReadings,
+          estimatedReadings,
+          completionPercentage
+        },
+        alerts: {
+          deviationAlerts: deviationAlertsQuery[0]?.count || 0,
+          rolloverAlerts: rolloverAlertsQuery[0]?.count || 0,
+          estimationApprovals: estimationApprovalsQuery[0]?.count || 0
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching PMS dashboard metrics:", error)
+    return { isSuccess: false, error: "Failed to fetch PMS dashboard metrics" }
   }
 }
 

@@ -62,6 +62,10 @@ export function AppSidebar({
           {
             title: "Low Stock Alerts",
             url: "/dashboard/inventory?filter=low-stock"
+          },
+          {
+            title: "PMS Meter Readings",
+            url: "/dashboard/meter-readings"
           }
         ]
       },

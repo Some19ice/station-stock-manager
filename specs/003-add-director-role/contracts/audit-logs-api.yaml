@@ -1,0 +1,377 @@
+openapi: 3.0.3
+info:
+  title: Audit Logs API - Director Action Tracking
+  description: API endpoints for comprehensive audit logging and compliance monitoring
+  version: 1.0.0
+
+paths:
+  /api/audit-logs:
+    get:
+      summary: Retrieve audit logs
+      description: Get paginated audit logs with filtering options (Director/Manager access only)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Number of records per page
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by specific user ID
+        - name: actionType
+          in: query
+          schema:
+            type: string
+            enum:
+              [
+                user_create,
+                user_update,
+                user_deactivate,
+                role_assign,
+                report_generate,
+                report_export,
+                supplier_create,
+                supplier_update,
+                customer_create,
+                customer_update,
+                permission_check_fail
+              ]
+          description: Filter by action type
+        - name: resourceType
+          in: query
+          schema:
+            type: string
+            enum: [user, report, supplier, customer, permission]
+          description: Filter by resource type
+        - name: stationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by station ID
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter logs from this date (ISO 8601)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter logs to this date (ISO 8601)
+      responses:
+        200:
+          description: Audit logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      logs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AuditLogEntry"
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+                          total:
+                            type: integer
+                          totalPages:
+                            type: integer
+                          hasNext:
+                            type: boolean
+                          hasPrev:
+                            type: boolean
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Only Directors and Managers can access audit logs
+
+    post:
+      summary: Create audit log entry
+      description: Log a Director action for compliance tracking (internal use - called by server actions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - actionType
+                - resourceType
+                - details
+              properties:
+                actionType:
+                  type: string
+                  enum:
+                    [
+                      user_create,
+                      user_update,
+                      user_deactivate,
+                      role_assign,
+                      report_generate,
+                      report_export,
+                      supplier_create,
+                      supplier_update,
+                      customer_create,
+                      customer_update,
+                      permission_check_fail
+                    ]
+                resourceType:
+                  type: string
+                  enum: [user, report, supplier, customer, permission]
+                resourceId:
+                  type: string
+                  format: uuid
+                  description: ID of the affected resource (optional)
+                details:
+                  type: object
+                  description: Structured details about the action
+                  additionalProperties: true
+                  example:
+                    previousRole: "manager"
+                    newRole: "director"
+                    targetUsername: "john.doe"
+                ipAddress:
+                  type: string
+                  format: ipv4
+                userAgent:
+                  type: string
+                  maxLength: 500
+      responses:
+        201:
+          description: Audit log entry created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AuditLogEntry"
+        400:
+          description: Bad request - Invalid audit log data
+        401:
+          description: Unauthorized
+        500:
+          description: Internal server error - Failed to create audit log
+
+  /api/audit-logs/{logId}:
+    get:
+      summary: Get specific audit log entry
+      description: Retrieve detailed information about a specific audit log entry
+      parameters:
+        - name: logId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Audit log entry ID
+      responses:
+        200:
+          description: Audit log entry retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSuccess:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AuditLogEntry"
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Insufficient permissions
+        404:
+          description: Audit log entry not found
+
+  /api/audit-logs/export:
+    post:
+      summary: Export audit logs
+      description: Generate and download audit log export for compliance reporting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [csv, xlsx, pdf]
+                  default: csv
+                filters:
+                  type: object
+                  properties:
+                    startDate:
+                      type: string
+                      format: date-time
+                    endDate:
+                      type: string
+                      format: date-time
+                    userId:
+                      type: string
+                      format: uuid
+                    actionType:
+                      type: string
+                      enum:
+                        [
+                          user_create,
+                          user_update,
+                          user_deactivate,
+                          role_assign,
+                          report_generate,
+                          report_export,
+                          supplier_create,
+                          supplier_update,
+                          customer_create,
+                          customer_update,
+                          permission_check_fail
+                        ]
+                    stationId:
+                      type: string
+                      format: uuid
+      responses:
+        200:
+          description: Audit log export generated successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="audit-logs-2025-09-13.csv"
+        400:
+          description: Bad request - Invalid export parameters
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Only Directors can export audit logs
+
+components:
+  schemas:
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the audit log entry
+        userId:
+          type: string
+          format: uuid
+          description: ID of the user who performed the action
+        actionType:
+          type: string
+          enum:
+            [
+              user_create,
+              user_update,
+              user_deactivate,
+              role_assign,
+              report_generate,
+              report_export,
+              supplier_create,
+              supplier_update,
+              customer_create,
+              customer_update,
+              permission_check_fail
+            ]
+          description: Type of action performed
+        resourceType:
+          type: string
+          enum: [user, report, supplier, customer, permission]
+          description: Type of resource affected by the action
+        resourceId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the affected resource (if applicable)
+        details:
+          type: object
+          additionalProperties: true
+          description: Structured details about the action performed
+          example:
+            previousRole: "manager"
+            newRole: "director"
+            targetUsername: "john.doe"
+            targetStationId: "123e4567-e89b-12d3-a456-426614174000"
+        ipAddress:
+          type: string
+          nullable: true
+          description: IP address from which the action was performed
+        userAgent:
+          type: string
+          nullable: true
+          description: User agent string from the request
+        stationId:
+          type: string
+          format: uuid
+          description: Station ID associated with the action
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the action was performed
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            role:
+              type: string
+              enum: [staff, manager, director]
+          description: User information for the actor
+        station:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+          description: Station information where the action occurred
+
+  securitySchemes:
+    ClerkAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - ClerkAuth: []

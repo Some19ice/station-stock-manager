@@ -192,6 +192,42 @@ export default async function StaffDashboard() {
           </AnimatedCard>
         </div>
 
+        {/* PMS Meter Readings Section */}
+        <AnimatedCard
+          title="PMS Sales Recording"
+          hoverEffect={true}
+          className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <Fuel className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <CardDescription className="text-blue-700">
+                Record PMS sales via daily meter readings for accurate fuel
+                tracking
+              </CardDescription>
+            </div>
+            <Button
+              asChild
+              variant="outline"
+              className="border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              <Link href="/staff/meter-readings">
+                <Fuel className="mr-2 h-4 w-4" />
+                Enter Meter Readings
+              </Link>
+            </Button>
+          </div>
+          <div className="mt-4 rounded-lg bg-blue-100/50 p-3">
+            <p className="text-sm text-blue-800">
+              <strong>Important:</strong> PMS sales are no longer recorded as
+              individual transactions. Use the meter reading system to record
+              opening and closing readings for each pump.
+            </p>
+          </div>
+        </AnimatedCard>
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Recent Activity */}
@@ -258,7 +294,17 @@ export default async function StaffDashboard() {
               >
                 <Link href="/staff/sales">
                   <Plus className="mr-2 h-4 w-4" />
-                  New Sale
+                  New Sale (Lubricants)
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                asChild
+              >
+                <Link href="/staff/meter-readings">
+                  <Fuel className="mr-2 h-4 w-4" />
+                  PMS Meter Readings
                 </Link>
               </Button>
               <Button

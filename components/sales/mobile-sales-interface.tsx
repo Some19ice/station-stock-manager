@@ -30,9 +30,7 @@ interface CartItem {
 }
 
 export function MobileSalesInterface() {
-  const [selectedType, setSelectedType] = useState<"pms" | "lubricant" | null>(
-    null
-  )
+  const [selectedType, setSelectedType] = useState<"lubricant" | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
 
   // Mock products

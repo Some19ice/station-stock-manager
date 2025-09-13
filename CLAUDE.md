@@ -77,6 +77,7 @@ A fuel inventory management application that provides:
 ### User Roles
 - **Sales Staff**: Record sales, view daily summaries, access quick sale interface
 - **Manager**: Full dashboard access, inventory management, reports, staff management
+- **Director**: Strategic oversight role with reports/user management access, read-only inventory, no sales access
 
 ### Environment Variables Required
 - `DATABASE_URL` - PostgreSQL database connection string
@@ -89,3 +90,19 @@ A fuel inventory management application that provides:
 - **Unit Tests**: Jest with React Testing Library for components and utilities
 - **E2E Tests**: Playwright for full application workflow testing
 - **Coverage**: Configured for app/, lib/, db/, actions/, components/, hooks/ directories
+
+## Current Implementation Status
+
+### Recent Changes
+- **Director Role Implementation**: Extended role system to include Director role with strategic oversight capabilities
+- **Audit Logging**: Added comprehensive audit trail for Director actions and compliance
+- **Permission Matrix**: Implemented granular permission system for role-based access control
+
+### Tech Stack
+- **Language/Version**: TypeScript 5 with Next.js 15
+- **Primary Dependencies**: @clerk/nextjs 6.20.2, drizzle-orm 0.44.1, zod 4.1.3
+- **Storage**: PostgreSQL with Drizzle ORM, Supabase hosting  
+- **Testing**: Jest + React Testing Library (unit), Playwright (e2e)
+- **Project Type**: Web application (Next.js app router)
+
+*Last updated: 2025-09-13*
