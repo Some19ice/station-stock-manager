@@ -54,7 +54,7 @@ import { LoadingScreen } from "@/components/ui/loading-screen"
 interface UserData {
   id: string
   username: string
-  role: "staff" | "manager"
+  role: "staff" | "manager" | "director"
   isActive: boolean
   createdAt: Date
   clerkUserId?: string

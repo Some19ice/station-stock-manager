@@ -1,376 +1,51 @@
-"use client"
-
-export const dynamic = "force-dynamic"
-
-import React from "react"
-import { validateUserRole, getCurrentUserProfile } from "@/actions/auth"
 import {
   getDashboardMetrics,
   getLowStockAlerts,
-  getRecentTransactions
+  getRecentTransactions,
+  type DashboardMetrics,
+  type LowStockAlert
 } from "@/actions/dashboard"
-import { redirect } from "next/navigation"
-import { useState, useEffect, ReactNode, useRef, useCallback } from "react"
-import type { DashboardMetrics, LowStockAlert } from "@/actions/dashboard"
+import { getCurrentUserProfile } from "@/actions/auth"
+import DashboardClient from "./dashboard-client"
 
-type RecentTransaction = {
-  id: string
-  totalAmount: string
-  transactionDate: Date
-  userName: string
-  itemCount: number
-}
-import { EnhancedMetricsCards } from "@/components/dashboard/enhanced-metrics-cards"
-import { LowStockAlerts } from "@/components/dashboard/low-stock-alerts"
-import { RecentActivity } from "@/components/dashboard/recent-activity"
-import { QuickActions } from "@/components/dashboard/quick-actions"
-import {
-  DashboardErrorBoundary,
-  WidgetError
-} from "@/components/dashboard/error-boundary"
-import { useDashboardCache } from "@/hooks/use-dashboard-cache"
-import { useRealtimeUpdates } from "@/hooks/use-realtime-updates"
-import {
-  AnimatedPage,
-  AnimatedGrid,
-  AnimatedText,
-  AnimatedLoader
-} from "@/components/ui/animated-page"
-import { LoadingScreen } from "@/components/ui/loading-screen"
-import {
-  EnhancedCard,
-  EnhancedCardContent
-} from "@/components/ui/enhanced-card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Sparkles, Activity, Clock, RefreshCw } from "lucide-react"
-import { gsap } from "gsap"
-import { cn } from "@/lib/utils"
+export const dynamic = "force-dynamic"
 
-interface UserProfile {
-  user: {
-    id: string
-    username: string
-    role: string
-  }
-  station: {
-    id: string
-    name: string
-  }
-}
+export default async function DashboardPage() {
+  // Fetch all data in parallel
+  const [userProfileResult, metricsResult, alertsResult, activitiesResult] =
+    await Promise.all([
+      getCurrentUserProfile(),
+      getDashboardMetrics(),
+      getLowStockAlerts(),
+      getRecentTransactions(50)
+    ])
 
-interface Widget {
-  id: string
-  title: string
-  component: ReactNode
-  visible: boolean
-  order: number
-}
+  const userProfile =
+    userProfileResult.isSuccess && userProfileResult.data
+      ? userProfileResult.data
+      : null
 
-// Enhanced loading components with better animations
-const MetricsLoading = React.memo(() => (
-  <div className="animate-pulse space-y-4">
-    <div className="h-4 w-3/4 rounded bg-gray-200"></div>
-    <div className="h-8 w-1/2 rounded bg-gray-200"></div>
-  </div>
-))
-MetricsLoading.displayName = "MetricsLoading"
+  const metrics =
+    metricsResult.isSuccess && metricsResult.data
+      ? (metricsResult.data as DashboardMetrics)
+      : null
 
-const AlertsLoading = React.memo(() => (
-  <div className="animate-pulse space-y-3">
-    <div className="h-4 rounded bg-gray-200"></div>
-    <div className="h-4 w-5/6 rounded bg-gray-200"></div>
-  </div>
-))
-AlertsLoading.displayName = "AlertsLoading"
+  const alerts =
+    alertsResult.isSuccess && alertsResult.data
+      ? (alertsResult.data as LowStockAlert[])
+      : null
 
-const ActivityLoading = React.memo(() => (
-  <div className="animate-pulse space-y-3">
-    {[...Array(3)].map((_, i) => (
-      <div key={i} className="flex space-x-3">
-        <div className="h-10 w-10 rounded-full bg-gray-200"></div>
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-3/4 rounded bg-gray-200"></div>
-          <div className="h-3 w-1/2 rounded bg-gray-200"></div>
-        </div>
-      </div>
-    ))}
-  </div>
-))
-ActivityLoading.displayName = "ActivityLoading"
-
-export default function EnhancedDashboardPage() {
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
-  const [alerts, setAlerts] = useState<LowStockAlert[] | null>(null)
-  const [activities, setActivities] = useState<RecentTransaction[] | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [isDataLoading, setIsDataLoading] = useState(false)
-  const pageRef = useRef<HTMLDivElement>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
-  const mountedRef = useRef(true)
-
-  // Enhanced cache and real-time updates
-  const { invalidate: clearCache } = useDashboardCache(
-    "dashboard",
-    async (): Promise<null> => {
-      // Placeholder fetcher function for cache invalidation only
-      return null
-    },
-    { refreshInterval: 0 } // Disable auto-refresh since we manage it manually
-  )
-  const { isOnline: isConnected } = useRealtimeUpdates({ enabled: true })
-
-  // Stable reference for loadDashboardData using useRef to prevent infinite re-renders
-  const loadDashboardDataRef = useRef<
-    (useCache?: boolean, signal?: AbortSignal) => Promise<void>
-  >(async () => {})
-
-  loadDashboardDataRef.current = async (
-    useCache = true,
-    signal?: AbortSignal
-  ) => {
-    // Prevent multiple simultaneous requests
-    if (isDataLoading && !refreshing) return
-
-    try {
-      if (signal?.aborted || !mountedRef.current) return
-
-      setIsDataLoading(true)
-      setError(null)
-
-      // Load user profile first - critical for authorization
-      const profileResult = await getCurrentUserProfile()
-      if (signal?.aborted || !mountedRef.current) return
-
-      if (!profileResult.isSuccess) {
-        throw new Error("Failed to load user profile")
-      }
-
-      // Only update state if request wasn't cancelled and component is mounted
-      if (profileResult.data && !signal?.aborted && mountedRef.current) {
-        setUserProfile(profileResult.data)
-      }
-
-      // Load dashboard data in parallel with individual error handling
-      const dataPromises = [
-        getDashboardMetrics().catch(err => ({
-          isSuccess: false,
-          error: err.message
-        })),
-        getLowStockAlerts().catch(err => ({
-          isSuccess: false,
-          error: err.message
-        })),
-        getRecentTransactions(50).catch(err => ({
-          isSuccess: false,
-          error: err.message
-        }))
-      ]
-
-      const [metricsResult, alertsResult, activitiesResult] =
-        await Promise.all(dataPromises)
-
-      // Check for cancellation after all requests complete
-      if (signal?.aborted || !mountedRef.current) return
-
-      // Update state atomically to prevent partial updates
-      const updates: (() => void)[] = []
-
-      if (
-        metricsResult.isSuccess &&
-        "data" in metricsResult &&
-        metricsResult.data
-      ) {
-        updates.push(() => setMetrics(metricsResult.data as DashboardMetrics))
-      }
-
-      if (
-        alertsResult.isSuccess &&
-        "data" in alertsResult &&
-        alertsResult.data
-      ) {
-        updates.push(() => setAlerts(alertsResult.data as LowStockAlert[]))
-      }
-
-      if (
-        activitiesResult.isSuccess &&
-        "data" in activitiesResult &&
-        activitiesResult.data
-      ) {
-        updates.push(() =>
-          setActivities(activitiesResult.data as RecentTransaction[])
-        )
-      }
-
-      // Apply all updates if not cancelled and component is mounted
-      if (!signal?.aborted && mountedRef.current) {
-        updates.forEach(update => update())
-      }
-    } catch (err) {
-      if (signal?.aborted || !mountedRef.current) return
-      setError(err instanceof Error ? err.message : "Failed to load dashboard")
-    } finally {
-      if (!signal?.aborted && mountedRef.current) {
-        setLoading(false)
-        setRefreshing(false)
-        setIsDataLoading(false)
-      }
-    }
-  }
-
-  const loadDashboardData = useCallback(
-    (useCache = true, signal?: AbortSignal) => {
-      return (
-        loadDashboardDataRef.current?.(useCache, signal) || Promise.resolve()
-      )
-    },
-    []
-  )
-
-  useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-    }
-  }, [])
-
-  useEffect(() => {
-    // Cancel any existing request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-
-    abortControllerRef.current = new AbortController()
-    loadDashboardData(true, abortControllerRef.current.signal)
-
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-    }
-  }, [loadDashboardData])
-
-  useEffect(() => {
-    // Page entrance animation - only run once when component mounts
-    if (pageRef.current && !loading) {
-      gsap.fromTo(
-        pageRef.current,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 1, ease: "power2.out" }
-      )
-    }
-  }, [loading]) // Only depend on loading state
-
-  const handleRefresh = async () => {
-    // Prevent multiple refresh requests
-    if (isDataLoading) return
-
-    setRefreshing(true)
-    clearCache()
-
-    // Cancel existing request and create new one
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-    abortControllerRef.current = new AbortController()
-
-    await loadDashboardData(false, abortControllerRef.current.signal)
-  }
-
-  if (loading) {
-    return (
-      <LoadingScreen
-        title="Dashboard Overview"
-        subtitle="Loading your station data..."
-      />
-    )
-  }
-
-  if (error) {
-    return (
-      <AnimatedPage>
-        <DashboardErrorBoundary onRetry={() => loadDashboardData(false)}>
-          <div className="py-8 text-center">
-            <p className="text-red-600">Error: {error}</p>
-          </div>
-        </DashboardErrorBoundary>
-      </AnimatedPage>
-    )
-  }
+  const activities =
+    activitiesResult.isSuccess && activitiesResult.data
+      ? activitiesResult.data
+      : null
 
   return (
-    <AnimatedPage ref={pageRef}>
-      <div className="space-y-8">
-        {/* Enhanced header with status indicators */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="cursor-pointer">
-              <Sparkles className="text-primary h-8 w-8" />
-            </div>
-            <div>
-              <h1 className="text-foreground text-3xl font-bold">
-                Dashboard Overview
-              </h1>
-              <div className="mt-1 flex items-center gap-2">
-                <Badge
-                  variant={isConnected ? "default" : "destructive"}
-                  className="text-xs"
-                >
-                  {isConnected ? "Live" : "Offline"}
-                </Badge>
-                <span className="text-muted-foreground text-xs">
-                  Updated {new Date().toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            <RefreshCw
-              className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")}
-            />
-            Refresh All
-          </Button>
-        </div>
-
-        {/* Enhanced metrics */}
-        <DashboardErrorBoundary>
-          {metrics ? (
-            <EnhancedMetricsCards metrics={metrics} />
-          ) : (
-            <MetricsLoading />
-          )}
-        </DashboardErrorBoundary>
-
-        {/* Stock Alerts - moved above recent activities */}
-        {alerts && alerts.length > 0 && (
-          <DashboardErrorBoundary>
-            <LowStockAlerts alerts={alerts} />
-          </DashboardErrorBoundary>
-        )}
-
-        {/* Enhanced grid layout */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <DashboardErrorBoundary>
-            {activities ? (
-              <RecentActivity transactions={activities} />
-            ) : (
-              <ActivityLoading />
-            )}
-          </DashboardErrorBoundary>
-
-          <DashboardErrorBoundary>
-            <QuickActions userRole="manager" />
-          </DashboardErrorBoundary>
-        </div>
-      </div>
-    </AnimatedPage>
+    <DashboardClient
+      initialMetrics={metrics}
+      initialAlerts={alerts}
+      initialActivities={activities}
+      initialUserProfile={userProfile}
+    />
   )
 }

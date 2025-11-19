@@ -1,4 +1,4 @@
-import { getCurrentUserProfile } from "@/actions/auth"
+import { getCurrentUserProfile, validateUserRole } from "@/actions/auth"
 import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import EnhancedDashboardLayout from "./_components/enhanced-layout"
@@ -24,20 +24,22 @@ export default async function DashboardLayout({
 
   const { user: profileUser } = userProfile.data
 
-  // Verify user is a manager
-  if (profileUser.role !== "manager") {
+  // Verify user is a manager or director (handled by hierarchy check)
+  const roleCheck = await validateUserRole("manager")
+
+  if (!roleCheck.isSuccess) {
     redirect("/staff")
   }
 
   const userData = {
-    name: user.fullName || user.firstName || user.username || "Manager",
+    name: user.fullName || user.firstName || user.username || profileUser.role,
     email: user.emailAddresses[0]?.emailAddress || "",
     avatar: user.imageUrl,
-    membership: "manager"
+    membership: profileUser.role
   }
 
   return (
-    <EnhancedDashboardLayout userData={userData}>
+    <EnhancedDashboardLayout userData={userData} userRole={profileUser.role}>
       {children}
     </EnhancedDashboardLayout>
   )

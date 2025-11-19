@@ -25,6 +25,7 @@ import { NavUser } from "../_components/nav-user"
 
 export function AppSidebar({
   userData,
+  userRole,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   userData: {
@@ -33,23 +34,23 @@ export function AppSidebar({
     avatar: string
     membership: string
   }
+  userRole?: "staff" | "manager" | "director"
 }) {
   const { openAddProductModal } = useInventoryModalTrigger()
 
-  const data = {
-    user: userData,
-    navMain: [
+  const baseNavItems = React.useMemo(() => {
+    const items = [
       {
         title: "Dashboard",
-        url: "/dashboard",
+        url: userRole === "director" ? "/director" : "/dashboard",
         icon: Home,
         items: []
       },
       {
         title: "Inventory",
-        url: "/dashboard/inventory",
+        url: userRole === "director" ? "/director/inventory" : "/dashboard/inventory",
         icon: Package,
-        items: [
+        items: userRole === "director" ? [] : [
           {
             title: "View Products",
             url: "/dashboard/inventory"
@@ -68,8 +69,12 @@ export function AppSidebar({
             url: "/dashboard/meter-readings"
           }
         ]
-      },
-      {
+      }
+    ]
+
+    // Add Sales section only for non-Directors
+    if (userRole !== "director") {
+      items.push({
         title: "Sales & Transactions",
         url: "/dashboard/sales",
         icon: ShoppingCart,
@@ -87,15 +92,19 @@ export function AppSidebar({
             url: "/staff/summary"
           }
         ]
-      },
+      })
+    }
+
+    // Add remaining sections
+    items.push(
       {
         title: "Reports & Analytics",
-        url: "/dashboard/reports",
+        url: userRole === "director" ? "/director/reports" : "/dashboard/reports",
         icon: BarChart3,
         items: [
           {
             title: "Sales Reports",
-            url: "/dashboard/reports"
+            url: userRole === "director" ? "/director/reports" : "/dashboard/reports"
           },
           {
             title: "Inventory Reports",
@@ -109,12 +118,12 @@ export function AppSidebar({
       },
       {
         title: "Staff Management",
-        url: "/dashboard/users",
+        url: userRole === "director" ? "/director/users" : "/dashboard/users",
         icon: Users,
         items: [
           {
             title: "View Staff",
-            url: "/dashboard/users"
+            url: userRole === "director" ? "/director/users" : "/dashboard/users"
           },
           {
             title: "Add Staff Member",
@@ -125,28 +134,46 @@ export function AppSidebar({
             url: "/dashboard/users/roles"
           }
         ]
-      },
-      {
-        title: "Settings",
-        url: "/dashboard/settings",
-        icon: Settings,
-        items: [
-          {
-            title: "Station Settings",
-            url: "/dashboard/settings"
-          },
-          {
-            title: "Product Categories",
-            url: "/dashboard/settings/categories"
-          },
-          {
-            title: "Suppliers",
-            url: "/dashboard/settings/suppliers"
-          }
-        ]
       }
-    ]
-  }
+    )
+
+    // Add Audit Logs for Directors
+    if (userRole === "director") {
+      items.push({
+        title: "Audit Logs",
+        url: "/director/audit-logs",
+        icon: AlertTriangle,
+        items: []
+      })
+    }
+
+    items.push({
+      title: "Settings",
+      url: "/dashboard/settings",
+      icon: Settings,
+      items: [
+        {
+          title: "Station Settings",
+          url: "/dashboard/settings"
+        },
+        {
+          title: "Product Categories",
+          url: "/dashboard/settings/categories"
+        },
+        {
+          title: "Suppliers",
+          url: "/dashboard/settings/suppliers"
+        }
+      ]
+    })
+
+    return items
+  }, [userRole, openAddProductModal])
+
+  const data = React.useMemo(() => ({
+    user: userData,
+    navMain: baseNavItems
+  }), [userData, baseNavItems])
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -160,7 +187,7 @@ export function AppSidebar({
               Station Stock Manager
             </span>
             <span className="text-muted-foreground truncate text-xs">
-              Manager Portal
+              {userRole === "director" ? "Director Portal" : "Manager Portal"}
             </span>
           </div>
         </div>

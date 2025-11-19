@@ -51,7 +51,7 @@ import { toast } from "sonner"
 interface UserData {
   id: string
   username: string
-  role: "staff" | "manager"
+  role: "staff" | "manager" | "director"
   isActive: boolean
   createdAt: Date
   clerkUserId?: string
@@ -83,7 +83,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     username: "",
-    role: "staff" as "staff" | "manager"
+    role: "staff" as "staff" | "manager" | "director"
   })
   const headerRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -520,7 +520,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                         />
                         <Select
                           value={editForm.role}
-                          onValueChange={(value: "staff" | "manager") =>
+                          onValueChange={(value: "staff" | "manager" | "director") =>
                             setEditForm(prev => ({ ...prev, role: value }))
                           }
                         >
@@ -530,6 +530,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                           <SelectContent>
                             <SelectItem value="staff">Staff</SelectItem>
                             <SelectItem value="manager">Manager</SelectItem>
+                            <SelectItem value="director">Director</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

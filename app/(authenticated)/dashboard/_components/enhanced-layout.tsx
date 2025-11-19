@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils"
 
 export default function EnhancedDashboardLayout({
   children,
-  userData
+  userData,
+  userRole
 }: {
   children: React.ReactNode
   userData: {
@@ -34,6 +35,7 @@ export default function EnhancedDashboardLayout({
     avatar: string
     membership: string
   }
+  userRole?: "staff" | "manager" | "director"
 }) {
   const pathname = usePathname()
   const [isClient, setIsClient] = useState(false)
@@ -117,7 +119,7 @@ export default function EnhancedDashboardLayout({
       <CursorWrapper size={20} className="hidden lg:block" disabled={false} />
 
       <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar userData={userData} />
+        <AppSidebar userData={userData} userRole={userRole} />
         <SidebarInset className="relative">
           {/* Animated background */}
           <AnimatedBackground
