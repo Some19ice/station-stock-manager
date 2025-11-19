@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
 // Route matchers for different access levels
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/staff(.*)"])
+const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/staff(.*)", "/director(.*)"])
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, redirectToSignIn } = await auth()
