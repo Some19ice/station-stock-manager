@@ -1,13 +1,7 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  devIndicators: false,
-  transpilePackages: ["next-font"],
-  experimental: {
-    fontLoaders: [
-      { loader: "@next/font/google", options: { subsets: ["latin"] } }
-    ]
-  }
+  devIndicators: false
 }
 
 export default nextConfig
