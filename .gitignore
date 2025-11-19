@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # next.js
 /.next/
@@ -43,3 +47,53 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# drizzle orm
+/drizzle/
+*.db
+*.db-shm
+*.db-wal
+
+# supabase local
+/.supabase/
+
+# ai assistant configurations
+/.amazonq/
+/.claude/
+/.cursor/
+/.gemini/
+/.kiro/
+/.specify/
+/.warp/
+
+# ide / editor
+/.vscode/
+/.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.loadpath
+.buildpath
+
+# os files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# swc compiler cache
+/.swc/
+
+# temporary documentation (optional - uncomment if needed)
+# CLAUDE.md
+# GEMINI.md
+# WARP.md
+# *_REVIEW.md
+# *_IMPROVEMENTS.md
+# *_COMPLETE.md
