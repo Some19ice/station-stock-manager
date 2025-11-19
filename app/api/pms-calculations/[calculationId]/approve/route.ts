@@ -3,9 +3,9 @@ import { currentUser } from "@clerk/nextjs/server"
 import { approveEstimatedCalculation } from "@/actions/pms-calculations"
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     calculationId: string
-  }
+  }>
 }
 
 /**
@@ -25,7 +25,7 @@ export async function POST(
       )
     }
 
-    const { calculationId } = params
+    const { calculationId } = await params
     const body = await request.json()
 
     // Validate UUID format

@@ -3,9 +3,9 @@ import { currentUser } from "@clerk/nextjs/server"
 import { updatePumpStatus } from "@/actions/pump-configurations"
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     pumpId: string
-  }
+  }>
 }
 
 /**
@@ -25,7 +25,7 @@ export async function PATCH(
       )
     }
 
-    const { pumpId } = params
+    const { pumpId } = await params
     const body = await request.json()
 
     // Validate UUID format

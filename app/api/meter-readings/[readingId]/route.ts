@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { currentUser } from "@clerk/nextjs/server"
 import { updateMeterReading } from "@/actions/meter-readings"
+import { db } from "@/db"
+import { users } from "@/db/schema"
+import { eq } from "drizzle-orm"
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     readingId: string
-  }
+  }>
 }
 
 /**
@@ -17,6 +20,7 @@ export async function PUT(
   { params }: RouteContext
 ): Promise<NextResponse> {
   try {
+    const { readingId } = await params
     const user = await currentUser()
     if (!user) {
       return NextResponse.json(
@@ -25,7 +29,6 @@ export async function PUT(
       )
     }
 
-    const { readingId } = params
     const body = await request.json()
 
     // Validate UUID format
@@ -58,7 +61,7 @@ export async function PUT(
     const managerOverride = request.headers.get("X-Manager-Override")
     const managerId = request.headers.get("X-Manager-Id")
 
-    let managerOverrideData: Record<string, unknown> | undefined = undefined
+    let managerOverrideData: { isManager: boolean; managerId: string; reason: string } | undefined = undefined
 
     if (managerOverride === "true" && managerId) {
       // Validate manager ID is UUID
@@ -79,8 +82,26 @@ export async function PUT(
         )
       }
 
-      // TODO: Validate that managerId has manager role
-      // For now, we'll accept any user ID as manager override
+      // Validate that managerId has manager role
+      const [manager] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, managerId))
+
+      if (!manager) {
+        return NextResponse.json(
+          { isSuccess: false, error: "Manager not found" },
+          { status: 404 }
+        )
+      }
+
+      if (manager.role !== "manager") {
+        return NextResponse.json(
+          { isSuccess: false, error: "Only managers can override modification window" },
+          { status: 403 }
+        )
+      }
+
       managerOverrideData = {
         isManager: true,
         managerId: managerId,

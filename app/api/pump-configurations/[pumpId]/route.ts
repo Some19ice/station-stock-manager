@@ -6,9 +6,9 @@ import {
 } from "@/actions/pump-configurations"
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     pumpId: string
-  }
+  }>
 }
 
 /**
@@ -28,7 +28,7 @@ export async function GET(
       )
     }
 
-    const { pumpId } = params
+    const { pumpId } = await params
 
     // Validate UUID format
     const uuidRegex =
@@ -85,7 +85,7 @@ export async function PUT(
       )
     }
 
-    const { pumpId } = params
+    const { pumpId } = await params
     const body = await request.json()
 
     // Validate UUID format
