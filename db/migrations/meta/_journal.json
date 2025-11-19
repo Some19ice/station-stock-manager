@@ -71,6 +71,13 @@
       "when": 1757725106601,
       "tag": "0009_groovy_wong",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1757728401061,
+      "tag": "0010_open_sway",
+      "breakpoints": true
     }
   ]
 }

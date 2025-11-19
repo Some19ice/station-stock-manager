@@ -2,6 +2,7 @@
 export * from "./enums"
 
 // Export all tables and types
+export * from "./audit-logs"
 export * from "./customers"
 export * from "./stations"
 export * from "./users"

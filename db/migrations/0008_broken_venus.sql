@@ -1,8 +1,23 @@
-CREATE TYPE "public"."calculation_method" AS ENUM('meter_readings', 'estimated', 'manual_override');--> statement-breakpoint
-CREATE TYPE "public"."pump_status" AS ENUM('active', 'maintenance', 'calibration', 'repair');--> statement-breakpoint
-CREATE TYPE "public"."estimation_method" AS ENUM('transaction_based', 'historical_average', 'manual');--> statement-breakpoint
-CREATE TYPE "public"."reading_type" AS ENUM('opening', 'closing');--> statement-breakpoint
-CREATE TABLE "daily_pms_calculations" (
+-- Create enum types (only if they don't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'calculation_method') THEN
+        CREATE TYPE "public"."calculation_method" AS ENUM('meter_readings', 'estimated', 'manual_override');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'pump_status') THEN
+        CREATE TYPE "public"."pump_status" AS ENUM('active', 'maintenance', 'calibration', 'repair');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estimation_method') THEN
+        CREATE TYPE "public"."estimation_method" AS ENUM('transaction_based', 'historical_average', 'manual');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'reading_type') THEN
+        CREATE TYPE "public"."reading_type" AS ENUM('opening', 'closing');
+    END IF;
+END $$;--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "daily_pms_calculations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"pump_id" uuid NOT NULL,
 	"calculation_date" date NOT NULL,
@@ -24,7 +39,7 @@ CREATE TABLE "daily_pms_calculations" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "pump_configurations" (
+CREATE TABLE IF NOT EXISTS "pump_configurations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"station_id" uuid NOT NULL,
 	"pms_product_id" uuid NOT NULL,
@@ -38,7 +53,7 @@ CREATE TABLE "pump_configurations" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "pump_meter_readings" (
+CREATE TABLE IF NOT EXISTS "pump_meter_readings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"pump_id" uuid NOT NULL,
 	"reading_date" date NOT NULL,
@@ -56,7 +71,7 @@ CREATE TABLE "pump_meter_readings" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "pms_sales_records" (
+CREATE TABLE IF NOT EXISTS "pms_sales_records" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"station_id" uuid NOT NULL,
 	"record_date" date NOT NULL,
@@ -71,12 +86,42 @@ CREATE TABLE "pms_sales_records" (
 );
 --> statement-breakpoint
 DROP TABLE "widget_settings" CASCADE;--> statement-breakpoint
-ALTER TABLE "daily_pms_calculations" ADD CONSTRAINT "daily_pms_calculations_pump_id_pump_configurations_id_fk" FOREIGN KEY ("pump_id") REFERENCES "public"."pump_configurations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "daily_pms_calculations" ADD CONSTRAINT "daily_pms_calculations_calculated_by_users_id_fk" FOREIGN KEY ("calculated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "daily_pms_calculations" ADD CONSTRAINT "daily_pms_calculations_approved_by_users_id_fk" FOREIGN KEY ("approved_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pump_configurations" ADD CONSTRAINT "pump_configurations_station_id_stations_id_fk" FOREIGN KEY ("station_id") REFERENCES "public"."stations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pump_configurations" ADD CONSTRAINT "pump_configurations_pms_product_id_products_id_fk" FOREIGN KEY ("pms_product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pump_meter_readings" ADD CONSTRAINT "pump_meter_readings_pump_id_pump_configurations_id_fk" FOREIGN KEY ("pump_id") REFERENCES "public"."pump_configurations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pump_meter_readings" ADD CONSTRAINT "pump_meter_readings_recorded_by_users_id_fk" FOREIGN KEY ("recorded_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pump_meter_readings" ADD CONSTRAINT "pump_meter_readings_modified_by_users_id_fk" FOREIGN KEY ("modified_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pms_sales_records" ADD CONSTRAINT "pms_sales_records_station_id_stations_id_fk" FOREIGN KEY ("station_id") REFERENCES "public"."stations"("id") ON DELETE no action ON UPDATE no action;
+-- Add foreign key constraints (only if they don't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'daily_pms_calculations_pump_id_pump_configurations_id_fk') THEN
+        ALTER TABLE "daily_pms_calculations" ADD CONSTRAINT "daily_pms_calculations_pump_id_pump_configurations_id_fk" FOREIGN KEY ("pump_id") REFERENCES "public"."pump_configurations"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'daily_pms_calculations_calculated_by_users_id_fk') THEN
+        ALTER TABLE "daily_pms_calculations" ADD CONSTRAINT "daily_pms_calculations_calculated_by_users_id_fk" FOREIGN KEY ("calculated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'daily_pms_calculations_approved_by_users_id_fk') THEN
+        ALTER TABLE "daily_pms_calculations" ADD CONSTRAINT "daily_pms_calculations_approved_by_users_id_fk" FOREIGN KEY ("approved_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'pump_configurations_station_id_stations_id_fk') THEN
+        ALTER TABLE "pump_configurations" ADD CONSTRAINT "pump_configurations_station_id_stations_id_fk" FOREIGN KEY ("station_id") REFERENCES "public"."stations"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'pump_configurations_pms_product_id_products_id_fk') THEN
+        ALTER TABLE "pump_configurations" ADD CONSTRAINT "pump_configurations_pms_product_id_products_id_fk" FOREIGN KEY ("pms_product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'pump_meter_readings_pump_id_pump_configurations_id_fk') THEN
+        ALTER TABLE "pump_meter_readings" ADD CONSTRAINT "pump_meter_readings_pump_id_pump_configurations_id_fk" FOREIGN KEY ("pump_id") REFERENCES "public"."pump_configurations"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'pump_meter_readings_recorded_by_users_id_fk') THEN
+        ALTER TABLE "pump_meter_readings" ADD CONSTRAINT "pump_meter_readings_recorded_by_users_id_fk" FOREIGN KEY ("recorded_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'pump_meter_readings_modified_by_users_id_fk') THEN
+        ALTER TABLE "pump_meter_readings" ADD CONSTRAINT "pump_meter_readings_modified_by_users_id_fk" FOREIGN KEY ("modified_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'pms_sales_records_station_id_stations_id_fk') THEN
+        ALTER TABLE "pms_sales_records" ADD CONSTRAINT "pms_sales_records_station_id_stations_id_fk" FOREIGN KEY ("station_id") REFERENCES "public"."stations"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+END $$;

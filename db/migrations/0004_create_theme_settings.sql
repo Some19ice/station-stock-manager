@@ -6,8 +6,16 @@ CREATE TABLE IF NOT EXISTS "theme_settings" (
 );
 --> statement-breakpoint
 
--- Add foreign key constraint
-ALTER TABLE "theme_settings" ADD CONSTRAINT "theme_settings_station_id_stations_id_fk" FOREIGN KEY ("station_id") REFERENCES "public"."stations"("id") ON DELETE no action ON UPDATE no action;
+-- Add foreign key constraint (only if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'theme_settings_station_id_stations_id_fk'
+    ) THEN
+        ALTER TABLE "theme_settings" ADD CONSTRAINT "theme_settings_station_id_stations_id_fk" FOREIGN KEY ("station_id") REFERENCES "public"."stations"("id") ON DELETE no action ON UPDATE no action;
+    END IF;
+END $$;
 --> statement-breakpoint
 
 -- Create indexes

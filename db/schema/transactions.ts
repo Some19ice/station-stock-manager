@@ -1,4 +1,4 @@
-import { decimal, pgTable, timestamp, uuid } from "drizzle-orm/pg-core"
+import { decimal, pgTable, timestamp, uuid, index } from "drizzle-orm/pg-core"
 import { syncStatus } from "./enums"
 import { stations } from "./stations"
 import { users } from "./users"
@@ -15,7 +15,9 @@ export const transactions = pgTable("transactions", {
   transactionDate: timestamp("transaction_date").defaultNow().notNull(),
   syncStatus: syncStatus("sync_status").default("synced").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
-})
+}, (table) => ({
+  stationDateIdx: index("transactions_station_date_idx").on(table.stationId, table.transactionDate)
+}))
 
 export type InsertTransaction = typeof transactions.$inferInsert
 export type SelectTransaction = typeof transactions.$inferSelect
