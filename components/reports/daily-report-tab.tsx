@@ -321,34 +321,29 @@ export function DailyReportTab() {
           <AnimatedCard title="PMS Report" hoverEffect={true}>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div>
-                <p className="text-muted-foreground text-sm">Opening Stock</p>
+                <p className="text-muted-foreground text-sm">Total Volume</p>
                 <p className="text-xl font-semibold">
                   {parseFloat(
-                    reportData.pmsReport.openingStock
+                    reportData.pmsReport.totalVolume
                   ).toLocaleString()}{" "}
                   L
                 </p>
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">Litres Sold</p>
+                <p className="text-muted-foreground text-sm">Pump Count</p>
                 <p className="text-xl font-semibold text-blue-600">
-                  {parseFloat(reportData.pmsReport.litresSold).toLocaleString()}{" "}
-                  L
-                </p>
+                  {reportData.pmsReport.pumpCount}</p>
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">Closing Stock</p>
+                <p className="text-muted-foreground text-sm">Avg Unit Price</p>
                 <p className="text-xl font-semibold">
-                  {parseFloat(
-                    reportData.pmsReport.closingStock
-                  ).toLocaleString()}{" "}
-                  L
+                  {formatCurrency(reportData.pmsReport.averageUnitPrice)}
                 </p>
               </div>
               <div>
                 <p className="text-muted-foreground text-sm">Revenue</p>
                 <p className="text-xl font-semibold text-green-600">
-                  {formatCurrency(reportData.pmsReport.revenue)}
+                  {formatCurrency(reportData.pmsReport.totalRevenue)}
                 </p>
               </div>
             </div>
@@ -407,10 +402,10 @@ function generateCSVContent(data: DailyReportData, date: string): string {
   lines.push(
     "",
     "PMS Report",
-    `Opening Stock (L),${data.pmsReport.openingStock}`,
-    `Litres Sold,${data.pmsReport.litresSold}`,
-    `Closing Stock (L),${data.pmsReport.closingStock}`,
-    `Revenue,${data.pmsReport.revenue}`,
+    `Total Volume (L),${data.pmsReport.totalVolume}`,
+    `Pump Count,${data.pmsReport.pumpCount}`,
+    `Average Unit Price,${data.pmsReport.averageUnitPrice}`,
+    `Total Revenue,${data.pmsReport.totalRevenue}`,
     "",
     "Lubricant Breakdown",
     "Product Name,Brand,Opening Stock,Units Sold,Closing Stock,Revenue"

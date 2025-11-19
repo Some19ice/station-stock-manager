@@ -97,7 +97,7 @@ export function MeterReadingForm({
 
           // Initialize readings form for each pump
           setReadings(
-            activePumps.map(pump => ({
+            activePumps.map((pump: PumpConfiguration) => ({
               pumpId: pump.id,
               meterValue: "",
               notes: ""

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -81,9 +81,9 @@ export function PumpStatusManagement({
   const [editingPump, setEditingPump] = useState<PumpConfiguration | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState<{
-    pump: PumpConfiguration
+    pump: PumpConfiguration | null
     show: boolean
-  }>({ pump: null as any, show: false })
+  }>({ pump: null, show: false })
 
   // Form state for creating/editing pumps
   const [formData, setFormData] = useState({
@@ -100,7 +100,7 @@ export function PumpStatusManagement({
     notes: ""
   })
 
-  const loadData = async (): Promise<void> => {
+  const loadData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true)
 
@@ -134,13 +134,13 @@ export function PumpStatusManagement({
     } finally {
       setLoading(false)
     }
-  }
+  }, [stationId])
 
   useEffect(() => {
     if (stationId) {
       loadData()
     }
-  }, [stationId])
+  }, [loadData, stationId])
 
   const resetForm = (): void => {
     setFormData({
@@ -223,7 +223,7 @@ export function PumpStatusManagement({
     setSubmitting(true)
 
     try {
-      const updateData: any = {}
+      const updateData: Partial<PumpConfiguration> = {}
 
       if (formData.pumpNumber !== editingPump.pumpNumber) {
         updateData.pumpNumber = formData.pumpNumber
@@ -232,7 +232,7 @@ export function PumpStatusManagement({
         parseFloat(formData.meterCapacity) !==
         parseFloat(editingPump.meterCapacity)
       ) {
-        updateData.meterCapacity = parseFloat(formData.meterCapacity)
+        updateData.meterCapacity = parseFloat(formData.meterCapacity).toString()
       }
       if (
         formData.lastCalibrationDate &&
@@ -315,8 +315,8 @@ export function PumpStatusManagement({
       const result = await response.json()
       if (result.isSuccess) {
         toast.success("Pump status updated successfully")
-        setShowStatusDialog({ pump: null as any, show: false })
-        setStatusForm({ status: "" as any, notes: "" })
+        setShowStatusDialog({ pump: null, show: false })
+        setStatusForm({ status: "active", notes: "" })
         await loadData()
         onUpdate?.()
       } else {
@@ -378,7 +378,7 @@ export function PumpStatusManagement({
     })
   }
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string): React.ReactElement => {
     switch (status) {
       case "active":
         return <CheckCircle className="h-4 w-4 text-green-600" />
@@ -393,7 +393,7 @@ export function PumpStatusManagement({
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): React.ReactElement => {
     switch (status) {
       case "active":
         return <Badge className="bg-green-100 text-green-700">Active</Badge>
@@ -810,7 +810,7 @@ export function PumpStatusManagement({
               <Label htmlFor="status">Status</Label>
               <Select
                 value={statusForm.status}
-                onValueChange={(value: any) =>
+                onValueChange={(value: "active" | "maintenance" | "calibration" | "repair") =>
                   setStatusForm(prev => ({ ...prev, status: value }))
                 }
               >
@@ -862,8 +862,8 @@ export function PumpStatusManagement({
             <Button
               variant="outline"
               onClick={() => {
-                setShowStatusDialog({ pump: null as any, show: false })
-                setStatusForm({ status: "" as any, notes: "" })
+                setShowStatusDialog({ pump: null, show: false })
+                setStatusForm({ status: "active", notes: "" })
               }}
               disabled={submitting}
             >

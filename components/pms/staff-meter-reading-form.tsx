@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -35,6 +35,18 @@ interface PumpReading {
   capacity: number
 }
 
+interface PumpConfiguration {
+  id: string
+  pumpNumber: string
+  meterCapacity: string
+}
+
+interface MeterReading {
+  pumpId: string
+  openingReading?: number
+  closingReading?: number
+}
+
 interface StaffMeterReadingFormProps {
   stationId: string
   staffId: string
@@ -45,7 +57,7 @@ export function StaffMeterReadingForm({
   stationId,
   staffId,
   onSuccess
-}: StaffMeterReadingFormProps) {
+}: StaffMeterReadingFormProps): React.ReactElement {
   const [pumps, setPumps] = useState<PumpReading[]>([])
   const [closingReadings, setClosingReadings] = useState<
     Record<string, string>
@@ -55,9 +67,71 @@ export function StaffMeterReadingForm({
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const today = new Date().toISOString().split("T")[0]
+  const today = useMemo(() => new Date().toISOString().split("T")[0], [])
 
-  // Early return if stationId is not provided
+  const loadPumpReadings = useCallback(async (): Promise<void> => {
+    setLoading(true)
+    try {
+      // Get pump configurations and today's readings
+      const [pumpsResponse, readingsResponse] = await Promise.all([
+        fetch(`/api/pump-configurations?stationId=${stationId}`),
+        fetch(`/api/meter-readings?stationId=${stationId}&date=${today}`)
+      ])
+
+      if (!pumpsResponse.ok || !readingsResponse.ok) {
+        throw new Error("Failed to load pump data")
+      }
+
+      const [pumpsResult, readingsResult] = await Promise.all([
+        pumpsResponse.json(),
+        readingsResponse.json()
+      ])
+
+      if (pumpsResult.isSuccess && readingsResult.isSuccess) {
+        const pumpReadings: PumpReading[] = pumpsResult.data.map((pump: PumpConfiguration) => {
+          const todayReading = readingsResult.data.find(
+            (reading: MeterReading) => reading.pumpId === pump.id
+          )
+
+          return {
+            pumpId: pump.id,
+            pumpNumber: pump.pumpNumber,
+            openingReading: todayReading?.openingReading || null,
+            closingReading: todayReading?.closingReading || null,
+            hasOpeningReading: !!todayReading?.openingReading,
+            capacity: parseFloat(pump.meterCapacity)
+          }
+        })
+
+        setPumps(pumpReadings)
+
+        // Initialize closing readings state
+        const initialClosingReadings: Record<string, string> = {}
+        pumpReadings.forEach(pump => {
+          if (pump.closingReading !== null) {
+            initialClosingReadings[pump.pumpId] = pump.closingReading.toString()
+          }
+        })
+        setClosingReadings(initialClosingReadings)
+      } else {
+        throw new Error("Failed to process pump data")
+      }
+    } catch (error) {
+      console.error("Error loading pump readings:", error)
+      toast.error("Failed to load pump readings")
+    } finally {
+      setLoading(false)
+    }
+  }, [stationId, today])
+
+  useEffect(() => {
+    if (stationId) {
+      loadPumpReadings()
+    } else {
+      setLoading(false)
+    }
+  }, [loadPumpReadings, stationId])
+
   if (!stationId) {
     return (
       <Card>
@@ -73,70 +147,6 @@ export function StaffMeterReadingForm({
         </CardContent>
       </Card>
     )
-  }
-
-  useEffect(() => {
-    if (stationId) {
-      loadPumpReadings()
-    }
-  }, [stationId])
-
-  const loadPumpReadings = async () => {
-    setLoading(true)
-    try {
-      // Get pump configurations and today's readings
-      const [pumpsResponse, readingsResponse] = await Promise.all([
-        fetch(`/api/pump-configurations?stationId=${stationId}`),
-        fetch(
-          `/api/meter-readings/daily-status?stationId=${stationId}&date=${today}`
-        )
-      ])
-
-      if (!pumpsResponse.ok || !readingsResponse.ok) {
-        throw new Error("Failed to load pump data")
-      }
-
-      const pumpsData = await pumpsResponse.json()
-      const readingsData = await readingsResponse.json()
-
-      if (!pumpsData.isSuccess || !readingsData.isSuccess) {
-        throw new Error("Failed to load pump data")
-      }
-
-      // Combine pump info with reading status
-      const pumpReadings: PumpReading[] = pumpsData.data
-        .filter((pump: any) => pump.isActive && pump.status === "active")
-        .map((pump: any) => {
-          const dailyStatus = readingsData.data.pumps.find(
-            (p: any) => p.pumpId === pump.id
-          )
-
-          return {
-            pumpId: pump.id,
-            pumpNumber: pump.pumpNumber,
-            openingReading: dailyStatus?.openingValue || null,
-            closingReading: dailyStatus?.closingValue || null,
-            hasOpeningReading: dailyStatus?.hasOpening || false,
-            capacity: parseFloat(pump.meterCapacity)
-          }
-        })
-
-      setPumps(pumpReadings)
-
-      // Initialize closing readings form with existing values
-      const initialClosingReadings: Record<string, string> = {}
-      pumpReadings.forEach(pump => {
-        if (pump.closingReading !== null) {
-          initialClosingReadings[pump.pumpId] = pump.closingReading.toString()
-        }
-      })
-      setClosingReadings(initialClosingReadings)
-    } catch (error) {
-      console.error("Error loading pump readings:", error)
-      toast.error("Failed to load pump readings")
-    } finally {
-      setLoading(false)
-    }
   }
 
   const validateReading = (pumpId: string, value: string): string | null => {
@@ -160,7 +170,7 @@ export function StaffMeterReadingForm({
     return null
   }
 
-  const handleClosingReadingChange = (pumpId: string, value: string) => {
+  const handleClosingReadingChange = (pumpId: string, value: string): void => {
     setClosingReadings(prev => ({ ...prev, [pumpId]: value }))
 
     // Clear error when user starts typing
@@ -181,7 +191,7 @@ export function StaffMeterReadingForm({
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     setSubmitting(true)
 

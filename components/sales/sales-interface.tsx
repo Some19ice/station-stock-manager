@@ -24,7 +24,7 @@ interface Product {
   id: string
   name: string
   brand?: string
-  type: "lubricant" // Only lubricants - PMS handled via meter readings
+  type: "pms" | "lubricant" // Support both PMS and lubricants
   currentStock: string
   unitPrice: string
   unit: string

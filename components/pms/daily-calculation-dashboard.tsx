@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -62,6 +62,26 @@ interface DailyCalculationDashboardProps {
   className?: string
 }
 
+function getDeviationBadge(deviation: number): React.ReactElement {
+  const absDeviation = Math.abs(deviation)
+
+  if (absDeviation < 10) {
+    return (
+      <Badge variant="secondary" className="bg-green-100 text-green-700">
+        Normal
+      </Badge>
+    )
+  } else if (absDeviation < 20) {
+    return (
+      <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+        Watch
+      </Badge>
+    )
+  } else {
+    return <Badge variant="destructive">Alert</Badge>
+  }
+}
+
 export function DailyCalculationDashboard({
   stationId,
   selectedDate,
@@ -74,7 +94,7 @@ export function DailyCalculationDashboard({
   const [calculating, setCalculating] = useState(false)
   const [approving, setApproving] = useState<string | null>(null)
 
-  const loadCalculations = async (): Promise<void> => {
+  const loadCalculations = useCallback(async (): Promise<void> => {
     try {
       setLoading(true)
       const response = await fetch(
@@ -116,13 +136,13 @@ export function DailyCalculationDashboard({
     } finally {
       setLoading(false)
     }
-  }
+  }, [stationId, selectedDate])
 
   useEffect(() => {
     if (stationId && selectedDate) {
       loadCalculations()
     }
-  }, [stationId, selectedDate])
+  }, [stationId, selectedDate, loadCalculations])
 
   const handleCalculate = async (
     forceRecalculate: boolean = false
@@ -207,26 +227,6 @@ export function DailyCalculationDashboard({
       )
     } finally {
       setApproving(null)
-    }
-  }
-
-  const getDeviationBadge = (deviation: number): React.ReactElement => {
-    const absDeviation = Math.abs(deviation)
-
-    if (absDeviation < 10) {
-      return (
-        <Badge variant="secondary" className="bg-green-100 text-green-700">
-          Normal
-        </Badge>
-      )
-    } else if (absDeviation < 20) {
-      return (
-        <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-          Watch
-        </Badge>
-      )
-    } else {
-      return <Badge variant="destructive">Alert</Badge>
     }
   }
 

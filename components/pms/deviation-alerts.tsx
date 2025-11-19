@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -78,7 +78,7 @@ export function DeviationAlerts({
   const [days, setDays] = useState(defaultDays)
   const [resolving, setResolving] = useState<string | null>(null)
 
-  const loadDeviations = async (): Promise<void> => {
+  const loadDeviations = useCallback(async (): Promise<void> => {
     try {
       setLoading(true)
       const response = await fetch(
@@ -101,13 +101,13 @@ export function DeviationAlerts({
     } finally {
       setLoading(false)
     }
-  }
+  }, [stationId, threshold, days])
 
   useEffect(() => {
     if (stationId) {
       loadDeviations()
     }
-  }, [stationId, threshold, days])
+  }, [loadDeviations, stationId])
 
   const handleRefresh = async (): Promise<void> => {
     setRefreshing(true)
@@ -174,7 +174,7 @@ export function DeviationAlerts({
     }
   }
 
-  const getDeviationIcon = (deviation: number) => {
+  const getDeviationIcon = (deviation: number): React.ReactElement => {
     return deviation > 0 ? (
       <TrendingUp className="h-4 w-4 text-green-600" />
     ) : (
