@@ -83,6 +83,11 @@ export async function recordSale(input: z.infer<typeof recordSaleSchema>) {
       return { isSuccess: false, error: "User not found" }
     }
 
+    // Block Directors from creating sales
+    if (userInfo.role === "director") {
+      return { isSuccess: false, error: "Directors cannot create sales transactions" }
+    }
+
     // Verify user belongs to the station
     if (userInfo.stationId !== validatedInput.stationId) {
       return { isSuccess: false, error: "Access denied for this station" }

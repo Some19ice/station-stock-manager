@@ -14,6 +14,7 @@ import {
   ErrorCodes,
   type ApiResponse
 } from "@/lib/utils"
+import { getCurrentUserProfile } from "@/actions/auth"
 
 // Type definitions for related objects
 interface SupplierData {
@@ -122,6 +123,12 @@ export async function recordStockAdjustment(
   }
 
   return handleDatabaseOperation(async () => {
+    // Get user profile for station validation
+    const currentUserProfile = await getCurrentUserProfile()
+    if (!currentUserProfile.isSuccess || !currentUserProfile.data) {
+      throw new Error("Failed to verify user profile")
+    }
+
     const result = await db.transaction(async tx => {
       // Get current product stock
       const product = await tx.query.products.findFirst({
@@ -130,6 +137,14 @@ export async function recordStockAdjustment(
 
       if (!product) {
         throw new Error("Product not found")
+      }
+
+      // Verify product belongs to manager's station
+      if (!currentUserProfile.data) {
+        throw new Error("User profile data is missing")
+      }
+      if (product.stationId !== currentUserProfile.data.user.stationId) {
+        throw new Error("Cannot adjust stock for products from other stations")
       }
 
       const currentStock = parseFloat(product.currentStock)
@@ -216,6 +231,12 @@ export async function recordDelivery(
   }
 
   return handleDatabaseOperation(async () => {
+    // Get user profile for station validation
+    const currentUserProfile = await getCurrentUserProfile()
+    if (!currentUserProfile.isSuccess || !currentUserProfile.data) {
+      throw new Error("Failed to verify user profile")
+    }
+
     const result = await db.transaction(async tx => {
       // Get current product stock
       const product = await tx.query.products.findFirst({
@@ -224,6 +245,14 @@ export async function recordDelivery(
 
       if (!product) {
         throw new Error("Product not found")
+      }
+
+      // Verify product belongs to manager's station
+      if (!currentUserProfile.data) {
+        throw new Error("User profile data is missing")
+      }
+      if (product.stationId !== currentUserProfile.data.user.stationId) {
+        throw new Error("Cannot record delivery for products from other stations")
       }
 
       const currentStock = parseFloat(product.currentStock)
@@ -408,8 +437,8 @@ export async function getInventoryStatus(stationId: string): Promise<
   }>
 > {
   // Check authentication
-  const { userId } = await auth()
-  if (!userId) {
+  const userProfile = await getCurrentUserProfile()
+  if (!userProfile.isSuccess || !userProfile.data) {
     return createErrorResponse(
       "Authentication required",
       ErrorCodes.UNAUTHORIZED
@@ -418,6 +447,14 @@ export async function getInventoryStatus(stationId: string): Promise<
 
   if (!stationId) {
     return createErrorResponse("Station ID is required", ErrorCodes.BAD_REQUEST)
+  }
+
+  // Verify user belongs to the requested station
+  if (userProfile.data.user.stationId !== stationId) {
+    return createErrorResponse(
+      "Unauthorized access to station data",
+      ErrorCodes.FORBIDDEN
+    )
   }
 
   return handleDatabaseOperation(async () => {
@@ -524,6 +561,25 @@ export async function updateStockAlertThreshold(
   }
 
   return handleDatabaseOperation(async () => {
+    // First verify product belongs to manager's station
+    const existingProduct = await db.query.products.findFirst({
+      where: eq(products.id, validatedInput.productId),
+      columns: { id: true, stationId: true }
+    })
+
+    if (!existingProduct) {
+      throw new Error("Product not found")
+    }
+
+    // Verify ownership
+    const currentUserProfile = await getCurrentUserProfile()
+    if (!currentUserProfile.isSuccess || !currentUserProfile.data) {
+      throw new Error("Failed to verify user profile")
+    }
+    if (existingProduct.stationId !== currentUserProfile.data.user.stationId) {
+      throw new Error("Cannot update threshold for products from other stations")
+    }
+
     const [product] = await db
       .update(products)
       .set({
@@ -582,6 +638,13 @@ export async function bulkStockUpdate(
   }
 
   return handleDatabaseOperation(async () => {
+    // Get user profile once for all validations
+    const currentUserProfile = await getCurrentUserProfile()
+    if (!currentUserProfile.isSuccess || !currentUserProfile.data) {
+      throw new Error("Failed to verify user profile")
+    }
+    const userStationId = currentUserProfile.data.user.stationId
+
     const results = await db.transaction(async tx => {
       const updateResults = []
 
@@ -593,6 +656,11 @@ export async function bulkStockUpdate(
 
         if (!product) {
           throw new Error(`Product not found: ${update.productId}`)
+        }
+
+        // Verify product belongs to manager's station
+        if (product.stationId !== userStationId) {
+          throw new Error(`Cannot update stock for product from another station: ${product.name}`)
         }
 
         const currentStock = parseFloat(product.currentStock)
@@ -666,8 +734,8 @@ export async function getInventoryAnalytics(
   }>
 > {
   // Check authentication
-  const { userId } = await auth()
-  if (!userId) {
+  const userProfile = await getCurrentUserProfile()
+  if (!userProfile.isSuccess || !userProfile.data) {
     return createErrorResponse(
       "Authentication required",
       ErrorCodes.UNAUTHORIZED
@@ -676,6 +744,14 @@ export async function getInventoryAnalytics(
 
   if (!stationId) {
     return createErrorResponse("Station ID is required", ErrorCodes.BAD_REQUEST)
+  }
+
+  // Verify user belongs to the requested station
+  if (userProfile.data.user.stationId !== stationId) {
+    return createErrorResponse(
+      "Unauthorized access to station data",
+      ErrorCodes.FORBIDDEN
+    )
   }
 
   return handleDatabaseOperation(async () => {
@@ -798,8 +874,8 @@ export async function generateReorderRecommendations(
   }>
 > {
   // Check authentication
-  const { userId } = await auth()
-  if (!userId) {
+  const userProfile = await getCurrentUserProfile()
+  if (!userProfile.isSuccess || !userProfile.data) {
     return createErrorResponse(
       "Authentication required",
       ErrorCodes.UNAUTHORIZED
@@ -808,6 +884,14 @@ export async function generateReorderRecommendations(
 
   if (!stationId) {
     return createErrorResponse("Station ID is required", ErrorCodes.BAD_REQUEST)
+  }
+
+  // Verify user belongs to the requested station
+  if (userProfile.data.user.stationId !== stationId) {
+    return createErrorResponse(
+      "Unauthorized access to station data",
+      ErrorCodes.FORBIDDEN
+    )
   }
 
   return handleDatabaseOperation(async () => {

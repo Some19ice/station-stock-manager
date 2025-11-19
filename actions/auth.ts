@@ -2,22 +2,30 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { db } from "@/db"
-import { users, stations } from "@/db/schema"
-import { eq, and } from "drizzle-orm"
+import { users, stations, auditLogs } from "@/db/schema"
+import { eq, and, desc, sql } from "drizzle-orm"
 import { z } from "zod"
 import { sendUserInvitation } from "@/lib/clerk-admin"
+import { createPermissionChecker, canManageUsers } from "@/lib/permission-utils"
+
+import { ROLES, ROLE_HIERARCHY, type Role } from "@/lib/constants"
 
 // Input validation schemas
 const createUserSchema = z.object({
   stationId: z.string().uuid(),
   username: z.string().min(3).max(50),
-  role: z.enum(["staff", "manager"]),
+  role: z.enum([ROLES.STAFF, ROLES.MANAGER, ROLES.DIRECTOR]),
   email: z.string().email(),
   sendInvitation: z.boolean().optional().default(true)
 })
 
 const roleValidationSchema = z.object({
-  requiredRole: z.enum(["staff", "manager"])
+  requiredRole: z.enum([ROLES.STAFF, ROLES.MANAGER, ROLES.DIRECTOR])
+})
+
+const roleAssignmentSchema = z.object({
+  userId: z.string().uuid(),
+  newRole: z.enum([ROLES.STAFF, ROLES.MANAGER, ROLES.DIRECTOR])
 })
 
 // Response type for consistent API responses
@@ -71,7 +79,7 @@ export async function getCurrentUserProfile(): Promise<ActionResponse<{
 /**
  * Get user role for authorization checks
  */
-export async function getUserRole(clerkUserId?: string): Promise<ActionResponse<"staff" | "manager">> {
+export async function getUserRole(clerkUserId?: string): Promise<ActionResponse<Role>> {
   try {
     const { userId } = await auth()
     const targetUserId = clerkUserId || userId
@@ -103,7 +111,7 @@ export async function getUserRole(clerkUserId?: string): Promise<ActionResponse<
 /**
  * Validate if current user has required role
  */
-export async function validateUserRole(requiredRole: "staff" | "manager"): Promise<ActionResponse<boolean>> {
+export async function validateUserRole(requiredRole: Role): Promise<ActionResponse<boolean>> {
   try {
     const validatedInput = roleValidationSchema.parse({ requiredRole })
     
@@ -114,9 +122,11 @@ export async function validateUserRole(requiredRole: "staff" | "manager"): Promi
 
     const userRole = roleResult.data
     
-    // Manager has access to all staff functions
-    const hasAccess = userRole === validatedInput.requiredRole || 
-                     (validatedInput.requiredRole === "staff" && userRole === "manager")
+    // Check role hierarchy (director=3 > manager=2 > staff=1)
+    const userLevel = ROLE_HIERARCHY[userRole]
+    const requiredLevel = ROLE_HIERARCHY[validatedInput.requiredRole]
+    
+    const hasAccess = userLevel >= requiredLevel
 
     if (!hasAccess) {
       return { isSuccess: false, error: "Insufficient permissions" }
@@ -206,7 +216,7 @@ export async function createStationUser(input: z.infer<typeof createUserSchema>)
 export async function updateUserStatus(userId: string, isActive: boolean): Promise<ActionResponse<typeof users.$inferSelect>> {
   try {
     // Check if current user is a manager
-    const roleCheck = await validateUserRole("manager")
+    const roleCheck = await validateUserRole(ROLES.MANAGER)
     if (!roleCheck.isSuccess) {
       return { isSuccess: false, error: "Only managers can update user status" }
     }
@@ -258,7 +268,7 @@ export async function updateUserStatus(userId: string, isActive: boolean): Promi
 export async function getStationUsers(): Promise<ActionResponse<typeof users.$inferSelect[]>> {
   try {
     // Check if current user is a manager
-    const roleCheck = await validateUserRole("manager")
+    const roleCheck = await validateUserRole(ROLES.MANAGER)
     if (!roleCheck.isSuccess) {
       return { isSuccess: false, error: "Only managers can view all users" }
     }
@@ -279,5 +289,180 @@ export async function getStationUsers(): Promise<ActionResponse<typeof users.$in
   } catch (error) {
     console.error("Error getting station users:", error)
     return { isSuccess: false, error: "Failed to get station users" }
+  }
+}
+
+/**
+ * Assign role to user (Director or Manager only)
+ */
+export async function assignUserRole(input: z.infer<typeof roleAssignmentSchema>): Promise<ActionResponse<typeof users.$inferSelect>> {
+  try {
+    const validatedInput = roleAssignmentSchema.parse(input)
+    
+    // Get current user role
+    const currentUserRole = await getUserRole()
+    if (!currentUserRole.isSuccess || !currentUserRole.data) {
+      return { isSuccess: false, error: "Authentication required" }
+    }
+
+    // Check permissions - only directors and managers can assign roles
+    if (!canManageUsers(currentUserRole.data)) {
+      return { isSuccess: false, error: "Insufficient permissions to assign roles" }
+    }
+
+    // Only directors can assign director role
+    if (validatedInput.newRole === ROLES.DIRECTOR && currentUserRole.data !== ROLES.DIRECTOR) {
+      return { isSuccess: false, error: "Only directors can assign director role" }
+    }
+
+    // Get target user
+    const targetUser = await db.query.users.findFirst({
+      where: eq(users.id, validatedInput.userId)
+    })
+
+    if (!targetUser) {
+      return { isSuccess: false, error: "User not found" }
+    }
+
+    // Check minimum director policy before changing role
+    if (targetUser.role === ROLES.DIRECTOR && validatedInput.newRole !== ROLES.DIRECTOR) {
+      const directorCount = await db.select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(and(eq(users.role, ROLES.DIRECTOR), eq(users.isActive, true)))
+
+      if (directorCount[0].count <= 1) {
+        return { isSuccess: false, error: "Cannot change role: System must have at least one active Director" }
+      }
+    }
+
+    // Update user role
+    const [updatedUser] = await db.update(users)
+      .set({ 
+        role: validatedInput.newRole,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, validatedInput.userId))
+      .returning()
+
+    // Log the role assignment
+    await logAuditAction({
+      actionType: "role_assign",
+      resourceType: "user",
+      resourceId: validatedInput.userId,
+      details: {
+        oldRole: targetUser.role,
+        newRole: validatedInput.newRole,
+        assignedBy: currentUserRole.data
+      }
+    })
+
+    return { isSuccess: true, data: updatedUser }
+  } catch (error) {
+    console.error("Error assigning user role:", error)
+    if (error instanceof z.ZodError) {
+      return { isSuccess: false, error: `Invalid input: ${error.issues.map(e => e.message).join(", ")}` }
+    }
+    return { isSuccess: false, error: "Failed to assign role" }
+  }
+}
+
+/**
+ * Get all users across all stations (Director only)
+ */
+export async function getAllUsers(): Promise<ActionResponse<(typeof users.$inferSelect & { station: typeof stations.$inferSelect })[]>> {
+  try {
+    // Check if current user is a director
+    const roleCheck = await validateUserRole(ROLES.DIRECTOR)
+    if (!roleCheck.isSuccess) {
+      return { isSuccess: false, error: "Only directors can view all users" }
+    }
+
+    // Get all users with their stations
+    const allUsers = await db
+      .select({
+        user: users,
+        station: stations
+      })
+      .from(users)
+      .innerJoin(stations, eq(users.stationId, stations.id))
+      .orderBy(desc(users.createdAt))
+
+    const formattedUsers = allUsers.map(({ user, station }) => ({
+      ...user,
+      station
+    }))
+
+    return { isSuccess: true, data: formattedUsers }
+  } catch (error) {
+    console.error("Error getting all users:", error)
+    return { isSuccess: false, error: "Failed to get all users" }
+  }
+}
+
+/**
+ * Check minimum director policy status
+ */
+export async function checkMinimumDirectorPolicy(): Promise<ActionResponse<{
+  activeDirectors: number
+  minimumMet: boolean
+  canDeactivate: boolean
+}>> {
+  try {
+    // Check if current user is a director
+    const roleCheck = await validateUserRole(ROLES.DIRECTOR)
+    if (!roleCheck.isSuccess) {
+      return { isSuccess: false, error: "Only directors can check director policy status" }
+    }
+
+    const directorCount = await db.select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(eq(users.role, ROLES.DIRECTOR), eq(users.isActive, true)))
+
+    const activeDirectors = directorCount[0].count
+    const minimumMet = activeDirectors >= 1
+    const canDeactivate = activeDirectors > 1
+
+    return {
+      isSuccess: true,
+      data: {
+        activeDirectors,
+        minimumMet,
+        canDeactivate
+      }
+    }
+  } catch (error) {
+    console.error("Error checking minimum director policy:", error)
+    return { isSuccess: false, error: "Failed to check director policy" }
+  }
+}
+
+/**
+ * Helper function to log audit actions
+ */
+async function logAuditAction(params: {
+  actionType: string
+  resourceType: string
+  resourceId?: string
+  details: Record<string, any>
+}) {
+  try {
+    const { userId } = await auth()
+    if (!userId) return
+
+    const currentUserProfile = await getCurrentUserProfile()
+    if (!currentUserProfile.isSuccess || !currentUserProfile.data) return
+
+    await db.insert(auditLogs).values({
+      userId: currentUserProfile.data.user.id,
+      actionType: params.actionType as any,
+      resourceType: params.resourceType as any,
+      resourceId: params.resourceId,
+      details: params.details,
+      stationId: currentUserProfile.data.user.stationId,
+      createdAt: new Date()
+    })
+  } catch (error) {
+    console.error("Error logging audit action:", error)
+    // Don't throw - audit logging failure shouldn't break main functionality
   }
 }

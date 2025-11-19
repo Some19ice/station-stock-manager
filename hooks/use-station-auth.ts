@@ -4,7 +4,7 @@ import { useUser } from "@clerk/nextjs"
 import { useEffect, useState } from "react"
 import { getCurrentUserProfile } from "@/actions/auth"
 
-export type UserRole = "staff" | "manager"
+export type UserRole = "staff" | "manager" | "director"
 
 export interface StationUser {
   id: string
@@ -31,7 +31,7 @@ export interface UseStationAuthReturn {
   station: Station | null
   isLoading: boolean
   error: string | null
-  isManager: boolean
+  isManagerOrDirector: boolean
   isStaff: boolean
   hasRole: (role: UserRole) => boolean
   canAccess: (requiredRole: UserRole) => boolean
@@ -89,7 +89,7 @@ export function useStationAuth(): UseStationAuthReturn {
     }
   }, [clerkUser?.id, isLoaded])
 
-  const isManager = stationUser?.role === "manager"
+  const isManagerOrDirector = stationUser?.role === "manager" || stationUser?.role === "director"
   const isStaff = stationUser?.role === "staff"
 
   const hasRole = (role: UserRole): boolean => {
@@ -98,6 +98,11 @@ export function useStationAuth(): UseStationAuthReturn {
 
   const canAccess = (requiredRole: UserRole): boolean => {
     if (!stationUser) return false
+
+    // Director can access all functions
+    if (stationUser.role === "director") {
+      return true
+    }
 
     // Manager can access all staff functions
     if (requiredRole === "staff" && stationUser.role === "manager") {
@@ -112,7 +117,7 @@ export function useStationAuth(): UseStationAuthReturn {
     station,
     isLoading,
     error,
-    isManager,
+    isManagerOrDirector,
     isStaff,
     hasRole,
     canAccess,

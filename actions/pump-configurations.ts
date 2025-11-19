@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache"
 import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { pumpConfigurationSchemas } from "@/lib/utils"
+import { getCurrentUserProfile } from "@/actions/auth"
 
 /**
  * Get all pump configurations for a station
@@ -21,9 +22,17 @@ export async function getPumpConfigurations(stationId: string): Promise<{
   error?: string
 }> {
   try {
-    const user = await currentUser()
-    if (!user) {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile.isSuccess || !userProfile.data) {
       redirect("/login")
+    }
+
+    // Verify user belongs to the requested station
+    if (userProfile.data.user.stationId !== stationId) {
+      return {
+        isSuccess: false,
+        error: "Unauthorized access to station data"
+      }
     }
 
     const configurations = await db
@@ -54,8 +63,8 @@ export async function getPumpConfiguration(pumpId: string): Promise<{
   error?: string
 }> {
   try {
-    const user = await currentUser()
-    if (!user) {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile.isSuccess || !userProfile.data) {
       redirect("/login")
     }
 
@@ -68,6 +77,14 @@ export async function getPumpConfiguration(pumpId: string): Promise<{
       return {
         isSuccess: false,
         error: "Pump configuration not found"
+      }
+    }
+
+    // Verify user belongs to the pump's station
+    if (userProfile.data.user.stationId !== configuration.stationId) {
+      return {
+        isSuccess: false,
+        error: "Unauthorized access to pump data"
       }
     }
 
@@ -99,9 +116,17 @@ export async function createPumpConfiguration(data: {
   error?: string
 }> {
   try {
-    const user = await currentUser()
-    if (!user) {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile.isSuccess || !userProfile.data) {
       redirect("/login")
+    }
+
+    // Verify user belongs to the target station
+    if (userProfile.data.user.stationId !== data.stationId) {
+      return {
+        isSuccess: false,
+        error: "Unauthorized: Cannot create configuration for another station"
+      }
     }
 
     // Validate input data
@@ -175,8 +200,8 @@ export async function updatePumpConfiguration(
   error?: string
 }> {
   try {
-    const user = await currentUser()
-    if (!user) {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile.isSuccess || !userProfile.data) {
       redirect("/login")
     }
 
@@ -199,6 +224,14 @@ export async function updatePumpConfiguration(
       return {
         isSuccess: false,
         error: "Pump configuration not found"
+      }
+    }
+
+    // Verify user belongs to the pump's station
+    if (userProfile.data.user.stationId !== existingPump.stationId) {
+      return {
+        isSuccess: false,
+        error: "Unauthorized: Cannot update configuration for another station"
       }
     }
 
@@ -269,8 +302,8 @@ export async function updatePumpStatus(
   error?: string
 }> {
   try {
-    const user = await currentUser()
-    if (!user) {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile.isSuccess || !userProfile.data) {
       redirect("/login")
     }
 
@@ -294,6 +327,14 @@ export async function updatePumpStatus(
       return {
         isSuccess: false,
         error: "Pump configuration not found"
+      }
+    }
+
+    // Verify user belongs to the pump's station
+    if (userProfile.data.user.stationId !== existingPump.stationId) {
+      return {
+        isSuccess: false,
+        error: "Unauthorized: Cannot update status for another station"
       }
     }
 
@@ -332,9 +373,17 @@ export async function getActivePumpConfigurations(stationId: string): Promise<{
   error?: string
 }> {
   try {
-    const user = await currentUser()
-    if (!user) {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile.isSuccess || !userProfile.data) {
       redirect("/login")
+    }
+
+    // Verify user belongs to the requested station
+    if (userProfile.data.user.stationId !== stationId) {
+      return {
+        isSuccess: false,
+        error: "Unauthorized access to station data"
+      }
     }
 
     const configurations = await db
@@ -369,8 +418,8 @@ export async function deletePumpConfiguration(pumpId: string): Promise<{
   error?: string
 }> {
   try {
-    const user = await currentUser()
-    if (!user) {
+    const userProfile = await getCurrentUserProfile()
+    if (!userProfile.isSuccess || !userProfile.data) {
       redirect("/login")
     }
 
@@ -384,6 +433,14 @@ export async function deletePumpConfiguration(pumpId: string): Promise<{
       return {
         isSuccess: false,
         error: "Pump configuration not found"
+      }
+    }
+
+    // Verify user belongs to the pump's station
+    if (userProfile.data.user.stationId !== existingPump.stationId) {
+      return {
+        isSuccess: false,
+        error: "Unauthorized: Cannot delete configuration for another station"
       }
     }
 

@@ -7,6 +7,7 @@ import {
   pumpConfigurations,
   products,
   pmsSalesRecords,
+  stockMovements,
   type SelectDailyPmsCalculation,
   type InsertDailyPmsCalculation
 } from "@/db/schema"
@@ -236,12 +237,12 @@ async function calculatePumpForDate(
       parseFloat(pumpInfo.meterCapacity)
     )
 
-    let volumeDispensed = rolloverInfo.volumeDispensed
+    const volumeDispensed = rolloverInfo.volumeDispensed
     const hasRollover = rolloverInfo.hasRollover
     const rolloverValue = rolloverInfo.rolloverValue
 
     // Calculate revenue
-    const unitPrice = parseFloat(pumpInfo.unitPrice)
+    const unitPrice = parseFloat(pumpInfo.unitPrice || "0")
     const totalRevenue = volumeDispensed * unitPrice
 
     // T022: Deviation detection - calculate deviation from average
@@ -270,6 +271,15 @@ async function calculatePumpForDate(
         calculatedBy: userId
       })
       .returning()
+
+    // Update PMS product inventory - deduct dispensed volume
+    if (pumpInfo.pmsProductId) {
+      await updatePmsInventory(
+        pumpInfo.pmsProductId,
+        volumeDispensed,
+        newCalculation.id
+      )
+    }
 
     return {
       isSuccess: true,
@@ -367,7 +377,7 @@ async function calculateDeviationFromAverage(
 
     const averageVolume = historicalData[0]?.avgVolume
 
-    if (!averageVolume || averageVolume === 0) {
+    if (!averageVolume || parseFloat(averageVolume.toString()) === 0) {
       return 0 // No historical data or zero average
     }
 
@@ -387,8 +397,8 @@ async function calculateDeviationFromAverage(
 async function estimateMissingReadings(
   pumpId: string,
   calculationDate: string,
-  openingReading?: any,
-  closingReading?: any
+  openingReading?: { meterValue: string },
+  closingReading?: { meterValue: string }
 ): Promise<{
   openingValue: number
   closingValue: number
@@ -433,6 +443,53 @@ async function estimateMissingReadings(
       closingValue: 100, // Default 100L
       estimationMethod: "manual"
     }
+  }
+}
+
+/**
+ * Update PMS product inventory after calculation
+ */
+async function updatePmsInventory(
+  productId: string,
+  volumeDispensed: number,
+  calculationId: string
+): Promise<void> {
+  try {
+    // Get current product stock
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, productId))
+
+    if (!product) {
+      console.error(`Product ${productId} not found for inventory update`)
+      return
+    }
+
+    const currentStock = parseFloat(product.currentStock)
+    const newStock = currentStock - volumeDispensed
+
+    // Update product stock
+    await db
+      .update(products)
+      .set({
+        currentStock: newStock.toString(),
+        updatedAt: new Date()
+      })
+      .where(eq(products.id, productId))
+
+    // Record stock movement
+    await db.insert(stockMovements).values({
+      productId: productId,
+      movementType: "sale",
+      quantity: (-volumeDispensed).toString(), // Negative for sale
+      previousStock: currentStock.toString(),
+      newStock: newStock.toString(),
+      reference: `PMS_CALC:${calculationId}`
+    })
+  } catch (error) {
+    console.error("Error updating PMS inventory:", error)
+    // Don't throw - this is a secondary operation
   }
 }
 
@@ -576,6 +633,28 @@ export async function confirmRollover(data: {
     // Recalculate revenue
     const unitPrice = parseFloat(existingCalculation.unitPrice)
     const totalRevenue = totalVolume * unitPrice
+
+    // Get pump info to update inventory
+    const [pumpInfo] = await db
+      .select({
+        pmsProductId: pumpConfigurations.pmsProductId
+      })
+      .from(pumpConfigurations)
+      .where(eq(pumpConfigurations.id, data.pumpId))
+
+    // Reverse old inventory deduction and apply new one
+    if (pumpInfo?.pmsProductId) {
+      const oldVolume = parseFloat(existingCalculation.volumeDispensed)
+      const volumeDifference = totalVolume - oldVolume
+
+      if (volumeDifference !== 0) {
+        await updatePmsInventory(
+          pumpInfo.pmsProductId,
+          volumeDifference,
+          existingCalculation.id
+        )
+      }
+    }
 
     // Update calculation
     const [updatedCalculation] = await db
@@ -758,7 +837,7 @@ export async function getCalculationsWithDeviations(params: {
           ...calc,
           averageVolume: avgVolume,
           deviationPercent: parseFloat(calc.deviationFromAverage),
-          pumpNumber: item.pumpNumber
+          pumpNumber: item.pumpNumber || "Unknown"
         }
       })
     )
@@ -859,7 +938,7 @@ export async function getPmsCalculations(params: {
   endDate: string
 }): Promise<{
   isSuccess: boolean
-  data?: SelectDailyPmsCalculation[]
+  data?: (SelectDailyPmsCalculation & { pumpNumber: string })[]
   error?: string
 }> {
   try {
@@ -892,8 +971,8 @@ export async function getPmsCalculations(params: {
 
     const enhancedCalculations = calculations.map(item => ({
       ...item.calculation,
-      pumpNumber: item.pumpNumber
-    }))
+      pumpNumber: item.pumpNumber || "Unknown"
+    })) as (SelectDailyPmsCalculation & { pumpNumber: string })[]
 
     return {
       isSuccess: true,

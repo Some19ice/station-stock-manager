@@ -62,7 +62,7 @@ export async function getMeterReadings(params: {
       redirect("/login")
     }
 
-    let query = db
+    const query = db
       .select({
         id: pumpMeterReadings.id,
         pumpId: pumpMeterReadings.pumpId,
@@ -86,23 +86,25 @@ export async function getMeterReadings(params: {
         pumpConfigurations,
         eq(pumpMeterReadings.pumpId, pumpConfigurations.id)
       )
-      .where(
-        and(
-          eq(pumpConfigurations.stationId, params.stationId),
-          gte(pumpMeterReadings.readingDate, params.startDate),
-          lte(pumpMeterReadings.readingDate, params.endDate)
-        )
-      )
+
+    // Build conditions array
+    const conditions = [
+      eq(pumpConfigurations.stationId, params.stationId),
+      gte(pumpMeterReadings.readingDate, params.startDate),
+      lte(pumpMeterReadings.readingDate, params.endDate)
+    ]
 
     if (params.pumpId) {
-      query = query.where(eq(pumpMeterReadings.pumpId, params.pumpId))
+      conditions.push(eq(pumpMeterReadings.pumpId, params.pumpId))
     }
 
-    const readings = await query.orderBy(
-      pumpMeterReadings.readingDate,
-      pumpConfigurations.pumpNumber,
-      pumpMeterReadings.readingType
-    )
+    const readings = await query
+      .where(and(...conditions))
+      .orderBy(
+        pumpMeterReadings.readingDate,
+        pumpConfigurations.pumpNumber,
+        pumpMeterReadings.readingType
+      )
 
     return {
       isSuccess: true,
@@ -149,6 +151,14 @@ export async function recordMeterReading(data: {
       return {
         isSuccess: false,
         error: "User not found in database"
+      }
+    }
+
+    // Block Directors from recording meter readings
+    if (dbUser.role === "director") {
+      return {
+        isSuccess: false,
+        error: "Directors cannot record meter readings"
       }
     }
 
@@ -278,6 +288,14 @@ export async function updateMeterReading(
       }
     }
 
+    // Block Directors from modifying meter readings (unless manager override)
+    if (dbUser.role === "director" && !managerOverride?.isManager) {
+      return {
+        isSuccess: false,
+        error: "Directors cannot modify meter readings"
+      }
+    }
+
     // Validate input data
     const validationResult = meterReadingSchemas.update.safeParse(data)
     if (!validationResult.success) {
@@ -302,12 +320,11 @@ export async function updateMeterReading(
 
     // Check modification time window (unless manager override)
     if (!managerOverride?.isManager) {
-      if (
-        !canModifyReading(
-          existingReading.recordedAt,
-          existingReading.readingDate
-        )
-      ) {
+      const canModify = await canModifyReading(
+        existingReading.recordedAt,
+        existingReading.readingDate
+      )
+      if (!canModify) {
         return {
           isSuccess: false,
           error:

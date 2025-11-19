@@ -14,6 +14,7 @@ import {
 } from "@/db/schema"
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm"
 import { validateUserRole, getCurrentUserProfile } from "./auth"
+import { ROLES } from "@/lib/constants"
 
 export interface DashboardMetrics {
   todaysSales: {
@@ -76,7 +77,7 @@ export async function getDashboardMetrics(date?: Date): Promise<{
       return { isSuccess: false, error: "Unauthorized" }
     }
 
-    const roleCheck = await validateUserRole("manager")
+    const roleCheck = await validateUserRole(ROLES.MANAGER)
     if (!roleCheck.isSuccess) {
       return { isSuccess: false, error: "Insufficient permissions" }
     }
@@ -365,7 +366,7 @@ export async function getLowStockAlerts(): Promise<{
       return { isSuccess: false, error: "Unauthorized" }
     }
 
-    const roleCheck = await validateUserRole("manager")
+    const roleCheck = await validateUserRole(ROLES.MANAGER)
     if (!roleCheck.isSuccess) {
       return { isSuccess: false, error: "Insufficient permissions" }
     }
@@ -684,7 +685,7 @@ export async function getRecentTransactions(limit: number = 10): Promise<{
       return { isSuccess: false, error: "Unauthorized" }
     }
 
-    const roleCheck = await validateUserRole("manager")
+    const roleCheck = await validateUserRole(ROLES.MANAGER)
     if (!roleCheck.isSuccess) {
       return { isSuccess: false, error: "Insufficient permissions" }
     }
