@@ -7,6 +7,7 @@ interface CursorWrapperProps {
   size?: number
   className?: string
   disabled?: boolean
+  theme?: "default" | "business" | "minimal"
 }
 
 const CustomCursor = dynamic(
@@ -20,7 +21,8 @@ const CustomCursor = dynamic(
 export function CursorWrapper({
   size = 20,
   className = "",
-  disabled = false
+  disabled = false,
+  theme = "business"
 }: CursorWrapperProps) {
   const [mounted, setMounted] = useState(false)
 
@@ -32,5 +34,12 @@ export function CursorWrapper({
     return null
   }
 
-  return <CustomCursor size={size} className={className} disabled={disabled} />
+  return (
+    <CustomCursor 
+      size={size} 
+      className={className} 
+      disabled={disabled} 
+      theme={theme}
+    />
+  )
 }

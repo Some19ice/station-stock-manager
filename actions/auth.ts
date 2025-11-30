@@ -43,6 +43,11 @@ export async function getCurrentUserProfile(): Promise<ActionResponse<{
   station: typeof stations.$inferSelect
 }>> {
   try {
+    if (!db) {
+      console.error("Database not available")
+      return { isSuccess: false, error: "Database not available" }
+    }
+
     const { userId } = await auth()
     
     if (!userId) {
@@ -81,6 +86,11 @@ export async function getCurrentUserProfile(): Promise<ActionResponse<{
  */
 export async function getUserRole(clerkUserId?: string): Promise<ActionResponse<Role>> {
   try {
+    if (!db) {
+      console.error("Database not available")
+      return { isSuccess: false, error: "Database not available" }
+    }
+
     const { userId } = await auth()
     const targetUserId = clerkUserId || userId
     

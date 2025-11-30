@@ -116,7 +116,12 @@ export default function EnhancedDashboardLayout({
   return (
     <>
       {/* Enhanced cursor for desktop */}
-      <CursorWrapper size={20} className="hidden lg:block" disabled={false} />
+      <CursorWrapper 
+        size={24} 
+        className="hidden lg:block" 
+        theme="business"
+        disabled={false} 
+      />
 
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar userData={userData} userRole={userRole} />

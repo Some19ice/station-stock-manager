@@ -33,7 +33,7 @@ config({ path: ".env.local" })
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL is not set")
+  console.warn("DATABASE_URL is not set, using fallback")
 }
 
 const dbSchema = {
@@ -67,8 +67,22 @@ const dbSchema = {
 }
 
 function initializeDb(url: string) {
-  const client = postgres(url, { prepare: false })
-  return drizzlePostgres(client, { schema: dbSchema })
+  try {
+    const client = postgres(url, { 
+      prepare: false,
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10
+    })
+    return drizzlePostgres(client, { schema: dbSchema })
+  } catch (error) {
+    console.error("Database connection failed:", error)
+    throw error
+  }
 }
 
-export const db = initializeDb(databaseUrl)
+export const db = databaseUrl ? initializeDb(databaseUrl) : null
+
+if (!db) {
+  console.error("Database not initialized - check DATABASE_URL")
+}

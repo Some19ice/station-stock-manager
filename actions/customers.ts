@@ -8,28 +8,50 @@ import { eq } from "drizzle-orm"
 export async function getCustomerByUserId(
   userId: string
 ): Promise<SelectCustomer | null> {
-  const customer = await db.query.customers.findFirst({
-    where: eq(customers.userId, userId)
-  })
-
-  return customer || null
+  try {
+    if (!db) {
+      console.error("Database not available")
+      return null
+    }
+    
+    const customer = await db.query.customers.findFirst({
+      where: eq(customers.userId, userId)
+    })
+    return customer || null
+  } catch (error) {
+    console.error("Error fetching customer:", error)
+    return null
+  }
 }
 
 export async function getBillingDataByUserId(userId: string): Promise<{
   customer: SelectCustomer | null
   clerkEmail: string | null
 }> {
-  // Get Clerk user data
-  const user = await currentUser()
+  try {
+    if (!db) {
+      console.error("Database not available")
+      return { customer: null, clerkEmail: null }
+    }
 
-  // Get customer profile
-  const customer = await db.query.customers.findFirst({
-    where: eq(customers.userId, userId)
-  })
+    // Get Clerk user data
+    const user = await currentUser()
 
-  return {
-    customer: customer || null,
-    clerkEmail: user?.emailAddresses[0]?.emailAddress || null
+    // Get customer profile
+    const customer = await db.query.customers.findFirst({
+      where: eq(customers.userId, userId)
+    })
+
+    return {
+      customer: customer || null,
+      clerkEmail: user?.emailAddresses[0]?.emailAddress || null
+    }
+  } catch (error) {
+    console.error("Error fetching billing data:", error)
+    return {
+      customer: null,
+      clerkEmail: null
+    }
   }
 }
 

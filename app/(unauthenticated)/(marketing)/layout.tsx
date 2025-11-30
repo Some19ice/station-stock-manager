@@ -12,8 +12,12 @@ export default async function MarketingLayout({
 }) {
   return (
     <>
-      {/* Custom cursor for enhanced interactivity */}
-      <CursorWrapper size={24} className="hidden lg:block" />
+      {/* Enhanced cursor for better interactivity */}
+      <CursorWrapper 
+        size={28} 
+        className="hidden lg:block" 
+        theme="default"
+      />
 
       <SiteBanner />
       <HeaderWrapper />

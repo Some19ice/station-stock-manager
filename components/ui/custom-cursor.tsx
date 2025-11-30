@@ -1,91 +1,152 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
+import { cn } from "@/lib/utils"
 
 interface CustomCursorProps {
   className?: string
   disabled?: boolean
   size?: number
+  theme?: "default" | "business" | "minimal"
 }
+
+type CursorState = "default" | "hover" | "click" | "drag" | "text" | "loading"
 
 export function CustomCursor({
   className = "",
   disabled = false,
-  size = 20
+  size = 20,
+  theme = "business"
 }: CustomCursorProps) {
   const cursorRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
-  const [isHovering, setIsHovering] = useState(false)
+  const [cursorState, setCursorState] = useState<CursorState>("default")
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  const updateCursorPosition = useCallback((x: number, y: number) => {
+    if (cursorRef.current) {
+      cursorRef.current.style.left = `${x}px`
+      cursorRef.current.style.top = `${y}px`
+    }
+  }, [])
+
   useEffect(() => {
     if (!mounted || disabled || typeof window === "undefined") return
 
-    const cursor = cursorRef.current
-    if (!cursor) return
+    // Only enable on desktop
+    if (window.innerWidth < 1024) return
 
-    if (window.innerWidth >= 1024) {
-      document.body.style.cursor = "none"
-    }
+    // Hide default cursor
+    document.body.style.cursor = "none"
 
     const handleMouseMove = (e: MouseEvent) => {
       setIsVisible(true)
-      cursor.style.left = e.clientX + "px"
-      cursor.style.top = e.clientY + "px"
+      updateCursorPosition(e.clientX, e.clientY)
     }
 
     const handleMouseEnter = () => setIsVisible(true)
     const handleMouseLeave = () => setIsVisible(false)
 
-    const handleInteractiveEnter = () => setIsHovering(true)
-    const handleInteractiveLeave = () => setIsHovering(false)
+    const handleMouseDown = () => setCursorState("click")
+    const handleMouseUp = () => setCursorState("hover")
 
-    window.addEventListener("mousemove", handleMouseMove)
+    // Enhanced element detection
+    const handleElementInteraction = (e: Event) => {
+      const target = e.target as HTMLElement
+      if (!target || typeof target.matches !== 'function') return
+      
+      if (target.matches('button, [role="button"]')) {
+        setCursorState(e.type === "mouseenter" ? "hover" : "default")
+      } else if (target.matches('a, [href]')) {
+        setCursorState(e.type === "mouseenter" ? "hover" : "default")
+      } else if (target.matches('input, textarea, [contenteditable]')) {
+        setCursorState(e.type === "mouseenter" ? "text" : "default")
+      } else if (target.matches('[draggable="true"]')) {
+        setCursorState(e.type === "mouseenter" ? "drag" : "default")
+      } else if (target.matches('[data-loading]')) {
+        setCursorState(e.type === "mouseenter" ? "loading" : "default")
+      } else {
+        setCursorState("default")
+      }
+    }
+
+    // Event listeners
+    window.addEventListener("mousemove", handleMouseMove, { passive: true })
     window.addEventListener("mouseenter", handleMouseEnter)
     window.addEventListener("mouseleave", handleMouseLeave)
+    window.addEventListener("mousedown", handleMouseDown)
+    window.addEventListener("mouseup", handleMouseUp)
 
-    const interactiveElements = document.querySelectorAll(
-      "button, a, input, textarea, select, [data-cursor]"
-    )
-
-    interactiveElements.forEach(el => {
-      el.addEventListener("mouseenter", handleInteractiveEnter)
-      el.addEventListener("mouseleave", handleInteractiveLeave)
-    })
+    // Use event delegation for better performance
+    document.addEventListener("mouseenter", handleElementInteraction, true)
+    document.addEventListener("mouseleave", handleElementInteraction, true)
 
     return () => {
       document.body.style.cursor = "auto"
       window.removeEventListener("mousemove", handleMouseMove)
       window.removeEventListener("mouseenter", handleMouseEnter)
       window.removeEventListener("mouseleave", handleMouseLeave)
-
-      interactiveElements.forEach(el => {
-        el.removeEventListener("mouseenter", handleInteractiveEnter)
-        el.removeEventListener("mouseleave", handleInteractiveLeave)
-      })
+      window.removeEventListener("mousedown", handleMouseDown)
+      window.removeEventListener("mouseup", handleMouseUp)
+      document.removeEventListener("mouseenter", handleElementInteraction, true)
+      document.removeEventListener("mouseleave", handleElementInteraction, true)
     }
-  }, [mounted, disabled, isHovering])
+  }, [mounted, disabled, updateCursorPosition])
 
   if (!mounted || disabled) return null
+
+  const getCursorStyles = () => {
+    const baseStyles = "pointer-events-none fixed z-[9999] transition-transform duration-75 ease-out"
+    const visibilityStyles = isVisible ? "opacity-100" : "opacity-0"
+    
+    switch (cursorState) {
+      case "hover":
+        return `${baseStyles} ${visibilityStyles} scale-125`
+      case "click":
+        return `${baseStyles} ${visibilityStyles} scale-90`
+      default:
+        return `${baseStyles} ${visibilityStyles} scale-100`
+    }
+  }
+
+  const getCursorContent = () => {
+    switch (theme) {
+      case "business":
+        return (
+          <>
+            <div className="h-full w-full rounded-full border border-blue-500/60 bg-blue-500/10" />
+            <div className="absolute top-1/2 left-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600" />
+          </>
+        )
+      case "minimal":
+        return (
+          <div className="h-full w-full rounded-full border border-foreground/40 bg-foreground/5" />
+        )
+      default:
+        return (
+          <>
+            <div className="h-full w-full rounded-full border border-foreground/40 bg-foreground/10" />
+            <div className="absolute top-1/2 left-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground" />
+          </>
+        )
+    }
+  }
 
   return (
     <div
       ref={cursorRef}
-      className={`pointer-events-none fixed z-[9999] transition-all duration-200 ease-out ${
-        isVisible ? "opacity-100" : "opacity-0"
-      } ${isHovering ? "scale-150" : "scale-100"} ${className}`}
-      style={{
-        transform: "translate(-50%, -50%)",
-        width: size,
-        height: size
+      className={cn(getCursorStyles(), className)}
+      style={{ 
+        width: size, 
+        height: size,
+        transform: "translate(-50%, -50%)"
       }}
     >
-      <div className="border-foreground/40 bg-foreground/10 h-full w-full rounded-full border backdrop-blur-sm" />
-      <div className="bg-foreground absolute top-1/2 left-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full" />
+      {getCursorContent()}
     </div>
   )
 }

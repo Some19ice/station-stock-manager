@@ -35,7 +35,8 @@ interface UserProfile {
   user: {
     id: string
     username: string
-    role: string
+    role: "staff" | "manager" | "director"
+    stationId: string
   }
   station: {
     id: string
@@ -88,6 +89,7 @@ export default function DashboardClient({
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pageRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
@@ -212,8 +214,10 @@ export default function DashboardClient({
 
   useEffect(() => {
     mountedRef.current = true
+    setMounted(true)
     return () => {
       mountedRef.current = false
+      abortControllerRef.current?.abort()
     }
   }, [])
 
@@ -286,7 +290,7 @@ export default function DashboardClient({
                   {isConnected ? "Live" : "Offline"}
                 </Badge>
                 <span className="text-muted-foreground text-xs">
-                  Updated {new Date().toLocaleTimeString()}
+                  {mounted ? `Updated ${new Date().toLocaleTimeString()}` : "Loading..."}
                 </span>
               </div>
             </div>
@@ -331,7 +335,7 @@ export default function DashboardClient({
           </DashboardErrorBoundary>
 
           <DashboardErrorBoundary>
-            <QuickActions userRole="manager" />
+            <QuickActions userRole={userProfile?.user.role === "staff" ? "staff" : "manager"} />
           </DashboardErrorBoundary>
         </div>
       </div>
