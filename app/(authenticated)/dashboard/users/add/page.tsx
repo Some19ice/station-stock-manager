@@ -22,12 +22,12 @@ const staffSchema = z.object({
   email: z.string().email("Valid email is required"),
   phone: z.string().min(1, "Phone number is required"),
   role: z.enum(["staff", "manager"], {
-    required_error: "Please select a role"
+    message: "Please select a role"
   }),
-  isActive: z.boolean().default(true),
-  canManageInventory: z.boolean().default(false),
-  canViewReports: z.boolean().default(false),
-  canManageUsers: z.boolean().default(false)
+  isActive: z.boolean(),
+  canManageInventory: z.boolean(),
+  canViewReports: z.boolean(),
+  canManageUsers: z.boolean()
 })
 
 type StaffFormData = z.infer<typeof staffSchema>

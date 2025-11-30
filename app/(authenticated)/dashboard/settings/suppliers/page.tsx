@@ -30,7 +30,7 @@ const supplierSchema = z.object({
   email: z.string().email("Valid email is required"),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
-  isActive: z.boolean().default(true)
+  isActive: z.boolean()
 })
 
 type SupplierFormData = z.infer<typeof supplierSchema>

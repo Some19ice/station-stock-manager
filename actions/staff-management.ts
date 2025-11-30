@@ -13,7 +13,7 @@ const staffSchema = z.object({
   email: z.string().email("Valid email is required"),
   phone: z.string().min(1, "Phone number is required"),
   role: z.enum(["staff", "manager"], {
-    required_error: "Please select a role"
+    message: "Please select a role"
   }),
   isActive: z.boolean().default(true),
   canManageInventory: z.boolean().default(false),
@@ -28,7 +28,7 @@ export async function createStaffMember(data: z.infer<typeof staffSchema>) {
 
     const validation = staffSchema.safeParse(data)
     if (!validation.success) {
-      return { isSuccess: false, error: validation.error.errors[0].message }
+      return { isSuccess: false, error: validation.error.issues[0].message }
     }
 
     const profileResult = await getCurrentUserProfile()

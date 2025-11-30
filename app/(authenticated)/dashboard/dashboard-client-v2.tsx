@@ -36,9 +36,9 @@ export default function DashboardClientV2({
         getRecentTransactions(10)
       ])
 
-      if (metricsResult.isSuccess) setMetrics(metricsResult.data)
-      if (alertsResult.isSuccess) setAlerts(alertsResult.data)
-      if (activitiesResult.isSuccess) setActivities(activitiesResult.data)
+      if (metricsResult.isSuccess && metricsResult.data) setMetrics(metricsResult.data)
+      if (alertsResult.isSuccess && alertsResult.data) setAlerts(alertsResult.data)
+      if (activitiesResult.isSuccess && activitiesResult.data) setActivities(activitiesResult.data)
       
       toast.success("Dashboard refreshed")
     } catch (error) {

@@ -81,8 +81,11 @@ function initializeDb(url: string) {
   }
 }
 
-export const db = databaseUrl ? initializeDb(databaseUrl) : null
-
-if (!db) {
-  console.error("Database not initialized - check DATABASE_URL")
+function getDb() {
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is not set - check your environment variables")
+  }
+  return initializeDb(databaseUrl)
 }
+
+export const db = getDb()

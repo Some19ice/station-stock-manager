@@ -263,7 +263,7 @@ export default function StaffReportsPage() {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent, value }) => 
-                      percent > 0.05 ? `${name}: ${selectedStaff === "all" ? value : `₦${(value / 1000000).toFixed(1)}M`} (${(percent * 100).toFixed(0)}%)` : ''
+                      (percent ?? 0) > 0.05 ? `${name}: ${selectedStaff === "all" ? (value ?? 0) : `₦${((value ?? 0) / 1000000).toFixed(1)}M`} (${((percent ?? 0) * 100).toFixed(0)}%)` : ''
                     }
                     outerRadius={80}
                     fill="#8884d8"

@@ -59,7 +59,7 @@ export async function createSupplier(data: z.infer<typeof supplierSchema>) {
 
     const validation = supplierSchema.safeParse(data)
     if (!validation.success) {
-      return { isSuccess: false, error: validation.error.errors[0].message }
+      return { isSuccess: false, error: validation.error.issues[0].message }
     }
 
     const profileResult = await getCurrentUserProfile()
