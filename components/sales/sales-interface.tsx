@@ -388,64 +388,91 @@ export function SalesInterface({
   if (!selectedType) {
     return (
       <div className="space-y-6">
+        {/* Header */}
         <div className="text-center">
-          <h2 className="mb-2 text-2xl font-bold">Transaction Sales</h2>
-          <p className="text-muted-foreground mb-6">
-            Record individual product sales (lubricants only)
+          <h2 className="mb-2 text-2xl font-bold text-slate-800">
+            Select Sale Type
+          </h2>
+          <p className="text-muted-foreground">
+            Choose the type of sale you want to record
           </p>
         </div>
 
-        {/* PMS Sales Information */}
-        <Card className="mx-auto max-w-2xl border-blue-200 bg-blue-50">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-blue-100 p-2">
-                <Fuel className="h-5 w-5 text-blue-600" />
+        {/* Side by Side Cards */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* PMS / Fuel Sales - Links to Meter Readings */}
+          <Card className="group relative overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 transition-all duration-300 hover:border-blue-400 hover:shadow-xl">
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-blue-100/50 transition-transform group-hover:scale-125" />
+            <div className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-indigo-100/50" />
+            
+            <CardHeader className="relative pb-3">
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200 transition-transform group-hover:scale-110">
+                <Fuel className="h-7 w-7 text-white" />
               </div>
-              <div>
-                <CardTitle className="text-lg text-blue-900">
-                  PMS Sales Recording
-                </CardTitle>
-                <CardDescription className="text-blue-700">
-                  PMS sales are recorded via daily meter readings, not
-                  individual transactions
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="mb-3 text-sm text-blue-800">
-              To record PMS sales, use the <strong>PMS Meter Readings</strong>{" "}
-              page to enter your daily closing readings for each pump.
-            </p>
-            <Link href="/staff/meter-readings">
-              <Button
-                variant="outline"
-                className="border-blue-300 text-blue-700 hover:bg-blue-100"
-              >
-                <Fuel className="mr-2 h-4 w-4" />
-                Go to Meter Readings
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+              <CardTitle className="text-xl text-blue-900">
+                Fuel Sales (PMS)
+              </CardTitle>
+              <CardDescription className="text-blue-700">
+                Record daily pump meter readings
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="relative pt-0">
+              <p className="mb-4 text-sm text-slate-600">
+                PMS sales are calculated from opening and closing meter readings for each pump.
+              </p>
+              <Link href="/staff/meter-readings">
+                <Button className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md transition-all hover:shadow-lg">
+                  <Fuel className="mr-2 h-4 w-4" />
+                  Record Meter Readings
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
 
-        {/* Lubricant Sales */}
-        <div className="mx-auto max-w-md">
+          {/* Lubricant Sales - Opens Sales Interface */}
           <Card
-            className="hover:border-primary cursor-pointer border-2 transition-shadow hover:shadow-lg"
+            className="group relative cursor-pointer overflow-hidden border-2 border-orange-200 bg-gradient-to-br from-orange-50 via-white to-amber-50 transition-all duration-300 hover:border-orange-400 hover:shadow-xl"
             onClick={() => setSelectedType("lubricant")}
           >
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-fit rounded-full bg-orange-100 p-3">
-                <Wrench className="h-8 w-8 text-orange-600" />
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-orange-100/50 transition-transform group-hover:scale-125" />
+            <div className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-amber-100/50" />
+            
+            <CardHeader className="relative pb-3">
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-200 transition-transform group-hover:scale-110">
+                <Wrench className="h-7 w-7 text-white" />
               </div>
-              <CardTitle className="text-xl">
-                Lubricants & Accessories
+              <CardTitle className="text-xl text-orange-900">
+                Lubricants & Others
               </CardTitle>
-              <CardDescription>Engine oils and other products</CardDescription>
+              <CardDescription className="text-orange-700">
+                Engine oils, accessories & products
+              </CardDescription>
             </CardHeader>
+            
+            <CardContent className="relative pt-0">
+              <p className="mb-4 text-sm text-slate-600">
+                Record individual sales transactions for lubricants, oils, and other products.
+              </p>
+              <Button 
+                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-md transition-all hover:shadow-lg"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedType("lubricant")
+                }}
+              >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Start Sale
+              </Button>
+            </CardContent>
           </Card>
+        </div>
+
+        {/* Help Text */}
+        <div className="text-center">
+          <p className="text-xs text-slate-400">
+            Tip: Use keyboard shortcut <kbd className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">Alt+R</kbd> to quickly access this page
+          </p>
         </div>
       </div>
     )
@@ -596,16 +623,20 @@ export function SalesInterface({
                         )}
                       </div>
 
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => addToCart(product, 1)}
-                          disabled={stock <= 0}
-                          className="flex-1"
-                        >
-                          <Plus className="mr-1 h-4 w-4" />
-                          Add 1
-                        </Button>
+                      <div className="flex flex-wrap gap-2">
+                        {[1, 2, 5].map(qty => (
+                          <Button
+                            key={qty}
+                            size="sm"
+                            variant={qty === 1 ? "default" : "outline"}
+                            onClick={() => addToCart(product, qty)}
+                            disabled={stock < qty}
+                            className="flex-1 min-w-[60px]"
+                          >
+                            <Plus className="mr-1 h-3 w-3" />
+                            {qty}
+                          </Button>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -629,11 +660,20 @@ export function SalesInterface({
 
         {/* Cart */}
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                Cart ({cartItemCount} items)
+          <Card className={`transition-all duration-300 ${cart.length > 0 ? "border-emerald-200 shadow-lg" : ""}`}>
+            <CardHeader className={`${cart.length > 0 ? "bg-gradient-to-r from-emerald-50 to-green-50" : ""}`}>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`rounded-full p-1.5 ${cart.length > 0 ? "bg-emerald-100" : "bg-slate-100"}`}>
+                    <ShoppingCart className={`h-4 w-4 ${cart.length > 0 ? "text-emerald-600" : "text-slate-500"}`} />
+                  </div>
+                  <span>Cart</span>
+                </div>
+                {cart.length > 0 && (
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                    {cartItemCount} items
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -723,27 +763,44 @@ export function SalesInterface({
 
                   <Separator />
 
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-lg font-semibold">
-                      <span>Total:</span>
-                      <span>₦{cartTotal.toFixed(2)}</span>
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-gradient-to-r from-emerald-50 to-green-50 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-600">Subtotal</span>
+                        <span className="text-sm text-slate-600">₦{cartTotal.toFixed(2)}</span>
+                      </div>
+                      <Separator className="my-2" />
+                      <div className="flex items-center justify-between text-lg font-bold">
+                        <span className="text-emerald-800">Total</span>
+                        <span className="text-emerald-600">₦{cartTotal.toFixed(2)}</span>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
                       <Button
                         onClick={processSale}
                         disabled={processingSale || cart.length === 0}
-                        className="w-full"
+                        className="w-full bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 shadow-md transition-all hover:shadow-lg"
                         size="lg"
                       >
-                        {processingSale ? "Processing..." : "Complete Sale"}
+                        {processingSale ? (
+                          <span className="flex items-center gap-2">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            Processing...
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <ShoppingCart className="h-4 w-4" />
+                            Complete Sale
+                          </span>
+                        )}
                       </Button>
 
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         onClick={clearCart}
                         disabled={cart.length === 0}
-                        className="w-full"
+                        className="w-full text-slate-500 hover:text-red-600 hover:bg-red-50"
                       >
                         Clear Cart
                       </Button>

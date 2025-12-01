@@ -68,12 +68,14 @@ const dbSchema = {
 
 function initializeDb(url: string) {
   try {
-    const client = postgres(url, { 
-      prepare: false,
-      max: 1,
-      idle_timeout: 20,
-      connect_timeout: 10
+    const client = postgres(url, {
+      prepare: true,
+      max: 10,
+      idle_timeout: 300,
+      connect_timeout: 30,
+      max_lifetime: 3600
     })
+
     return drizzlePostgres(client, { schema: dbSchema })
   } catch (error) {
     console.error("Database connection failed:", error)

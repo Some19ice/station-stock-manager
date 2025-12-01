@@ -1,49 +1,37 @@
 export const dynamic = "force-dynamic"
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { getCurrentUserProfile } from "@/actions/auth"
+import { getTodaysSalesSummary } from "@/actions/sales"
+import { redirect } from "next/navigation"
+import { StaffSummaryContent } from "@/components/dashboard/staff-summary-content"
 
-export default function StaffSummaryPage() {
+export default async function StaffSummaryPage() {
+  const userProfile = await getCurrentUserProfile()
+
+  if (!userProfile.isSuccess || !userProfile.data) {
+    redirect("/setup-profile")
+  }
+
+  const { user, station } = userProfile.data
+
+  const summaryResult = await getTodaysSalesSummary(station.id, user.id)
+
+  const summary = summaryResult.isSuccess && summaryResult.data
+    ? summaryResult.data
+    : {
+        date: new Date().toISOString().split("T")[0],
+        totalTransactions: 0,
+        totalAmount: 0,
+        productTypeSummary: {},
+        topProducts: [],
+        transactions: []
+      }
+
   return (
-    <div className="py-8">
-      <div className="mb-6">
-        <Button variant="ghost" asChild className="mb-4">
-          <Link href="/staff" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Daily Summary</h1>
-        <p className="mt-2 text-gray-600">
-          Personal sales summary will be implemented in task 6
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Personal Sales Summary</CardTitle>
-          <CardDescription>
-            This feature will be implemented in the reporting phase
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600">Your daily summary will include:</p>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-gray-600">
-            <li>Total sales value for today</li>
-            <li>Number of transactions completed</li>
-            <li>Top products sold</li>
-            <li>Performance compared to previous days</li>
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
+    <StaffSummaryContent
+      user={user}
+      station={station}
+      summary={summary}
+    />
   )
 }

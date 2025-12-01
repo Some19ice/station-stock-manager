@@ -75,7 +75,7 @@ export function StaffMeterReadingForm({
       // Get pump configurations and today's readings
       const [pumpsResponse, readingsResponse] = await Promise.all([
         fetch(`/api/pump-configurations?stationId=${stationId}`),
-        fetch(`/api/meter-readings?stationId=${stationId}&date=${today}`)
+        fetch(`/api/meter-readings?stationId=${stationId}&startDate=${today}&endDate=${today}`)
       ])
 
       if (!pumpsResponse.ok || !readingsResponse.ok) {

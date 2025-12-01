@@ -18,6 +18,7 @@ interface AnimatedCardProps {
   className?: string
   hoverEffect?: boolean
   glowEffect?: boolean
+  onClick?: () => void
 }
 
 export function AnimatedCard({
@@ -26,7 +27,8 @@ export function AnimatedCard({
   children,
   className,
   hoverEffect = true,
-  glowEffect = false
+  glowEffect = false,
+  onClick
 }: AnimatedCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const glowRef = useRef<HTMLDivElement>(null)
@@ -90,7 +92,7 @@ export function AnimatedCard({
           className="absolute -inset-1 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 blur"
         />
       )}
-      <Card ref={cardRef} className={cn("relative", className)}>
+      <Card ref={cardRef} className={cn("relative", className)} onClick={onClick}>
         {(title || description) && (
           <CardHeader>
             {title && <CardTitle>{title}</CardTitle>}
