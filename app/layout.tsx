@@ -2,6 +2,7 @@ import { CheckoutRedirect } from "@/components/payments/checkout-redirect"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { TailwindIndicator } from "@/components/utility/tailwind-indicator"
 import ErrorBoundary from "@/components/utility/error-boundary"
+import { ThemeInitializer } from "@/components/theme-initializer"
 import { ClerkProvider } from "@clerk/nextjs"
 import type { Metadata } from "next"
 import { ThemeProvider } from "next-themes"
@@ -43,6 +44,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <ErrorBoundary>
               <TooltipProvider>
+                <ThemeInitializer />
                 {children}
                 <CheckoutRedirect />
 

@@ -1,42 +1,39 @@
 "use client"
 
-import { useTheme } from "next-themes"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, Monitor } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface ThemeSwitcherProps {
   value?: "light" | "dark"
   onChange?: (mode: "light" | "dark") => void
 }
 
-export function ThemeSwitcher({ value, onChange }: ThemeSwitcherProps) {
-  const { theme, setTheme } = useTheme()
-  
-  const currentTheme = value || theme
-  const isDark = currentTheme === "dark"
-
-  const handleToggle = (checked: boolean) => {
-    const newMode = checked ? "dark" : "light"
-    if (onChange) {
-      onChange(newMode)
-    } else {
-      setTheme(newMode)
-    }
-  }
+export function ThemeSwitcher({ value = "light", onChange }: ThemeSwitcherProps) {
+  const options = [
+    { mode: "light" as const, icon: Sun, label: "Light" },
+    { mode: "dark" as const, icon: Moon, label: "Dark" }
+  ]
 
   return (
-    <div className="flex items-center space-x-3">
-      <Sun className="h-4 w-4" />
-      <Switch
-        checked={isDark}
-        onCheckedChange={handleToggle}
-        aria-label="Toggle theme"
-      />
-      <Moon className="h-4 w-4" />
-      <Label htmlFor="theme-switch" className="text-sm font-medium">
-        {isDark ? "Dark" : "Light"} Mode
-      </Label>
+    <div className="flex gap-2">
+      {options.map(option => {
+        const isSelected = value === option.mode
+        return (
+          <button
+            key={option.mode}
+            onClick={() => onChange?.(option.mode)}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2 rounded-lg border-2 p-3 transition-all",
+              isSelected
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-background hover:border-primary/50 hover:bg-muted"
+            )}
+          >
+            <option.icon className="h-5 w-5" />
+            <span className="text-sm font-medium">{option.label}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
