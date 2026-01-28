@@ -319,11 +319,11 @@ export default function EnhancedDashboardPage() {
                   variant={isConnected ? "default" : "destructive"}
                   className="text-xs"
                 >
-                  {isConnected ? "Live" : "Offline"}
+                  {isConnected ? "System Secure" : "Offline Warning"}
                 </Badge>
-                <span className="text-muted-foreground text-xs">
-                  Updated {new Date().toLocaleTimeString()}
-                </span>
+                <div className="bg-green-900/20 text-green-600 flex items-center gap-2 rounded px-2 py-0.5 text-xs font-bold border border-green-500/30 animate-pulse">
+                   <Activity className="h-3 w-3" /> Live Sales Ticker Active
+                </div>
               </div>
             </div>
           </div>

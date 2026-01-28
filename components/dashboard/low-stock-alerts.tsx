@@ -177,23 +177,23 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
       <div className="mb-8">
         <div ref={headerRef} className="mb-4 flex items-center gap-3">
           <h3 className="text-lg font-semibold text-gray-900">
-            Low Stock Alerts
+            Leak & Theft Alerts
           </h3>
           <Badge variant="secondary" className="bg-green-100 text-green-700">
-            All Good
+            System Secure
           </Badge>
         </div>
-        <Card className="border-chart-1/20 bg-chart-1/5">
+        <Card className="border-green-500/20 bg-green-50/20">
           <CardContent className="p-6">
             <div ref={emptyStateRef} className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                 <Package className="h-8 w-8 text-green-600" />
               </div>
               <h4 className="mb-2 text-lg font-medium text-green-900">
-                Excellent Stock Management!
+                No Leaks Detected
               </h4>
               <p className="text-sm text-green-700">
-                All products are above minimum threshold levels
+                All tanks and inventory are accounted for.
               </p>
             </div>
           </CardContent>
@@ -206,14 +206,14 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
     <div className="mb-8">
       <div ref={headerRef} className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Low Stock Alerts
+          <h3 className="text-lg font-bold text-red-600 animate-pulse">
+            🚨 CRITICAL LEAK & THEFT ALERTS
           </h3>
           <Badge
             variant="destructive"
-            className="animate-pulse bg-red-100 text-red-700"
+            className="bg-red-600 text-white font-bold animate-bounce"
           >
-            {alerts.length} Alert{alerts.length !== 1 ? "s" : ""}
+            {alerts.length} Action Required
           </Badge>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -294,7 +294,7 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
                             className="text-xs"
                           >
                             {isCritical
-                              ? "Critical"
+                              ? "Potential Theft/Leak"
                               : isWarning
                                 ? "Warning"
                                 : "Low"}
@@ -327,9 +327,9 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
                             )}
                           >
                             <Zap className="h-3 w-3" />
-                            <span>Need: </span>
+                            <span>Variance: </span>
                             <span className="font-medium">
-                              {formatNumber(recommendedReorder.toString())}{" "}
+                              -{formatNumber((parseFloat(alert.minThreshold || "0") - parseFloat(alert.currentStock || "0")).toString())}{" "}
                               {alert.unit || "units"}
                             </span>
                           </div>
@@ -408,7 +408,7 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
                         )}
                       >
                         <Link href={`/inventory?product=${alert.id || ""}`}>
-                          Restock Now
+                          Investigate
                         </Link>
                       </Button>
                     </div>
@@ -442,7 +442,7 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
               >
                 <Package className="h-4 w-4 text-gray-500 transition-colors group-hover:text-gray-700" />
                 <span className="text-gray-700 transition-colors group-hover:text-gray-900">
-                  View All {alerts?.length || 0} Low Stock Items
+                  View All {alerts?.length || 0} Critical Items
                 </span>
                 <Badge variant="outline" className="bg-white">
                   +{(alerts?.length || 0) - 3}

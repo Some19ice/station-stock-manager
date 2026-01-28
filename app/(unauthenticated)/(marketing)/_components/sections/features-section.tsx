@@ -24,10 +24,10 @@ import { gsap } from "gsap"
 
 const features = [
   {
-    name: "Real-time Fuel Monitoring",
+    name: "Leak & Theft Detection",
     description:
-      "Track fuel levels across all tanks with automated alerts when inventory drops below minimum thresholds.",
-    icon: BarChart
+      "Detect unrecorded sales and tank leaks instantly. If the pump meter moves but no sale is logged, you get an alert.",
+    icon: Shield
   },
   {
     name: "Supplier Management",
@@ -39,7 +39,7 @@ const features = [
     name: "Multi-Station Dashboard",
     description:
       "Oversee multiple locations from a single dashboard with role-based access for staff and managers.",
-    icon: Shield
+    icon: BarChart
   },
   {
     name: "Lubricant Inventory",
@@ -48,16 +48,16 @@ const features = [
     icon: Palette
   },
   {
-    name: "Compliance Reporting",
+    name: "Daily Profit Reconciliation",
     description:
-      "Generate regulatory reports for environmental compliance, tax reporting, and audit requirements.",
-    icon: Code2
+      "Automated End-of-Day reports sent to your phone. Compare 'Expected Cash' vs 'Actual Cash' instantly.",
+    icon: CreditCard
   },
   {
-    name: "Sales Analytics",
+    name: "Shift Accountability Logs",
     description:
-      "Detailed sales reports, profit margins, and performance metrics to optimize your operations.",
-    icon: CreditCard
+      "Know exactly which attendant was on duty during a shortage. Digital clock-ins and activity logs prevent disputes.",
+    icon: Code2
   }
 ]
 
