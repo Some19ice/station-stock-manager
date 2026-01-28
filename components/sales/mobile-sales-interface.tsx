@@ -118,7 +118,12 @@ export function MobileSalesInterface() {
           >
             <Fuel className="h-12 w-12" />
             <span className="font-bold text-2xl">PETROL (PMS)</span>
-            <span className="text-sm opacity-80">₦650.00/L</span>
+            <span className="text-sm opacity-80">
+                {(() => {
+                    const product = products.find(p => p.type === "pms")
+                    return product ? `₦${parseFloat(product.unitPrice).toFixed(2)}/L` : "—/L"
+                })()}
+            </span>
           </Button>
 
           <Button

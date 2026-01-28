@@ -321,9 +321,11 @@ export default function EnhancedDashboardPage() {
                 >
                   {isConnected ? "System Secure" : "Offline Warning"}
                 </Badge>
-                <div className="bg-green-900/20 text-green-600 flex items-center gap-2 rounded px-2 py-0.5 text-xs font-bold border border-green-500/30 animate-pulse">
-                   <Activity className="h-3 w-3" /> Live Sales Ticker Active
-                </div>
+                {isConnected && (
+                  <div className="bg-green-900/20 text-green-600 flex items-center gap-2 rounded px-2 py-0.5 text-xs font-bold border border-green-500/30 animate-pulse">
+                    <Activity className="h-3 w-3" /> Live Sales Ticker Active
+                  </div>
+                )}
               </div>
             </div>
           </div>

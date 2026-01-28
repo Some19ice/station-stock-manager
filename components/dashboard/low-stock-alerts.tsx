@@ -206,12 +206,12 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
     <div className="mb-8">
       <div ref={headerRef} className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold text-red-600 animate-pulse">
-            🚨 CRITICAL LEAK & THEFT ALERTS
+          <h3 className="text-lg font-bold text-red-600 motion-safe:animate-pulse">
+            🚨 CRITICAL SHORTAGE ALERTS
           </h3>
           <Badge
             variant="destructive"
-            className="bg-red-600 text-white font-bold animate-bounce"
+            className="bg-red-600 text-white font-bold"
           >
             {alerts.length} Action Required
           </Badge>
@@ -294,7 +294,7 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
                             className="text-xs"
                           >
                             {isCritical
-                              ? "Potential Theft/Leak"
+                              ? "Critical Shortage"
                               : isWarning
                                 ? "Warning"
                                 : "Low"}
@@ -329,7 +329,11 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
                             <Zap className="h-3 w-3" />
                             <span>Variance: </span>
                             <span className="font-medium">
-                              -{formatNumber((parseFloat(alert.minThreshold || "0") - parseFloat(alert.currentStock || "0")).toString())}{" "}
+                              {(() => {
+                                const diff = parseFloat(alert.minThreshold || "0") - parseFloat(alert.currentStock || "0")
+                                const sign = diff > 0 ? "-" : "+"
+                                return `${sign}${formatNumber(Math.abs(diff).toString())}`
+                              })()}{" "}
                               {alert.unit || "units"}
                             </span>
                           </div>

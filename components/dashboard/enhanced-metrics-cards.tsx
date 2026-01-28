@@ -268,7 +268,7 @@ export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
       title: "Leak Detection",
       value: (metrics.stockStatus.lowStockCount || 0).toString(),
       icon: Package,
-      trend: ((metrics.stockStatus.lowStockCount || 0) > 5 ? "down" : "up") as "up" | "down" | "neutral",
+      trend: ((metrics.stockStatus.lowStockCount || 0) > 0 ? "down" : "up") as "up" | "down" | "neutral",
       trendValue: ((metrics.stockStatus.lowStockCount || 0) > 0 ? "Potential Leaks" : "All Secure"),
       variant:
         ((metrics.stockStatus.lowStockCount || 0) > 0 ? "alert" : "metric") as "default" | "metric" | "alert" | "feature",

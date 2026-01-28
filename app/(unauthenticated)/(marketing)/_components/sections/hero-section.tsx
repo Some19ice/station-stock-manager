@@ -206,7 +206,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
               asChild
               className="group hover:border-primary hover:text-primary bg-card/60 hover:bg-card/80 w-full border-2 px-8 py-4 backdrop-blur-sm transition-all duration-300 sm:w-auto"
             >
-              <Link href={demoUrl} className="flex items-center gap-3">
+              <Link href="/demo" className="flex items-center gap-3">
                 <span>View Live Demo</span>
                 <LayoutDashboard className="h-5 w-5" />
               </Link>
