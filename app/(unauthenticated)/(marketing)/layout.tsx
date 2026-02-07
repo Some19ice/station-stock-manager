@@ -1,5 +1,4 @@
 import { RedirectToast } from "@/components/payments/redirect-toast"
-import { CursorWrapper } from "@/components/ui/cursor-wrapper"
 import { Footer } from "./_components/footer"
 import { HeaderWrapper } from "./_components/header-wrapper"
 import { ScrollIndicator } from "./_components/scroll-indicator"
@@ -12,9 +11,6 @@ export default async function MarketingLayout({
 }) {
   return (
     <>
-      {/* Custom cursor for enhanced interactivity */}
-      <CursorWrapper size={24} className="hidden lg:block" />
-
       <SiteBanner />
       <HeaderWrapper />
 

@@ -15,7 +15,6 @@ import {
   SidebarTrigger
 } from "@/components/ui/sidebar"
 import { AnimatedBackground } from "@/components/ui/animated-background"
-import { CursorWrapper } from "@/components/ui/cursor-wrapper"
 import { ScrollIndicator } from "@/components/ui/scroll-indicator"
 import { usePathname } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
@@ -113,9 +112,6 @@ export default function EnhancedDashboardLayout({
 
   return (
     <>
-      {/* Enhanced cursor for desktop */}
-      <CursorWrapper size={20} className="hidden lg:block" disabled={false} />
-
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar userData={userData} />
         <SidebarInset className="relative">
