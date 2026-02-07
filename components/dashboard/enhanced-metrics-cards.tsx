@@ -105,8 +105,9 @@ const AnimatedNumber = React.memo(function AnimatedNumber({
     )
 
     // Sparkle animation for high priority items
+    let sparkleTween: gsap.core.Tween | null = null
     if (priority === "high" && sparkleRef.current) {
-      gsap.to(sparkleRef.current, {
+      sparkleTween = gsap.to(sparkleRef.current, {
         scale: 1.2,
         rotation: 360,
         duration: 2,
@@ -118,6 +119,7 @@ const AnimatedNumber = React.memo(function AnimatedNumber({
 
     return () => {
       tl.kill()
+      sparkleTween?.kill()
     }
   }, [value, delay, priority])
 

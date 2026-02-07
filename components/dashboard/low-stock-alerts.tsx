@@ -64,18 +64,6 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
     }
   }
 
-  const getRecommendedReorder = (current: string, threshold: string) => {
-    const thresholdNum = parseFloat(threshold)
-
-    // Safety check for invalid threshold
-    if (isNaN(thresholdNum) || thresholdNum <= 0) {
-      return 100 // Default reasonable reorder amount
-    }
-
-    // Recommended reorder is typically 2x the minimum threshold
-    return Math.max(thresholdNum * 2, thresholdNum + 50)
-  }
-
   // Header animation
   useEffect(() => {
     if (!headerRef.current) return
@@ -100,6 +88,7 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
     if (!alertItems || alertItems.length === 0) return
 
     const tl = gsap.timeline()
+    const criticalTweens: gsap.core.Tween[] = []
 
     tl.fromTo(
       alertItems,
@@ -130,18 +119,20 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
         alert.minThreshold &&
         getAlertSeverity(alert.currentStock, alert.minThreshold) === "critical"
       ) {
-        gsap.to(item, {
+        const tw = gsap.to(item, {
           boxShadow: "0 0 20px rgba(239, 68, 68, 0.3)",
           duration: 2,
           ease: "power2.inOut",
           repeat: -1,
           yoyo: true
         })
+        criticalTweens.push(tw)
       }
     })
 
     return () => {
       tl.kill()
+      criticalTweens.forEach(tw => tw.kill())
     }
   }, [alerts])
 
@@ -231,10 +222,6 @@ export const LowStockAlerts = React.memo<LowStockAlertsProps>(function LowStockA
               alert.minThreshold || "0"
             )
             const severityColor = getSeverityColor(severity)
-            const recommendedReorder = getRecommendedReorder(
-              alert.currentStock || "0",
-              alert.minThreshold || "0"
-            )
             const isCritical = severity === "critical"
             const isWarning = severity === "warning"
             const varianceDiff = parseFloat(alert.minThreshold || "0") - parseFloat(alert.currentStock || "0")
