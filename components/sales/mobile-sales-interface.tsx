@@ -108,27 +108,38 @@ export function MobileSalesInterface() {
     return (
       <div className="space-y-4 p-4">
         <h2 className="mb-6 text-center text-xl font-bold">
-          Select Product Type
+          Start New Sale
         </h2>
 
         <div className="space-y-3">
           <Button
-            variant="outline"
-            className="flex h-20 w-full flex-col gap-2"
+            className="flex h-32 w-full flex-col gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white shadow-lg"
             onClick={() => setSelectedType("pms")}
           >
-            <Fuel className="h-8 w-8 text-blue-600" />
-            <span className="font-medium">PMS (Petrol)</span>
+            <Fuel className="h-12 w-12" />
+            <span className="font-bold text-2xl">PETROL (PMS)</span>
+            <span className="text-sm opacity-80">
+                {(() => {
+                    const product = products.find(p => p.type === "pms")
+                    return product ? `₦${parseFloat(product.unitPrice).toFixed(2)}/L` : "—/L"
+                })()}
+            </span>
           </Button>
 
           <Button
             variant="outline"
-            className="flex h-20 w-full flex-col gap-2"
+            className="flex h-24 w-full flex-col gap-2 border-orange-200 bg-orange-50 hover:bg-orange-100"
             onClick={() => setSelectedType("lubricant")}
           >
             <Wrench className="h-8 w-8 text-orange-600" />
-            <span className="font-medium">Lubricants</span>
+            <span className="font-bold text-lg text-orange-900">Lubricants / Oil</span>
           </Button>
+        </div>
+        
+        <div className="mt-8 text-center">
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                System Online
+            </Badge>
         </div>
       </div>
     )

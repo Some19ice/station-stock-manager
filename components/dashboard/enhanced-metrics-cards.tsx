@@ -105,8 +105,9 @@ const AnimatedNumber = React.memo(function AnimatedNumber({
     )
 
     // Sparkle animation for high priority items
+    let sparkleTween: gsap.core.Tween | null = null
     if (priority === "high" && sparkleRef.current) {
-      gsap.to(sparkleRef.current, {
+      sparkleTween = gsap.to(sparkleRef.current, {
         scale: 1.2,
         rotation: 360,
         duration: 2,
@@ -118,6 +119,7 @@ const AnimatedNumber = React.memo(function AnimatedNumber({
 
     return () => {
       tl.kill()
+      sparkleTween?.kill()
     }
   }, [value, delay, priority])
 
@@ -245,14 +247,14 @@ export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
 
   const metricCards = [
     {
-      title: "Total Sales",
+      title: "Today's Revenue",
       value: `₦${parseFloat(metrics.todaysSales.totalValue || "0").toLocaleString()}`,
       icon: DollarSign,
       trend: "neutral" as const,
-      trendValue: "Today",
+      trendValue: "Cash in Hand",
       variant: "metric" as const,
       priority: "high" as const,
-      bgColor: "bg-chart-1/10"
+      bgColor: "bg-green-950/20 border-green-500/20"
     },
     {
       title: "Transactions",
@@ -265,23 +267,23 @@ export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
       bgColor: "bg-chart-2/10"
     },
     {
-      title: "Low Stock Items",
+      title: "Stock Variance",
       value: (metrics.stockStatus.lowStockCount || 0).toString(),
       icon: Package,
-      trend: ((metrics.stockStatus.lowStockCount || 0) > 5 ? "down" : "up") as "up" | "down" | "neutral",
-      trendValue: `${metrics.stockStatus.lowStockCount || 0} items`,
+      trend: ((metrics.stockStatus.lowStockCount || 0) > 3 ? "down" : "neutral") as "up" | "down" | "neutral",
+      trendValue: ((metrics.stockStatus.lowStockCount || 0) > 3 ? "Variance Detected" : (metrics.stockStatus.lowStockCount || 0) > 0 ? `${metrics.stockStatus.lowStockCount} items low` : "All Secure"),
       variant:
-        ((metrics.stockStatus.lowStockCount || 0) > 5 ? "alert" : "metric") as "default" | "metric" | "alert" | "feature",
+        ((metrics.stockStatus.lowStockCount || 0) > 3 ? "alert" : "metric") as "default" | "metric" | "alert" | "feature",
       priority:
-        ((metrics.stockStatus.lowStockCount || 0) > 5 ? "high" : "normal") as "high" | "normal",
-      bgColor: "bg-chart-3/10"
+        ((metrics.stockStatus.lowStockCount || 0) > 3 ? "high" : "normal") as "high" | "normal",
+      bgColor: ((metrics.stockStatus.lowStockCount || 0) > 3 ? "bg-red-950/20 border-red-500/50" : "bg-chart-3/10")
     },
     {
-      title: "Active Staff",
+      title: "Staff on Duty",
       value: (metrics.staffActivity.activeStaffCount || 0).toString(),
       icon: Users,
       trend: "neutral" as const,
-      trendValue: `${metrics.staffActivity.activeStaffCount || 0}/${metrics.staffActivity.totalStaff || 0} online`,
+      trendValue: "Accountability Log",
       variant: "metric" as const,
       priority: "normal" as const,
       bgColor: "bg-chart-4/10"

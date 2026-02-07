@@ -112,14 +112,14 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
         <div className="relative z-10 mx-auto max-w-5xl text-center">
           <div className="mb-8 flex justify-center">
             <div className="bg-card/80 relative inline-flex items-center rounded-full px-4 py-2 text-sm shadow-lg">
-              <span className="mr-2">⛽</span>
-              <span>Trusted by 500+ Gas Stations</span>
+              <span className="mr-2">🛡️</span>
+              <span>Prevent Revenue Loss & Theft</span>
             </div>
           </div>
           <h1 className="text-foreground text-4xl font-bold sm:text-6xl lg:text-7xl">
-            Streamline Your
+            Stop Fuel Theft.
             <span className="from-primary via-secondary to-accent block bg-gradient-to-r bg-clip-text text-transparent">
-              Gas Station Operations
+              Secure Your Profits.
             </span>
           </h1>
         </div>
@@ -147,32 +147,30 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
       >
         {/* Trust Badge */}
         <div className="hero-badge mb-8 flex justify-center">
-          <div className="group bg-card/90 hover:bg-card border-border/50 hover:border-primary/30 relative inline-flex items-center rounded-full px-6 py-3 text-sm font-medium shadow-lg ring-1 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
+          <div className="group bg-card/90 hover:bg-card border-border/50 hover:border-red-500/30 relative inline-flex items-center rounded-full px-6 py-3 text-sm font-medium shadow-lg ring-1 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
             <span className="mr-3 text-lg" aria-hidden="true">
-              ⛽
+              🛡️
             </span>
-            <span>Trusted by 500+ Gas Stations</span>
-            <div className="from-primary/0 via-primary/10 to-primary/0 absolute inset-0 rounded-full bg-gradient-to-r opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <span>Prevent Revenue Loss & Theft</span>
+            <div className="from-red-500/0 via-red-500/10 to-red-500/0 absolute inset-0 rounded-full bg-gradient-to-r opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </div>
         </div>
 
         {/* Main Heading */}
         <h1 className="text-foreground mb-8 text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
-          <span className="hero-title-line block">Streamline Your</span>
+          <span className="hero-title-line block">Stop Fuel Theft.</span>
           <span className="hero-title-line text-primary relative block pb-2 leading-tight">
-            Gas Station Operations
+            Secure Your Profits.
           </span>
         </h1>
 
         {/* Subtitle */}
         <div className="hero-subtitle mx-auto max-w-4xl">
           <p className="text-foreground/80 text-lg leading-relaxed sm:text-xl sm:leading-8">
-            Complete inventory management for fuel and lubricants. Real-time
-            monitoring, automated alerts, and comprehensive reporting for single
-            stations or entire chains.
+            The only system designed to track every litre in real-time. Detect leaks, prevent unrecorded sales, and get automated shift reconciliation reports sent to your phone.
           </p>
-          <p className="text-primary mt-4 text-base font-medium">
-            Join the future of gas station management
+          <p className="text-red-500 mt-4 text-base font-bold">
+            Don't lose another Naira to inefficiency.
           </p>
         </div>
 
@@ -190,25 +188,38 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
               </Link>
             </Button>
           ) : (
-            <Button
-              size="lg"
-              asChild
-              className="group bg-primary hover:bg-primary/90 relative w-full overflow-hidden px-8 py-4 text-white shadow-xl transition-all duration-300 hover:shadow-2xl sm:w-auto"
-            >
-              <Link href="/signup" className="flex items-center gap-3">
-                <span>Start Free Trial</span>
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
+            <>
+              <Button
+                size="lg"
+                asChild
+                className="group bg-red-600 hover:bg-red-700 relative w-full overflow-hidden px-8 py-4 text-white shadow-xl transition-all duration-300 hover:shadow-2xl sm:w-auto"
+              >
+                <Link href="/signup" className="flex items-center gap-3">
+                  <span>Secure My Station</span>
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="group hover:border-primary hover:text-primary bg-card/60 hover:bg-card/80 w-full border-2 px-8 py-4 backdrop-blur-sm transition-all duration-300 sm:w-auto"
+              >
+                <Link href="/demo" className="flex items-center gap-3">
+                  <span>View Live Demo</span>
+                  <LayoutDashboard className="h-5 w-5" />
+                </Link>
+              </Button>
+            </>
           )}
 
           <Button
-            variant="outline"
-            size="lg"
+            variant="ghost"
+            size="sm"
             asChild
-            className="group hover:border-primary hover:text-primary bg-card/60 hover:bg-card/80 w-full border-2 px-8 py-4 backdrop-blur-sm transition-all duration-300 sm:w-auto"
+            className="group text-foreground/60 hover:text-foreground transition-colors sm:w-auto"
           >
-            <Link href="#features" className="flex items-center gap-3">
+            <Link href="#features" className="flex items-center gap-2">
               <span>View Features</span>
               <span className="inline-block animate-bounce">↓</span>
             </Link>
