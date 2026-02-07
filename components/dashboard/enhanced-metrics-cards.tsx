@@ -265,16 +265,16 @@ export const EnhancedMetricsCards = React.memo(function EnhancedMetricsCards({
       bgColor: "bg-chart-2/10"
     },
     {
-      title: "Leak Detection",
+      title: "Stock Variance",
       value: (metrics.stockStatus.lowStockCount || 0).toString(),
       icon: Package,
-      trend: ((metrics.stockStatus.lowStockCount || 0) > 0 ? "down" : "up") as "up" | "down" | "neutral",
-      trendValue: ((metrics.stockStatus.lowStockCount || 0) > 0 ? "Potential Leaks" : "All Secure"),
+      trend: ((metrics.stockStatus.lowStockCount || 0) > 3 ? "down" : "neutral") as "up" | "down" | "neutral",
+      trendValue: ((metrics.stockStatus.lowStockCount || 0) > 3 ? "Variance Detected" : (metrics.stockStatus.lowStockCount || 0) > 0 ? `${metrics.stockStatus.lowStockCount} items low` : "All Secure"),
       variant:
-        ((metrics.stockStatus.lowStockCount || 0) > 0 ? "alert" : "metric") as "default" | "metric" | "alert" | "feature",
+        ((metrics.stockStatus.lowStockCount || 0) > 3 ? "alert" : "metric") as "default" | "metric" | "alert" | "feature",
       priority:
-        ((metrics.stockStatus.lowStockCount || 0) > 0 ? "high" : "normal") as "high" | "normal",
-      bgColor: ((metrics.stockStatus.lowStockCount || 0) > 0 ? "bg-red-950/20 border-red-500/50" : "bg-chart-3/10")
+        ((metrics.stockStatus.lowStockCount || 0) > 3 ? "high" : "normal") as "high" | "normal",
+      bgColor: ((metrics.stockStatus.lowStockCount || 0) > 3 ? "bg-red-950/20 border-red-500/50" : "bg-chart-3/10")
     },
     {
       title: "Staff on Duty",

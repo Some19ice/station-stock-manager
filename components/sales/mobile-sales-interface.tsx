@@ -138,7 +138,7 @@ export function MobileSalesInterface() {
         
         <div className="mt-8 text-center">
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                🟢 System Online • Shift #102
+                System Online
             </Badge>
         </div>
       </div>

@@ -105,7 +105,6 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
   }, [mounted])
 
   const dashboardUrl = userRole === "manager" ? "/dashboard" : "/staff"
-  const demoUrl = "/dashboard?demo=true"
 
   if (!mounted) {
     return (
@@ -190,29 +189,41 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
             </Button>
           ) : (
             <>
-            <Button
-              size="lg"
-              asChild
-              className="group bg-red-600 hover:bg-red-700 relative w-full overflow-hidden px-8 py-4 text-white shadow-xl transition-all duration-300 hover:shadow-2xl sm:w-auto"
-            >
-              <Link href="/signup" className="flex items-center gap-3">
-                <span>Secure My Station</span>
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-             <Button
-              variant="outline"
-              size="lg"
-              asChild
-              className="group hover:border-primary hover:text-primary bg-card/60 hover:bg-card/80 w-full border-2 px-8 py-4 backdrop-blur-sm transition-all duration-300 sm:w-auto"
-            >
-              <Link href="/demo" className="flex items-center gap-3">
-                <span>View Live Demo</span>
-                <LayoutDashboard className="h-5 w-5" />
-              </Link>
-            </Button>
+              <Button
+                size="lg"
+                asChild
+                className="group bg-red-600 hover:bg-red-700 relative w-full overflow-hidden px-8 py-4 text-white shadow-xl transition-all duration-300 hover:shadow-2xl sm:w-auto"
+              >
+                <Link href="/signup" className="flex items-center gap-3">
+                  <span>Secure My Station</span>
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="group hover:border-primary hover:text-primary bg-card/60 hover:bg-card/80 w-full border-2 px-8 py-4 backdrop-blur-sm transition-all duration-300 sm:w-auto"
+              >
+                <Link href="/demo" className="flex items-center gap-3">
+                  <span>View Live Demo</span>
+                  <LayoutDashboard className="h-5 w-5" />
+                </Link>
+              </Button>
             </>
           )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="group text-foreground/60 hover:text-foreground transition-colors sm:w-auto"
+          >
+            <Link href="#features" className="flex items-center gap-2">
+              <span>View Features</span>
+              <span className="inline-block animate-bounce">↓</span>
+            </Link>
+          </Button>
         </div>
 
         {/* Enhanced Trust Indicators */}
