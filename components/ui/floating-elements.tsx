@@ -132,7 +132,7 @@ export function FloatingElements({
 
     // Cleanup function
     return () => {
-      tweens.forEach(t => t.kill())
+      tweens.forEach(t => { t.kill() })
       elements.forEach(element => {
         if (element.parentNode) {
           element.parentNode.removeChild(element)

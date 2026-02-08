@@ -189,7 +189,7 @@ export function DemoSection() {
         </div>
 
         {/* Manager Dashboard Image */}
-        <div className="demo-content mx-auto mt-12 max-w-4xl">
+        <div className="demo-image mx-auto mt-12 max-w-4xl">
           <div className="group relative overflow-hidden rounded-2xl shadow-2xl">
             <Image
               src="/images/manager-dashboard.png"
