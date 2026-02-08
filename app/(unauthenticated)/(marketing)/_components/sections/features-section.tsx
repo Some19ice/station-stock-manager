@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import {
   BarChart,
   Code2,
@@ -84,9 +85,10 @@ export function FeaturesSection() {
     // Continuous background animation
     const cards = sectionRef.current.querySelectorAll(".feature-card")
 
-    cards.forEach((card, index) => {
-      card.addEventListener("mouseenter", () => {
-        // Add ripple effect on hover
+    const handlers: Array<{ el: Element; enter: () => void; leave: () => void }> = []
+
+    cards.forEach((card) => {
+      const enter = () => {
         const ripple = document.createElement("div")
         ripple.className =
           "absolute inset-0 bg-primary/5 rounded-xl opacity-0 pointer-events-none"
@@ -98,9 +100,9 @@ export function FeaturesSection() {
           duration: 0.3,
           ease: "power2.out"
         })
-      })
+      }
 
-      card.addEventListener("mouseleave", () => {
+      const leave = () => {
         const ripples = card.querySelectorAll(
           ".absolute.inset-0.bg-primary\\/5"
         )
@@ -113,8 +115,19 @@ export function FeaturesSection() {
             onComplete: () => ripple.remove()
           })
         })
-      })
+      }
+
+      card.addEventListener("mouseenter", enter)
+      card.addEventListener("mouseleave", leave)
+      handlers.push({ el: card, enter, leave })
     })
+
+    return () => {
+      handlers.forEach(({ el, enter, leave }) => {
+        el.removeEventListener("mouseenter", enter)
+        el.removeEventListener("mouseleave", leave)
+      })
+    }
   }, [mounted])
 
   if (!mounted) {
@@ -177,6 +190,32 @@ export function FeaturesSection() {
               Trusted by industry leaders worldwide
             </span>
           </p>
+        </div>
+
+        {/* Visual Break — Station Images */}
+        <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-6 sm:mt-20 md:grid-cols-2">
+          <div className="group relative overflow-hidden rounded-2xl shadow-xl">
+            <Image
+              src="/images/station-aerial-view.png"
+              alt="Aerial view of a modern filling station"
+              width={600}
+              height={400}
+              className="h-64 w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <p className="absolute bottom-4 left-4 text-sm font-semibold text-white">Multi-Station Overview</p>
+          </div>
+          <div className="group relative overflow-hidden rounded-2xl shadow-xl">
+            <Image
+              src="/images/fuel-pump-closeup.png"
+              alt="Close-up of fuel pump with digital meter"
+              width={600}
+              height={400}
+              className="h-64 w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <p className="absolute bottom-4 left-4 text-sm font-semibold text-white">Precision Fuel Monitoring</p>
+          </div>
         </div>
 
         <div className="mx-auto mt-20 max-w-2xl sm:mt-24 lg:mt-32 lg:max-w-none">

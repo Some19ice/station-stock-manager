@@ -9,6 +9,7 @@ import {
   Sparkles,
   CheckCircle
 } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { SectionWrapper } from "./section-wrapper"
 import { useEffect, useRef, useState } from "react"
@@ -89,19 +90,27 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
       )
 
     // Sparkle animation
+    const sparkleTweens: gsap.core.Tween[] = []
     const sparkles = document.querySelectorAll(".sparkle")
     sparkles.forEach((sparkle, index) => {
-      gsap.to(sparkle, {
-        opacity: 0.8,
-        scale: 1.2,
-        rotation: "+=360",
-        duration: 3 + Math.random() * 2,
-        delay: index * 0.5,
-        repeat: -1,
-        yoyo: true,
-        ease: "power2.inOut"
-      })
+      sparkleTweens.push(
+        gsap.to(sparkle, {
+          opacity: 0.8,
+          scale: 1.2,
+          rotation: "+=360",
+          duration: 3 + Math.random() * 2,
+          delay: index * 0.5,
+          repeat: -1,
+          yoyo: true,
+          ease: "power2.inOut"
+        })
+      )
     })
+
+    return () => {
+      tl.kill()
+      sparkleTweens.forEach(t => t.kill())
+    }
   }, [mounted])
 
   const dashboardUrl = userRole === "manager" ? "/dashboard" : "/staff"
@@ -129,6 +138,20 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
 
   return (
     <SectionWrapper className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-32 lg:pt-48 lg:pb-40">
+      {/* Hero Background Image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/images/hero-station-sunset.png"
+          alt="Modern filling station at sunset"
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
+          quality={85}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/80 to-background/95" />
+      </div>
+
       {/* Enhanced Background Effects */}
       <AnimatedBackground variant="hero" particleCount={40} />
       <FloatingElements variant="hero" density="medium" animated />
