@@ -12,7 +12,7 @@ import {
 } from "./card"
 import { cn } from "@/lib/utils"
 
-interface EnhancedCardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface MetricCardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "default" | "metric" | "alert" | "feature"
   hover?: boolean
   glow?: boolean
@@ -20,7 +20,7 @@ interface EnhancedCardProps extends React.HTMLAttributes<HTMLDivElement> {
   delay?: number
 }
 
-const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
+const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
   (
     {
       className,
@@ -181,17 +181,17 @@ const EnhancedCard = forwardRef<HTMLDivElement, EnhancedCardProps>(
   }
 )
 
-EnhancedCard.displayName = "EnhancedCard"
+MetricCard.displayName = "MetricCard"
 
-const EnhancedCardHeader = forwardRef<
+const MetricCardHeader = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <CardHeader ref={ref} className={cn("pb-3", className)} {...props} />
 ))
-EnhancedCardHeader.displayName = "EnhancedCardHeader"
+MetricCardHeader.displayName = "MetricCardHeader"
 
-const EnhancedCardTitle = forwardRef<
+const MetricCardTitle = forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
@@ -204,9 +204,9 @@ const EnhancedCardTitle = forwardRef<
     {...props}
   />
 ))
-EnhancedCardTitle.displayName = "EnhancedCardTitle"
+MetricCardTitle.displayName = "MetricCardTitle"
 
-const EnhancedCardDescription = forwardRef<
+const MetricCardDescription = forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
@@ -216,17 +216,17 @@ const EnhancedCardDescription = forwardRef<
     {...props}
   />
 ))
-EnhancedCardDescription.displayName = "EnhancedCardDescription"
+MetricCardDescription.displayName = "MetricCardDescription"
 
-const EnhancedCardContent = forwardRef<
+const MetricCardContent = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <CardContent ref={ref} className={cn("p-6 pt-0", className)} {...props} />
 ))
-EnhancedCardContent.displayName = "EnhancedCardContent"
+MetricCardContent.displayName = "MetricCardContent"
 
-const EnhancedCardFooter = forwardRef<
+const MetricCardFooter = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
@@ -236,13 +236,13 @@ const EnhancedCardFooter = forwardRef<
     {...props}
   />
 ))
-EnhancedCardFooter.displayName = "EnhancedCardFooter"
+MetricCardFooter.displayName = "MetricCardFooter"
 
 export {
-  EnhancedCard,
-  EnhancedCardHeader,
-  EnhancedCardFooter,
-  EnhancedCardTitle,
-  EnhancedCardDescription,
-  EnhancedCardContent
+  MetricCard,
+  MetricCardHeader,
+  MetricCardFooter,
+  MetricCardTitle,
+  MetricCardDescription,
+  MetricCardContent
 }

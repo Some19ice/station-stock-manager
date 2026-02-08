@@ -5,7 +5,7 @@ import { gsap } from "gsap"
 import { Sparkles, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AnimatedSkeleton } from "./animated-loading"
-import { EnhancedCard, EnhancedCardContent } from "./enhanced-card"
+import { MetricCard, MetricCardContent } from "./metric-card"
 import { AnimatedPage } from "./animated-page"
 
 interface LoadingScreenProps {
@@ -46,8 +46,8 @@ function MetricsLoading() {
       className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4"
     >
       {Array.from({ length: 4 }).map((_, i) => (
-        <EnhancedCard key={i} variant="metric" className="overflow-hidden">
-          <EnhancedCardContent className="p-6">
+        <MetricCard key={i} variant="metric" className="overflow-hidden">
+          <MetricCardContent className="p-6">
             <div className="mb-4 flex items-center justify-between">
               <AnimatedSkeleton className="h-4 w-20" />
               <div className="bg-primary/20 h-8 w-8 animate-pulse rounded-full" />
@@ -57,8 +57,8 @@ function MetricsLoading() {
               <AnimatedSkeleton className="h-6 w-16 rounded-full" />
               <AnimatedSkeleton className="h-5 w-12 rounded" />
             </div>
-          </EnhancedCardContent>
-        </EnhancedCard>
+          </MetricCardContent>
+        </MetricCard>
       ))}
     </div>
   )
@@ -93,16 +93,16 @@ function UsersLoading() {
         className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
       >
         {Array.from({ length: 4 }).map((_, i) => (
-          <EnhancedCard key={i} className="overflow-hidden">
-            <EnhancedCardContent className="p-6">
+          <MetricCard key={i} className="overflow-hidden">
+            <MetricCardContent className="p-6">
               <div className="mb-4 flex items-center justify-between">
                 <AnimatedSkeleton className="h-4 w-20" />
                 <div className="bg-primary/20 h-4 w-4 animate-pulse rounded" />
               </div>
               <AnimatedSkeleton className="mb-2 h-8 w-12" />
               <AnimatedSkeleton className="h-3 w-24" />
-            </EnhancedCardContent>
-          </EnhancedCard>
+            </MetricCardContent>
+          </MetricCard>
         ))}
       </div>
 
@@ -117,8 +117,8 @@ function UsersLoading() {
       {/* Users List */}
       <div className="space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <EnhancedCard key={i}>
-            <EnhancedCardContent className="p-6">
+          <MetricCard key={i}>
+            <MetricCardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="bg-primary/20 h-12 w-12 animate-pulse rounded-full" />
@@ -132,8 +132,8 @@ function UsersLoading() {
                   <AnimatedSkeleton className="h-9 w-20 rounded" />
                 </div>
               </div>
-            </EnhancedCardContent>
-          </EnhancedCard>
+            </MetricCardContent>
+          </MetricCard>
         ))}
       </div>
     </div>
@@ -169,16 +169,16 @@ function InventoryLoading() {
         className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
       >
         {Array.from({ length: 4 }).map((_, i) => (
-          <EnhancedCard key={i} className="overflow-hidden">
-            <EnhancedCardContent className="p-6">
+          <MetricCard key={i} className="overflow-hidden">
+            <MetricCardContent className="p-6">
               <div className="mb-4 flex items-center justify-between">
                 <AnimatedSkeleton className="h-4 w-24" />
                 <div className="bg-primary/20 h-4 w-4 animate-pulse rounded" />
               </div>
               <AnimatedSkeleton className="mb-2 h-8 w-16" />
               <AnimatedSkeleton className="h-3 w-32" />
-            </EnhancedCardContent>
-          </EnhancedCard>
+            </MetricCardContent>
+          </MetricCard>
         ))}
       </div>
 
@@ -196,8 +196,8 @@ function InventoryLoading() {
         </div>
 
         {/* Product List */}
-        <EnhancedCard>
-          <EnhancedCardContent className="p-6">
+        <MetricCard>
+          <MetricCardContent className="p-6">
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div
@@ -216,8 +216,8 @@ function InventoryLoading() {
                 </div>
               ))}
             </div>
-          </EnhancedCardContent>
-        </EnhancedCard>
+          </MetricCardContent>
+        </MetricCard>
       </div>
     </div>
   )
@@ -231,7 +231,7 @@ function ActivityLoading() {
         <div className="bg-chart-2/20 h-6 w-12 animate-pulse rounded-full" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
-        <EnhancedCard key={i} className="p-4">
+        <MetricCard key={i} className="p-4">
           <div className="flex items-center gap-3">
             <div className="bg-chart-1/20 h-8 w-8 animate-pulse rounded-full" />
             <div className="flex-1 space-y-2">
@@ -240,7 +240,7 @@ function ActivityLoading() {
             </div>
             <AnimatedSkeleton className="h-6 w-16 rounded" />
           </div>
-        </EnhancedCard>
+        </MetricCard>
       ))}
     </div>
   )
@@ -361,7 +361,7 @@ export function LoadingScreen({
         </div>
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <EnhancedCard key={i} className="p-4">
+            <MetricCard key={i} className="p-4">
               <div className="flex items-center gap-3">
                 <div className="bg-muted h-8 w-8 animate-pulse rounded-full" />
                 <div className="flex-1 space-y-2">
@@ -369,7 +369,7 @@ export function LoadingScreen({
                   <AnimatedSkeleton className="h-3 w-1/2" />
                 </div>
               </div>
-            </EnhancedCard>
+            </MetricCard>
           ))}
         </div>
       </div>

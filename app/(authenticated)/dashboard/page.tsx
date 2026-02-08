@@ -20,7 +20,7 @@ type RecentTransaction = {
   userName: string
   itemCount: number
 }
-import { EnhancedMetricsCards } from "@/components/dashboard/enhanced-metrics-cards"
+import { MetricsCards } from "@/components/dashboard/metrics-cards"
 import { LowStockAlerts } from "@/components/dashboard/low-stock-alerts"
 import { RecentActivity } from "@/components/dashboard/recent-activity"
 import { QuickActions } from "@/components/dashboard/quick-actions"
@@ -38,9 +38,9 @@ import {
 } from "@/components/ui/animated-page"
 import { LoadingScreen } from "@/components/ui/loading-screen"
 import {
-  EnhancedCard,
-  EnhancedCardContent
-} from "@/components/ui/enhanced-card"
+  MetricCard,
+  MetricCardContent
+} from "@/components/ui/metric-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Sparkles, Activity, Clock, RefreshCw } from "lucide-react"
@@ -99,7 +99,7 @@ const ActivityLoading = React.memo(() => (
 ))
 ActivityLoading.displayName = "ActivityLoading"
 
-export default function EnhancedDashboardPage() {
+export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [alerts, setAlerts] = useState<LowStockAlert[] | null>(null)
@@ -345,7 +345,7 @@ export default function EnhancedDashboardPage() {
         {/* Enhanced metrics */}
         <DashboardErrorBoundary>
           {metrics ? (
-            <EnhancedMetricsCards metrics={metrics} />
+            <MetricsCards metrics={metrics} />
           ) : (
             <MetricsLoading />
           )}

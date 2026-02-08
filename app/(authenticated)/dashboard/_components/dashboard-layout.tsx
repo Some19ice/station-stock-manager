@@ -22,7 +22,7 @@ import { gsap } from "gsap"
 import { AppSidebar } from "./app-sidebar"
 import { cn } from "@/lib/utils"
 
-export default function EnhancedDashboardLayout({
+export default function DashboardLayout({
   children,
   userData
 }: {
