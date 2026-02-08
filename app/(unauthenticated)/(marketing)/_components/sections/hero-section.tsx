@@ -109,7 +109,7 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
 
     return () => {
       tl.kill()
-      sparkleTweens.forEach(t => t.kill())
+      sparkleTweens.forEach(t => { t.kill() })
     }
   }, [mounted])
 
