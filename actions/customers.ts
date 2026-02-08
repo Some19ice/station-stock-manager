@@ -78,15 +78,15 @@ export async function updateCustomerByUserId(
   }
 }
 
-export async function updateCustomerByStripeCustomerId(
-  stripeCustomerId: string,
+export async function updateCustomerByPaystackCode(
+  paystackCustomerCode: string,
   updates: Partial<SelectCustomer>
 ): Promise<{ isSuccess: boolean; data?: SelectCustomer }> {
   try {
     const [updatedCustomer] = await db
       .update(customers)
       .set(updates)
-      .where(eq(customers.stripeCustomerId, stripeCustomerId))
+      .where(eq(customers.paystackCustomerCode, paystackCustomerCode))
       .returning()
 
     if (!updatedCustomer) {
@@ -95,7 +95,7 @@ export async function updateCustomerByStripeCustomerId(
 
     return { isSuccess: true, data: updatedCustomer }
   } catch (error) {
-    console.error("Error updating customer by stripeCustomerId:", error)
+    console.error("Error updating customer by paystackCustomerCode:", error)
     return { isSuccess: false }
   }
 }

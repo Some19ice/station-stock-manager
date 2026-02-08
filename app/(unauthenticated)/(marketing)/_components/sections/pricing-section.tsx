@@ -2,13 +2,13 @@
 
 import { PricingButton } from "@/components/payments/pricing-button"
 import { Button } from "@/components/ui/button"
-import { Check, CreditCard, Zap } from "lucide-react"
+import { Check, CreditCard, Zap, Gift } from "lucide-react"
 import { SectionWrapper } from "./section-wrapper"
 
 const pricing = [
   {
     name: "Single Station",
-    price: "$49",
+    price: "\u20A625,000",
     period: "/month",
     description: "Perfect for independent gas stations",
     features: [
@@ -19,13 +19,13 @@ const pricing = [
       "Mobile app access",
       "Supplier management"
     ],
-    paymentLink: process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_MONTHLY,
+    planKey: "SINGLE_STATION" as const,
     icon: CreditCard,
     highlight: false
   },
   {
     name: "Multi-Station Chain",
-    price: "$149",
+    price: "\u20A675,000",
     period: "/month",
     description: "Best for chains - up to 10 locations",
     features: [
@@ -37,7 +37,7 @@ const pricing = [
       "Compliance reporting",
       "Dedicated account manager"
     ],
-    paymentLink: process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_YEARLY,
+    planKey: "MULTI_STATION" as const,
     icon: Zap,
     highlight: true
   }
@@ -53,6 +53,19 @@ export function PricingSection() {
           </h2>
           <p className="pricing-subtitle text-muted-foreground mt-4 text-lg leading-8">
             Choose the plan that fits your needs. Cancel anytime.
+          </p>
+        </div>
+
+        {/* Pilot Offer Banner */}
+        <div className="mx-auto mt-8 max-w-lg rounded-2xl border border-green-500/30 bg-green-500/10 p-4 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <Gift className="h-5 w-5 text-green-600" />
+            <span className="font-semibold text-green-700">
+              Pilot Offer: {"\u20A6"}15,000/mo for your first 3 months!
+            </span>
+          </div>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Limited time offer for early adopters.
           </p>
         </div>
 
@@ -144,31 +157,17 @@ export function PricingSection() {
                 ))}
               </ul>
 
-              {tier.paymentLink ? (
-                <PricingButton
-                  paymentLink={tier.paymentLink}
-                  className={`mt-8 w-full ${
-                    tier.highlight
-                      ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                      : ""
-                  }`}
-                  variant={tier.highlight ? "default" : "outline"}
-                >
-                  Get started
-                </PricingButton>
-              ) : (
-                <Button
-                  className={`mt-8 w-full ${
-                    tier.highlight
-                      ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                      : ""
-                  }`}
-                  variant={tier.highlight ? "default" : "outline"}
-                  disabled
-                >
-                  Configure payment link
-                </Button>
-              )}
+              <PricingButton
+                planKey={tier.planKey}
+                className={`mt-8 w-full ${
+                  tier.highlight
+                    ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                    : ""
+                }`}
+                variant={tier.highlight ? "default" : "outline"}
+              >
+                Get started
+              </PricingButton>
             </div>
           ))}
         </div>

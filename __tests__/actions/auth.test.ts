@@ -99,7 +99,7 @@ describe("Authentication Actions", () => {
       id: createTestUUID("1000"),
       userId: "clerk_customer_123",
       membership: "free",
-      stripeCustomerId: null,
+      paystackCustomerCode: null,
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -334,8 +334,10 @@ describe("Authentication Actions", () => {
       const newStaffData = {
         clerkUserId: "clerk_new_staff_456",
         username: "newstaff",
-        role: "staff",
-        stationId: testStation.id
+        role: "staff" as const,
+        stationId: testStation.id,
+        email: "newstaff@example.com",
+        sendInvitation: true
       }
 
       const createdUser = {
@@ -415,8 +417,10 @@ describe("Authentication Actions", () => {
       const newManagerData = {
         clerkUserId: "clerk_new_manager_789",
         username: "newmanager",
-        role: "manager",
-        stationId: testStation.id
+        role: "manager" as const,
+        stationId: testStation.id,
+        email: "newmanager@example.com",
+        sendInvitation: true
       }
 
       const createdManager = {
@@ -446,7 +450,9 @@ describe("Authentication Actions", () => {
       const newUserData = {
         clerkUserId: "clerk_new_user_999",
         username: "newuser",
-        role: "staff"
+        role: "staff" as const,
+        email: "newuser@example.com",
+        sendInvitation: true
       }
 
       const { createStationUser } = await import("@/actions/auth")
@@ -487,8 +493,10 @@ describe("Authentication Actions", () => {
       const duplicateUsernameData = {
         clerkUserId: "clerk_duplicate_username_123",
         username: testStaffUser.username,
-        role: "staff",
-        stationId: testStation.id
+        role: "staff" as const,
+        stationId: testStation.id,
+        email: "duplicate@example.com",
+        sendInvitation: true
       }
 
       const { createStationUser } = await import("@/actions/auth")
@@ -527,8 +535,10 @@ describe("Authentication Actions", () => {
       const duplicateClerkIdData = {
         clerkUserId: testStaffUser.clerkUserId,
         username: "uniqueusername",
-        role: "staff",
-        stationId: testStation.id
+        role: "staff" as const,
+        stationId: testStation.id,
+        email: "unique@example.com",
+        sendInvitation: true
       }
 
       const { createStationUser } = await import("@/actions/auth")

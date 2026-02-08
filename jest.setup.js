@@ -8,7 +8,7 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL || "postgresql://test:test@localhost:5432/test"
 process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_mock"
 process.env.CLERK_SECRET_KEY = "sk_test_mock"
-process.env.STRIPE_SECRET_KEY = "sk_test_mock"
+process.env.PAYSTACK_SECRET_KEY = "sk_test_mock"
 process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000"
 
 // Global test timeout
@@ -211,41 +211,41 @@ Object.defineProperty(window, "scrollTo", {
 })
 
 global.Request = jest.fn(input => ({
-    input,
-    headers: {
-        get: jest.fn(header => {
-            if (header === 'x-forwarded-for') {
-                return '127.0.0.1';
-            }
-            return null;
-        }),
-    },
-}));
+  input,
+  headers: {
+    get: jest.fn(header => {
+      if (header === "x-forwarded-for") {
+        return "127.0.0.1"
+      }
+      return null
+    })
+  }
+}))
 
 // Polyfill for `Response`
-if (typeof global.Response === 'undefined') {
-  global.Response = require('node-fetch').Response;
+if (typeof global.Response === "undefined") {
+  global.Response = require("node-fetch").Response
 }
 
-const { TextEncoder, TextDecoder } = require('util');
+const { TextEncoder, TextDecoder } = require("util")
 
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
 
-if (typeof global.BroadcastChannel === 'undefined') {
+if (typeof global.BroadcastChannel === "undefined") {
   global.BroadcastChannel = class {
     constructor(name) {}
     postMessage(message) {}
     close() {}
-    onmessage = null;
-    onmessageerror = null;
+    onmessage = null
+    onmessageerror = null
     addEventListener(type, listener) {}
     removeEventListener(type, listener) {}
     dispatchEvent(event) {}
-  };
+  }
 }
 
-if (typeof global.TransformStream === 'undefined') {
-  const { TransformStream } = require('node:stream/web');
-  global.TransformStream = TransformStream;
+if (typeof global.TransformStream === "undefined") {
+  const { TransformStream } = require("node:stream/web")
+  global.TransformStream = TransformStream
 }

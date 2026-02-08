@@ -6,8 +6,10 @@ export const customers = pgTable("customers", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").unique().notNull(),
   membership: membership("membership").default("free").notNull(),
-  stripeCustomerId: text("stripe_customer_id").unique(),
-  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  paystackCustomerCode: text("paystack_customer_code").unique(),
+  paystackSubscriptionCode: text("paystack_subscription_code").unique(),
+  paystackAuthorizationCode: text("paystack_authorization_code"),
+  paystackLastPayment: timestamp("paystack_last_payment"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 })

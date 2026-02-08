@@ -1,21 +1,22 @@
 "use client"
 
-import { createCheckoutUrl } from "@/actions/stripe"
+import { initializeTransaction } from "@/actions/paystack"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
+import { PAYSTACK_PLANS } from "@/lib/paystack"
 
 interface PricingButtonProps {
-  paymentLink: string
+  planKey: keyof typeof PAYSTACK_PLANS
   children: React.ReactNode
   className?: string
   variant?: "default" | "outline" | "secondary"
 }
 
 export function PricingButton({
-  paymentLink,
+  planKey,
   children,
   className,
   variant = "default"
@@ -26,8 +27,7 @@ export function PricingButton({
 
   const handleClick = async () => {
     if (!isSignedIn) {
-      // Store the payment link for post-auth redirect
-      sessionStorage.setItem("pendingCheckout", paymentLink)
+      sessionStorage.setItem("pendingCheckout", planKey)
       toast.info("Please sign in to continue")
       router.push("/login")
       return
@@ -35,17 +35,14 @@ export function PricingButton({
 
     setIsLoading(true)
     try {
-      const result = await createCheckoutUrl(paymentLink)
+      const result = await initializeTransaction(planKey)
 
-      if (result.error) {
-        throw new Error(result.error)
+      if (!result.isSuccess || !result.data) {
+        throw new Error(result.error || "Failed to initialize payment")
       }
 
-      if (result.url) {
-        window.location.href = result.url
-      } else {
-        throw new Error("No checkout URL received")
-      }
+      // Redirect to Paystack checkout page
+      window.location.href = result.data.authorizationUrl
     } catch (error) {
       console.error("Checkout error:", error)
       toast.error(

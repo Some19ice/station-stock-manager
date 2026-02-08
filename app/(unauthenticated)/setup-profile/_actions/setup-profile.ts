@@ -63,8 +63,7 @@ export async function setupUserProfile(
         .insert(customers)
         .values({
           userId: validatedInput.clerkUserId,
-          membership: "free", // Default membership
-          stripeCustomerId: null // Will be set up later if needed
+          membership: "free" // Default membership
         })
         .returning()
 
