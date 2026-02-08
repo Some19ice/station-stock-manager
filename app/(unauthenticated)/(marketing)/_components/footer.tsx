@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { Github, Instagram, Music2, Youtube } from "lucide-react"
 import Link from "next/link"
 
@@ -49,18 +50,32 @@ export function Footer() {
   ]
 
   return (
-    <footer className="bg-muted/50" aria-labelledby="footer-heading">
+    <footer className="relative overflow-hidden bg-muted/50" aria-labelledby="footer-heading">
+      {/* Night Scene Background */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/images/station-night-scene.png"
+          alt=""
+          fill
+          className="object-cover opacity-10"
+          loading="lazy"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/80" />
+      </div>
+
       <h2 id="footer-heading" className="sr-only">
         Footer
       </h2>
-      <div className="mx-auto max-w-7xl px-6 pt-16 pb-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-6 pt-16 pb-8">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8">
             <Link href="/" className="text-xl font-bold">
-              Company
+              Station Manager
             </Link>
             <p className="text-muted-foreground text-sm leading-6">
-              Your company description here.
+              The complete gas station management platform. Track every litre,
+              prevent theft, and maximize your profits with real-time monitoring.
             </p>
             <div className="flex space-x-6">
               {socialLinks.map(item => (
@@ -152,7 +167,7 @@ export function Footer() {
         </div>
         <div className="border-border mt-16 border-t pt-8 sm:mt-20 lg:mt-24">
           <p className="text-muted-foreground text-xs leading-5">
-            &copy; {new Date().getFullYear()} Company, Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} Station Manager. All rights reserved.
           </p>
         </div>
       </div>

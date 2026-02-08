@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
 import { gsap } from "gsap"
 import {
@@ -17,8 +18,6 @@ import {
   Package
 } from "lucide-react"
 import { SectionWrapper } from "./section-wrapper"
-import { AnimatedBackground } from "@/components/ui/animated-background"
-import { FloatingElements } from "@/components/ui/floating-elements"
 
 const demoTabs = [
   {
@@ -51,7 +50,7 @@ const mockData = {
   dashboard: {
     title: "Manager Dashboard",
     metrics: [
-      { label: "Today's Sales", value: "$12,450", change: "+8.2%" },
+      { label: "Today's Sales", value: "₦12,450", change: "+8.2%" },
       { label: "Fuel Inventory", value: "85%", change: "-2.1%" },
       { label: "Active Staff", value: "12", change: "+1" },
       { label: "Transactions", value: "234", change: "+15%" }
@@ -69,10 +68,10 @@ const mockData = {
   sales: {
     title: "Sales Interface",
     recentSales: [
-      { time: "2:45 PM", product: "Premium Gas", amount: "$45.20" },
-      { time: "2:42 PM", product: "Regular Gas", amount: "$32.15" },
-      { time: "2:38 PM", product: "Diesel", amount: "$67.80" },
-      { time: "2:35 PM", product: "Snacks", amount: "$8.50" }
+      { time: "2:45 PM", product: "Premium Gas", amount: "₦45,200" },
+      { time: "2:42 PM", product: "Regular Gas", amount: "₦32,150" },
+      { time: "2:38 PM", product: "Diesel", amount: "₦67,800" },
+      { time: "2:35 PM", product: "Snacks", amount: "₦8,500" }
     ]
   },
   alerts: {
@@ -173,8 +172,6 @@ export function DemoSection() {
 
   return (
     <SectionWrapper id="demo" className="relative overflow-hidden py-20 sm:py-32">
-      <AnimatedBackground variant="features" particleCount={30} />
-      <FloatingElements variant="features" density="low" animated />
 
       <div
         ref={sectionRef}
@@ -189,6 +186,24 @@ export function DemoSection() {
             Experience the power of modern gas station management with our
             intuitive interface designed for both managers and staff.
           </p>
+        </div>
+
+        {/* Manager Dashboard Image */}
+        <div className="demo-image mx-auto mt-12 max-w-4xl">
+          <div className="group relative overflow-hidden rounded-2xl shadow-2xl">
+            <Image
+              src="/images/manager-dashboard.png"
+              alt="Station manager monitoring real-time analytics"
+              width={900}
+              height={500}
+              className="w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            <div className="absolute bottom-6 left-6 right-6">
+              <p className="text-lg font-bold text-white">Real-Time Station Intelligence</p>
+              <p className="mt-1 text-sm text-white/80">Monitor every metric from anywhere, on any device</p>
+            </div>
+          </div>
         </div>
 
         {/* Demo Tabs */}
@@ -263,8 +278,8 @@ export function DemoSection() {
   )
 }
 
-function DemoContent({ activeTab, data }: { 
-  activeTab: string; 
+function DemoContent({ activeTab, data }: {
+  activeTab: string;
   data: {
     title: string;
     metrics?: Array<{ label: string; value: string; change: string }>;
@@ -344,10 +359,10 @@ function DemoContent({ activeTab, data }: {
           <div className="space-y-3">
             {data.notifications?.map((alert, index: number) => (
               <div key={index} className={`flex items-start gap-3 rounded-lg border p-4 ${
-                alert.type === 'critical' ? 'border-red-200 bg-red-50' :
-                alert.type === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-                alert.type === 'success' ? 'border-green-200 bg-green-50' :
-                'border-blue-200 bg-blue-50'
+                alert.type === 'critical' ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30' :
+                alert.type === 'warning' ? 'border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30' :
+                alert.type === 'success' ? 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30' :
+                'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30'
               }`}>
                 {alert.type === 'critical' && <AlertTriangle className="h-5 w-5 text-red-600" />}
                 {alert.type === 'warning' && <AlertTriangle className="h-5 w-5 text-yellow-600" />}

@@ -9,6 +9,7 @@ import {
   Sparkles,
   CheckCircle
 } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { SectionWrapper } from "./section-wrapper"
 import { useEffect, useRef, useState } from "react"
@@ -88,20 +89,9 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
         "-=0.2"
       )
 
-    // Sparkle animation
-    const sparkles = document.querySelectorAll(".sparkle")
-    sparkles.forEach((sparkle, index) => {
-      gsap.to(sparkle, {
-        opacity: 0.8,
-        scale: 1.2,
-        rotation: "+=360",
-        duration: 3 + Math.random() * 2,
-        delay: index * 0.5,
-        repeat: -1,
-        yoyo: true,
-        ease: "power2.inOut"
-      })
-    })
+    return () => {
+      tl.kill()
+    }
   }, [mounted])
 
   const dashboardUrl = userRole === "manager" ? "/dashboard" : "/staff"
@@ -129,16 +119,30 @@ export function HeroSection({ isAuthenticated, userRole }: HeroSectionProps) {
 
   return (
     <SectionWrapper className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-32 lg:pt-48 lg:pb-40">
+      {/* Hero Background Image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/images/hero-station-sunset.png"
+          alt="Modern filling station at sunset"
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
+          quality={85}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/80 to-background/95" />
+      </div>
+
       {/* Enhanced Background Effects */}
-      <AnimatedBackground variant="hero" particleCount={40} />
-      <FloatingElements variant="hero" density="medium" animated />
+      <AnimatedBackground variant="hero" particleCount={12} />
+      <FloatingElements variant="hero" density="low" animated />
 
       {/* Optimized Sparkles */}
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-        <Sparkles className="sparkle text-primary/30 absolute top-20 left-[10%] h-4 w-4" />
-        <Sparkles className="sparkle text-secondary/30 absolute top-32 right-[15%] h-3 w-3" />
-        <Sparkles className="sparkle text-accent/30 absolute bottom-40 left-[20%] h-5 w-5" />
-        <Sparkles className="sparkle text-primary/30 absolute right-[25%] bottom-20 h-3 w-3" />
+        <Sparkles className="text-primary/30 absolute top-20 left-[10%] h-4 w-4 animate-pulse" />
+        <Sparkles className="text-secondary/30 absolute top-32 right-[15%] h-3 w-3 animate-pulse" style={{ animationDelay: '1s' }} />
+        <Sparkles className="text-accent/30 absolute bottom-40 left-[20%] h-5 w-5 animate-pulse" style={{ animationDelay: '2s' }} />
+        <Sparkles className="text-primary/30 absolute right-[25%] bottom-20 h-3 w-3 animate-pulse" style={{ animationDelay: '0.5s' }} />
       </div>
 
       <div
