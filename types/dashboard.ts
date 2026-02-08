@@ -93,7 +93,7 @@ export interface DashboardContext {
 }
 
 // Component-specific prop types
-export interface EnhancedCardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface MetricCardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "default" | "metric" | "alert" | "feature"
   hover?: boolean
   glow?: boolean

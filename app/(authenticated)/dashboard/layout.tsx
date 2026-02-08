@@ -1,7 +1,7 @@
 import { getCurrentUserProfile } from "@/actions/auth"
 import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import EnhancedDashboardLayout from "./_components/enhanced-layout"
+import DashboardShell from "./_components/dashboard-layout"
 
 export const dynamic = "force-dynamic"
 
@@ -37,8 +37,8 @@ export default async function DashboardLayout({
   }
 
   return (
-    <EnhancedDashboardLayout userData={userData}>
+    <DashboardShell userData={userData}>
       {children}
-    </EnhancedDashboardLayout>
+    </DashboardShell>
   )
 }
