@@ -5,20 +5,9 @@ import { gsap } from "gsap"
 
 // Register GSAP plugins
 if (typeof window !== "undefined") {
-  Promise.all([
-    import("gsap/ScrollTrigger"),
-    import("gsap/TextPlugin"),
-    import("gsap/MorphSVGPlugin")
-  ])
-    .then(([{ ScrollTrigger }, { TextPlugin }, { MorphSVGPlugin }]) => {
-      gsap.registerPlugin(ScrollTrigger, TextPlugin, MorphSVGPlugin)
-    })
-    .catch(() => {
-      // Fallback if plugins aren't available
-      import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
-        gsap.registerPlugin(ScrollTrigger)
-      })
-    })
+  import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
+    gsap.registerPlugin(ScrollTrigger)
+  })
 }
 
 export function useGSAP() {

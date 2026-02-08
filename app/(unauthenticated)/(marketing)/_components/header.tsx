@@ -8,7 +8,6 @@ import { useTheme } from "next-themes"
 import Link from "next/link"
 import { useEffect, useState, useRef } from "react"
 import { gsap } from "gsap"
-import { useMagneticHover } from "@/hooks/use-gsap"
 
 interface HeaderProps {
   userMembership: SelectCustomer["membership"] | null
@@ -30,8 +29,7 @@ export function Header({ userMembership, userRole }: HeaderProps) {
   const navRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLDivElement>(null)
 
-  // Magnetic hover effects
-  // useMagneticHover(logoRef, { strength: 0.3 })
+
 
   useEffect(() => {
     setMounted(true)
@@ -42,7 +40,7 @@ export function Header({ userMembership, userRole }: HeaderProps) {
 
     // Header entrance animation
     const tl = gsap.timeline()
-    
+
     tl.from(".header-logo", {
       opacity: 0,
       y: -20,
@@ -63,19 +61,13 @@ export function Header({ userMembership, userRole }: HeaderProps) {
       ease: "back.out(1.7)"
     }, "-=0.2")
 
-    // Scroll-based header background
+    // Scroll-based header background via CSS class toggle
     const handleScroll = () => {
       if (!headerRef.current) return
-      
-      const scrolled = window.scrollY > 50
-      gsap.to(headerRef.current, {
-        backgroundColor: scrolled ? "rgba(255, 255, 255, 0.95)" : "transparent",
-        backdropFilter: scrolled ? "blur(10px)" : "none",
-        duration: 0.3
-      })
+      headerRef.current.classList.toggle("header-scrolled", window.scrollY > 50)
     }
 
-    window.addEventListener("scroll", handleScroll)
+    window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [mounted])
 
@@ -106,7 +98,7 @@ export function Header({ userMembership, userRole }: HeaderProps) {
   return (
     <header
       ref={headerRef}
-      className="fixed inset-x-0 z-40 transition-all duration-300"
+      className="fixed inset-x-0 z-40 transition-all duration-300 [&.header-scrolled]:bg-background/95 [&.header-scrolled]:backdrop-blur-md [&.header-scrolled]:shadow-sm"
       style={{ top: "var(--banner-height, 0px)" }}
     >
       <nav

@@ -60,7 +60,7 @@ const variantStyles = {
 export function AnimatedBackground({
   className,
   variant = "hero",
-  particleCount = 50
+  particleCount = 15
 }: AnimatedBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const tweensRef = useRef<gsap.core.Tween[]>([])
@@ -108,17 +108,7 @@ export function AnimatedBackground({
         })
       )
 
-      if (p.hasRotation) {
-        trackTween(
-          gsap.to(el, {
-            rotation: 360,
-            duration: p.duration * 2,
-            ease: "none",
-            repeat: -1,
-            delay: p.delay
-          })
-        )
-      }
+      // Rotation tweens removed for performance
     })
 
     // Animate orbs for hero variant
@@ -206,15 +196,7 @@ export function AnimatedBackground({
         </>
       )}
 
-      {/* Subtle grid overlay */}
-      <div
-        className="absolute inset-0 animate-[grid-move_30s_linear_infinite] opacity-[0.02]"
-        style={{
-          backgroundImage:
-            "linear-gradient(hsl(var(--foreground) / 0.1) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground) / 0.1) 1px, transparent 1px)",
-          backgroundSize: "50px 50px"
-        }}
-      />
+      {/* Grid overlay removed for performance */}
     </div>
   )
 }

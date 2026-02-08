@@ -50,7 +50,7 @@ export function FloatingElements({
     const elements: HTMLDivElement[] = []
     const icons = iconSets[variant]
 
-    const elementCount = density === "low" ? 6 : density === "medium" ? 10 : 15
+    const elementCount = density === "low" ? 3 : density === "medium" ? 5 : 8
 
     // Create floating elements
     for (let i = 0; i < elementCount; i++) {
@@ -104,66 +104,25 @@ export function FloatingElements({
 
     elementsRef.current = elements
 
-    // Animate elements with GSAP
-    elements.forEach((element, index) => {
+    // Animate elements with GSAP — single float tween only
+    const tweens: gsap.core.Tween[] = []
+    elements.forEach((element) => {
       const delay = Math.random() * 2
-      const duration = 4 + Math.random() * 4
+      const duration = 6 + Math.random() * 4
       const amplitude =
-        variant === "hero" ? 30 : variant === "features" ? 20 : 15
+        variant === "hero" ? 20 : variant === "features" ? 15 : 10
 
-      // Floating animation
-      gsap.to(element, {
-        y: `${Math.random() > 0.5 ? "-" : "+"}${amplitude}px`,
-        x: `${Math.random() > 0.5 ? "-" : "+"}${amplitude * 0.7}px`,
-        rotation: Math.random() * 10 - 5,
-        duration: duration,
-        delay: delay,
-        ease: "power2.inOut",
-        repeat: -1,
-        yoyo: true,
-        repeatDelay: Math.random() * 1
-      })
-
-      // Scale pulsing for some elements
-      if (Math.random() > 0.6) {
+      tweens.push(
         gsap.to(element, {
-          scale: 1.1,
-          duration: 2 + Math.random() * 2,
-          delay: delay + Math.random(),
+          y: `${Math.random() > 0.5 ? "-" : "+"}${amplitude}px`,
+          x: `${Math.random() > 0.5 ? "-" : "+"}${amplitude * 0.5}px`,
+          duration: duration,
+          delay: delay,
           ease: "power2.inOut",
           repeat: -1,
           yoyo: true
         })
-      }
-
-      // Opacity breathing effect
-      gsap.to(element, {
-        opacity: 0.3 + Math.random() * 0.4,
-        duration: 3 + Math.random() * 2,
-        delay: delay,
-        ease: "power2.inOut",
-        repeat: -1,
-        yoyo: true
-      })
-
-      // Add hover interactions
-      element.addEventListener("mouseenter", () => {
-        gsap.to(element, {
-          scale: 1.2,
-          opacity: 1,
-          duration: 0.3,
-          ease: "back.out(1.7)"
-        })
-      })
-
-      element.addEventListener("mouseleave", () => {
-        gsap.to(element, {
-          scale: 1,
-          opacity: 0.6,
-          duration: 0.3,
-          ease: "power2.out"
-        })
-      })
+      )
     })
 
     // Add connecting lines between nearby elements for dashboard variant
@@ -173,6 +132,7 @@ export function FloatingElements({
 
     // Cleanup function
     return () => {
+      tweens.forEach(t => t.kill())
       elements.forEach(element => {
         if (element.parentNode) {
           element.parentNode.removeChild(element)

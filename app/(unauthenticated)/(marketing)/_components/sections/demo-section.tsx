@@ -18,8 +18,6 @@ import {
   Package
 } from "lucide-react"
 import { SectionWrapper } from "./section-wrapper"
-import { AnimatedBackground } from "@/components/ui/animated-background"
-import { FloatingElements } from "@/components/ui/floating-elements"
 
 const demoTabs = [
   {
@@ -174,8 +172,6 @@ export function DemoSection() {
 
   return (
     <SectionWrapper id="demo" className="relative overflow-hidden py-20 sm:py-32">
-      <AnimatedBackground variant="features" particleCount={30} />
-      <FloatingElements variant="features" density="low" animated />
 
       <div
         ref={sectionRef}

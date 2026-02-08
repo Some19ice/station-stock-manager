@@ -12,16 +12,10 @@ import {
   Zap
 } from "lucide-react"
 import { SectionWrapper } from "./section-wrapper"
-import { AnimatedBackground } from "@/components/ui/animated-background"
-import { FloatingElements } from "@/components/ui/floating-elements"
 import {
-  useStaggerAnimation,
-  useMagneticHover,
-  useAdvancedStagger,
-  useParallax
+  useStaggerAnimation
 } from "@/hooks/use-gsap"
 import { useEffect, useRef, useState } from "react"
-import { gsap } from "gsap"
 
 const features = [
   {
@@ -66,69 +60,14 @@ export function FeaturesSection() {
   const [mounted, setMounted] = useState(false)
   const sectionRef = useRef<HTMLDivElement>(null)
 
-  // Enhanced GSAP animations
-  useAdvancedStagger("#features-grid", ".feature-card", {
-    phase1: { opacity: 0, y: 60, rotationY: -15, scale: 0.9 },
-    phase2: { opacity: 1, y: 0, rotationY: 0, scale: 1 },
-    stagger: 0.15
-  })
-  useMagneticHover(".feature-card", 0.2)
-  useParallax(".features-background", 0.3)
+  // Simple scroll-triggered stagger animation
+  useStaggerAnimation("#features-grid", ".feature-card")
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  useEffect(() => {
-    if (!mounted || !sectionRef.current) return
 
-    // Continuous background animation
-    const cards = sectionRef.current.querySelectorAll(".feature-card")
-
-    const handlers: Array<{ el: Element; enter: () => void; leave: () => void }> = []
-
-    cards.forEach((card) => {
-      const enter = () => {
-        const ripple = document.createElement("div")
-        ripple.className =
-          "absolute inset-0 bg-primary/5 rounded-xl opacity-0 pointer-events-none"
-        card.appendChild(ripple)
-
-        gsap.to(ripple, {
-          opacity: 1,
-          scale: 1.05,
-          duration: 0.3,
-          ease: "power2.out"
-        })
-      }
-
-      const leave = () => {
-        const ripples = card.querySelectorAll(
-          ".absolute.inset-0.bg-primary\\/5"
-        )
-        ripples.forEach(ripple => {
-          gsap.to(ripple, {
-            opacity: 0,
-            scale: 0.95,
-            duration: 0.3,
-            ease: "power2.out",
-            onComplete: () => ripple.remove()
-          })
-        })
-      }
-
-      card.addEventListener("mouseenter", enter)
-      card.addEventListener("mouseleave", leave)
-      handlers.push({ el: card, enter, leave })
-    })
-
-    return () => {
-      handlers.forEach(({ el, enter, leave }) => {
-        el.removeEventListener("mouseenter", enter)
-        el.removeEventListener("mouseleave", leave)
-      })
-    }
-  }, [mounted])
 
   if (!mounted) {
     return (
@@ -154,14 +93,7 @@ export function FeaturesSection() {
 
   return (
     <SectionWrapper className="relative overflow-hidden" id="features">
-      {/* Enhanced animated background */}
-      <AnimatedBackground
-        variant="features"
-        particleCount={40}
-        className="features-background"
-      />
-      <FloatingElements variant="features" density="low" animated />
-
+      {/* Static gradient backdrop */}
       <div className="absolute inset-0 -z-10">
         <div className="from-primary/5 to-secondary/5 absolute inset-0 bg-gradient-to-br via-transparent opacity-60" />
         <div className="bg-[radial-gradient(ellipse_at_center,theme(colors.accent/10),transparent_70%)] absolute inset-0" />
