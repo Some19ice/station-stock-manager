@@ -7,6 +7,7 @@ import {
   users,
   suppliers,
   products,
+  shifts,
   transactions,
   transactionItems,
   stockMovements,
@@ -16,6 +17,7 @@ import {
   usersRelations,
   suppliersRelations,
   productsRelations,
+  shiftsRelations,
   transactionsRelations,
   transactionItemsRelations,
   stockMovementsRelations
@@ -35,6 +37,7 @@ const dbSchema = {
   users,
   suppliers,
   products,
+  shifts,
   transactions,
   transactionItems,
   stockMovements,
@@ -45,6 +48,7 @@ const dbSchema = {
   usersRelations,
   suppliersRelations,
   productsRelations,
+  shiftsRelations,
   transactionsRelations,
   transactionItemsRelations,
   stockMovementsRelations

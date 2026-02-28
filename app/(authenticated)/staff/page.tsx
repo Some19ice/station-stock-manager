@@ -27,6 +27,7 @@ import {
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { AnimatedCard } from "@/components/ui/animated-card"
+import { ShiftClock } from "@/components/staff/shift-clock"
 
 export default async function StaffDashboard() {
   const userProfile = await getCurrentUserProfile()
@@ -91,6 +92,9 @@ export default async function StaffDashboard() {
             </span>
           </div>
         </div>
+
+        {/* Shift Management */}
+        <ShiftClock stationId={station.id} />
 
         {/* Primary Action */}
         <AnimatedCard

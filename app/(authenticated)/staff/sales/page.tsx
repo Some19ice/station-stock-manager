@@ -35,11 +35,25 @@ import {
 } from "@/hooks/use-gsap"
 import { gsap } from "gsap"
 import { AnimatedCard } from "@/components/ui/animated-card"
+import { getActiveShift } from "@/actions/shifts"
+import { Timer } from "lucide-react"
 
 export default function StaffSalesPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [activeTab, setActiveTab] = useState("record")
   const { user, station } = useStationAuth()
+  const [shiftActive, setShiftActive] = useState(false)
+  const [shiftStart, setShiftStart] = useState<Date | null>(null)
+
+  useEffect(() => {
+    if (!station) return
+    getActiveShift(station.id).then(result => {
+      if (result.isSuccess && result.data) {
+        setShiftActive(true)
+        setShiftStart(new Date(result.data.startedAt))
+      }
+    })
+  }, [station])
 
   // GSAP refs and context
   const ctx = useGSAP()
@@ -421,9 +435,30 @@ export default function StaffSalesPage() {
                   Record new sales and monitor your daily performance
                 </CardDescription>
               </div>
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                Live Session
+              <Badge
+                variant={shiftActive ? "default" : "secondary"}
+                className="flex items-center gap-1"
+              >
+                {shiftActive ? (
+                  <>
+                    <Timer className="h-3 w-3" />
+                    Shift Active
+                    {shiftStart && (
+                      <span className="ml-1 text-xs opacity-75">
+                        since{" "}
+                        {shiftStart.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-3 w-3" />
+                    No Shift
+                  </>
+                )}
               </Badge>
             </div>
           </CardHeader>

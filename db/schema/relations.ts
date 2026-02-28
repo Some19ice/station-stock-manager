@@ -4,6 +4,7 @@ import { stations } from "./stations"
 import { users } from "./users"
 import { suppliers } from "./suppliers"
 import { products } from "./products"
+import { shifts } from "./shifts"
 import { transactions } from "./transactions"
 import { transactionItems } from "./transaction-items"
 import { stockMovements } from "./stock-movements"
@@ -31,7 +32,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.stationId],
     references: [stations.id]
   }),
-  transactions: many(transactions)
+  transactions: many(transactions),
+  shifts: many(shifts)
 }))
 
 // Supplier relations
@@ -57,6 +59,19 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   stockMovements: many(stockMovements)
 }))
 
+// Shift relations
+export const shiftsRelations = relations(shifts, ({ one, many }) => ({
+  station: one(stations, {
+    fields: [shifts.stationId],
+    references: [stations.id]
+  }),
+  user: one(users, {
+    fields: [shifts.userId],
+    references: [users.id]
+  }),
+  transactions: many(transactions)
+}))
+
 // Transaction relations
 export const transactionsRelations = relations(
   transactions,
@@ -68,6 +83,10 @@ export const transactionsRelations = relations(
     user: one(users, {
       fields: [transactions.userId],
       references: [users.id]
+    }),
+    shift: one(shifts, {
+      fields: [transactions.shiftId],
+      references: [shifts.id]
     }),
     items: many(transactionItems)
   })

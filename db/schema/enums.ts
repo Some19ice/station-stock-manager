@@ -15,3 +15,10 @@ export const movementType = pgEnum("movement_type", [
   "adjustment",
   "delivery"
 ])
+
+// Shift status enum for tracking shift lifecycle
+export const shiftStatus = pgEnum("shift_status", [
+  "active",
+  "completed",
+  "abandoned"
+])

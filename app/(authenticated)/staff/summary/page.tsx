@@ -1,49 +1,41 @@
 export const dynamic = "force-dynamic"
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
+import { getCurrentUserProfile } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
+import { ShiftHistory } from "@/components/staff/shift-history"
 
-export default function StaffSummaryPage() {
+export default async function StaffSummaryPage() {
+  const userProfile = await getCurrentUserProfile()
+
+  if (!userProfile.isSuccess || !userProfile.data) {
+    redirect("/setup-profile")
+  }
+
+  const { station } = userProfile.data
+
   return (
-    <div className="py-8">
-      <div className="mb-6">
-        <Button variant="ghost" asChild className="mb-4">
-          <Link href="/staff" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Daily Summary</h1>
-        <p className="mt-2 text-gray-600">
-          Personal sales summary will be implemented in task 6
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="container mx-auto space-y-6 p-6">
+        <div>
+          <Button variant="ghost" asChild className="mb-4">
+            <Link href="/staff" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Shift History
+          </h1>
+          <p className="mt-1 text-slate-600">
+            Your shift records, sales totals, and cash reconciliation
+          </p>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Personal Sales Summary</CardTitle>
-          <CardDescription>
-            This feature will be implemented in the reporting phase
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600">Your daily summary will include:</p>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-gray-600">
-            <li>Total sales value for today</li>
-            <li>Number of transactions completed</li>
-            <li>Top products sold</li>
-            <li>Performance compared to previous days</li>
-          </ul>
-        </CardContent>
-      </Card>
+        <ShiftHistory stationId={station.id} />
+      </div>
     </div>
   )
 }

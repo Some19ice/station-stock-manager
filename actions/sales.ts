@@ -9,7 +9,8 @@ import {
   transactions,
   transactionItems,
   stockMovements,
-  users
+  users,
+  shifts
 } from "@/db/schema"
 import { eq, and, desc, sql } from "drizzle-orm"
 import { z } from "zod"
@@ -115,12 +116,21 @@ export async function recordSale(input: z.infer<typeof recordSaleSchema>) {
         })
       )
 
+      // Check for active shift to attach to transaction
+      const activeShift = await tx.query.shifts.findFirst({
+        where: and(
+          eq(shifts.userId, userInfo.id),
+          eq(shifts.status, "active")
+        )
+      })
+
       // Create the transaction record
       const [transaction] = await tx
         .insert(transactions)
         .values({
           stationId: validatedInput.stationId,
           userId: userInfo.id,
+          shiftId: activeShift?.id ?? null,
           totalAmount: validatedInput.totalAmount.toString(),
           syncStatus: "synced"
         })
